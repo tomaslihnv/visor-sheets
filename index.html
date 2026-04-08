@@ -429,6 +429,12 @@ Chart.register(ChartDataLabels);
                      Sincronización matemática garantiza que línea % siempre coincide con tope de barras.
    v20 (2026-04-07): Fix stacking gris al cargar: renderStacking()+applyFilters() se llaman antes
                      de las llamadas async a mindicador.cl (IPC). Colores aparecen al cargar CSVs.
+   v22 (2026-04-08): Fix celdas grises al cambiar de Echaurren a Irarrázaval.
+                     Causa: renderBothEvolCharts() (Chart.js) podía forzar un repaint del
+                     browser antes de que applyFilters() corriera al final de switchBuilding,
+                     dejando las celdas visualmente grises. Fix: applyFilters() se llama
+                     inmediatamente después de renderStacking() (misma lógica que Promise.all).
+                     El applyFilters() final sigue para aplicar rangos de sliders.
    v21 (2026-04-08): Botón "Exportar PDF" en la leyenda del Stacking Plan.
                      Usa html2canvas 1.4.1 + jsPDF 2.5.1 (ambos desde cdnjs).
                      Función exportStackingPDF(): expande overflows temporalmente, captura
@@ -1615,6 +1621,7 @@ function switchBuilding(id) {
   });
   resetFilters();
   renderStacking();
+  applyFilters(); // Colorear inmediatamente: evita gris si Chart.js fuerza repaint antes del applyFilters final
   updateMetrics(BD[AB].data, BD[AB].park, BD[AB].bod);
   renderEstatusTable(BD[AB].data, BD[AB].fields, BD[AB].refKey, BD[AB].refUF);
   renderRawTable('table2', { data: BD[AB].evol, meta: { fields: Object.keys(BD[AB].evol[0] || {}) } });
@@ -1627,7 +1634,7 @@ function switchBuilding(id) {
   populateDropdowns(BD[AB].data);
   initVencFilter(BD[AB].data);
   initUFFilter(BD[AB].data);
-  applyFilters();
+  applyFilters(); // Segunda pasada: aplica rangos de sliders recién inicializados
 }
 
 function showTab(id, btn) {
