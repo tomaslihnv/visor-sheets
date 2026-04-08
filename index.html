@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>INSITU — Visor Multi-edificio</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='16' fill='%23000'/><text x='16' y='21' font-family='Segoe UI,system-ui,sans-serif' font-size='13' font-weight='700' fill='%23fff' text-anchor='middle' letter-spacing='0.5'>VI</text></svg>">
 <style>
 /* ─────────────────────────────────────────────────────────────────────────────
    INSITU MULTI-EDIFICIO — Property Management Viewer v13
@@ -429,6 +430,13 @@ Chart.register(ChartDataLabels);
                      Sincronización matemática garantiza que línea % siempre coincide con tope de barras.
    v20 (2026-04-07): Fix stacking gris al cargar: renderStacking()+applyFilters() se llaman antes
                      de las llamadas async a mindicador.cl (IPC). Colores aparecen al cargar CSVs.
+   v23 (2026-04-08): Favicon SVG inline: pelota negra con letras "VI" blancas.
+                     Fix canon/GGCC en tooltips de estacionamientos y bodegas:
+                     parseCLP ahora stripea "$" y espacios antes de parsear
+                     (las sheets de parking/bodega guardan valores como "$ 70.000").
+                     GGCC Deptos. en tooltip de departamentos: se muestra debajo de
+                     Canon CLP. Se precomputa en __ggccCLP. col.ggcc resuelto en
+                     resolveColumns con match flexible (incluye GGCC + DEPTO).
    v22 (2026-04-08): Fix celdas grises al cambiar de Echaurren a Irarrázaval.
                      Causa: renderBothEvolCharts() (Chart.js) podía forzar un repaint del
                      browser antes de que applyFilters() corriera al final de switchBuilding,
@@ -537,7 +545,8 @@ function getParkingCategory(row) {
 
 function parseCLP(str) {
   if (str == null || str === '') return null;
-  const n = parseFloat(String(str).trim().replace(/\./g, '').replace(',', '.'));
+  // Strip $ sign, currency symbols and whitespace before parsing (sheets de parking/bodega incluyen "$")
+  const n = parseFloat(String(str).trim().replace(/[$\u0024\s]/g, '').replace(/\./g, '').replace(',', '.'));
   return isNaN(n) ? null : n;
 }
 
@@ -601,6 +610,7 @@ let col = {
   salario: null,
   titular: null,
   diasRem: null,
+  ggcc:    null,
 };
 
 function resolveColumns(headers) {
@@ -611,6 +621,7 @@ function resolveColumns(headers) {
   col.salario = find(k => k === 'SALARIO');
   col.titular = find(k => k === 'TITULAR' || k === 'ARRENDATARIO' || k === 'NOMBRE');
   col.diasRem = find(k => k === 'DIAS REMANENTES' || k === 'DIAS REM' || k.includes('REMANENTE'));
+  col.ggcc    = find(k => k.includes('GGCC') && k.includes('DEPTO')) || 'GGCC Deptos.';
 }
 
 let bcol = { n:'N°', piso:'Piso', estatus:'Estatus', titular:'Titular',
@@ -696,6 +707,7 @@ function precompute(data, refUF) {
     const isVacante  = dest === '-' && !isContrato;
 
     const canonRaw = parseCLP(row['Canon Deptos.']);
+    row.__ggccCLP  = parseCLP(col.ggcc ? row[col.ggcc] : row['GGCC Deptos.']);
     row.__canonCLP = row.__canonUF = row.__canonUFm2 = null;
     if (canonRaw !== null) {
       row.__canonCLP = row.__ipc != null ? canonRaw * (1 + row.__ipc) : canonRaw;
@@ -944,6 +956,7 @@ function showTooltip(e, n) {
     ['Titular',      (u && col.titular ? (u[col.titular] || '').trim() : '') || '—'],
     ['Tipología',    (u?.['Tipo'] || '').trim() || '—'],
     ['Canon CLP',    u?.__canonCLP  != null ? '$' + Math.round(u.__canonCLP).toLocaleString('es-CL') : '—'],
+    ['GGCC',         u?.__ggccCLP   != null ? '$' + Math.round(u.__ggccCLP).toLocaleString('es-CL')  : '—'],
     ['Canon UF/m²',  u?.__canonUFm2 != null ? u.__canonUFm2.toFixed(2) + ' UF/m²' : '—'],
     ['Sal/arriendo', u?.__salarioRatio != null ? u.__salarioRatio.toFixed(1).replace('.', ',') + 'x' : '—'],
   ];
