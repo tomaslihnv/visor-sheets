@@ -155,6 +155,18 @@ tr:hover td { background: #f8fafc; }
   margin: 0 8px; border-radius: 1px; flex-shrink: 0;
 }
 
+/* ── EXPORT PDF BUTTON ── */
+.btn-export-pdf {
+  margin-left: auto; flex-shrink: 0;
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 13px; border-radius: 6px; border: 1px solid #e2e6ea;
+  background: #fff; color: #4a5568; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.04em; cursor: pointer; transition: all 0.15s;
+  text-transform: uppercase; white-space: nowrap;
+}
+.btn-export-pdf:hover:not(:disabled) { background: #1a2332; color: #fff; border-color: #1a2332; }
+.btn-export-pdf:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* ── LEGEND COUNTS ── */
 .legend-count { font-size: 11px; font-weight: 700; color: #1a2332;
   background: #f0f4f8; border-radius: 10px; padding: 1px 7px; margin-left: 4px; }
@@ -211,6 +223,10 @@ tr:hover td { background: #f8fafc; }
         <div class="legend-metric"><span class="metric-label">Depto.</span><span class="metric-val" id="occ-depto">—</span></div>
         <div class="legend-metric"><span class="metric-label">Estac.</span><span class="metric-val" id="occ-estac">—</span></div>
         <div class="legend-metric"><span class="metric-label">Bodega</span><span class="metric-val" id="occ-bod">—</span></div>
+        <button class="btn-export-pdf" id="btn-export-pdf" onclick="exportStackingPDF()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PDF
+        </button>
       </div>
       <div class="stacking-wrap"><div class="building" id="building"></div></div>
     </div>
@@ -356,6 +372,8 @@ tr:hover td { background: #f8fafc; }
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script>
 'use strict';
@@ -411,6 +429,12 @@ Chart.register(ChartDataLabels);
                      Sincronización matemática garantiza que línea % siempre coincide con tope de barras.
    v20 (2026-04-07): Fix stacking gris al cargar: renderStacking()+applyFilters() se llaman antes
                      de las llamadas async a mindicador.cl (IPC). Colores aparecen al cargar CSVs.
+   v21 (2026-04-08): Botón "Exportar PDF" en la leyenda del Stacking Plan.
+                     Usa html2canvas 1.4.1 + jsPDF 2.5.1 (ambos desde cdnjs).
+                     Función exportStackingPDF(): expande overflows temporalmente, captura
+                     .stacking-left completo (legend + building + subterráneo), genera PDF A3
+                     landscape con header (nombre edificio + fecha). Oculta sidebar de filtros
+                     durante la captura para que no aparezca. Restaura todo al terminar.
 ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* Edificio activo */
@@ -1678,6 +1702,121 @@ Promise.all(URLS.irr.concat(URLS.ech).map(u => fetch(u)))
     document.getElementById('ipc-notice').textContent = `UF ref (${refKey}): ${refUF?.toFixed(2) ?? '—'}`;
   })
   .catch(err => console.error('Error cargando datos:', err));
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   EXPORTAR STACKING PLAN COMO PDF
+   Usa html2canvas para capturar el DOM y jsPDF para generar el archivo.
+   1. Expande temporalmente los overflows del panel (scroll oculto → visible).
+   2. Oculta el sidebar de filtros para que no aparezca en la captura.
+   3. Captura .stacking-left a escala 2x (alta resolución).
+   4. Genera PDF A3 landscape con header: nombre edificio + fecha.
+   5. Restaura todos los estilos originales.
+═══════════════════════════════════════════════════════════════════════════════ */
+async function exportStackingPDF() {
+  const btn = document.getElementById('btn-export-pdf');
+  btn.disabled = true;
+  btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Generando…`;
+
+  const panelEl  = document.getElementById('panel-stacking');
+  const leftEl   = document.querySelector('.stacking-left');
+  const wrapEl   = document.querySelector('.stacking-wrap');
+  const sidebar  = document.querySelector('.filters-panel');
+  const tooltip  = document.getElementById('unit-tt');
+
+  // Guardar estilos originales
+  const origPanel  = { overflow: panelEl.style.overflow, height: panelEl.style.height };
+  const origLeft   = { overflow: leftEl.style.overflow };
+  const origWrap   = { overflow: wrapEl.style.overflow, height: wrapEl.style.height, flex: wrapEl.style.flex };
+  const origSidebar = sidebar.style.display;
+
+  function restoreStyles() {
+    panelEl.style.overflow  = origPanel.overflow;
+    panelEl.style.height    = origPanel.height;
+    leftEl.style.overflow   = origLeft.overflow;
+    wrapEl.style.overflow   = origWrap.overflow;
+    wrapEl.style.height     = origWrap.height;
+    wrapEl.style.flex       = origWrap.flex;
+    sidebar.style.display   = origSidebar;
+  }
+
+  try {
+    // Expandir para mostrar contenido completo
+    panelEl.style.overflow = 'visible';
+    panelEl.style.height   = 'auto';
+    leftEl.style.overflow  = 'visible';
+    wrapEl.style.overflow  = 'visible';
+    wrapEl.style.height    = 'auto';
+    wrapEl.style.flex      = 'none';
+    // Ocultar sidebar y tooltip
+    sidebar.style.display  = 'none';
+    if (tooltip) tooltip.style.display = 'none';
+
+    // Reflow
+    await new Promise(r => setTimeout(r, 120));
+
+    const canvas = await html2canvas(leftEl, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#f0f4f8',
+      removeContainer: true
+    });
+
+    restoreStyles();
+
+    // Generar PDF
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
+
+    const pageW  = pdf.internal.pageSize.getWidth();   // 420mm
+    const pageH  = pdf.internal.pageSize.getHeight();  // 297mm
+    const margin = 10;
+    const headerH = 22;
+
+    const imgAspect = canvas.width / canvas.height;
+    let imgW = pageW - margin * 2;
+    let imgH = imgW / imgAspect;
+
+    if (imgH > pageH - headerH - margin) {
+      imgH = pageH - headerH - margin;
+      imgW = imgH * imgAspect;
+    }
+
+    // Header: nombre edificio
+    const bldgName = AB === 'irr' ? 'INSITU IRARRÁZAVAL' : 'INSITU ECHAURREN';
+    const accentColor = AB === 'irr' ? [0, 209, 102] : [52, 193, 214];
+    const dateStr = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    pdf.setDrawColor(...accentColor);
+    pdf.setLineWidth(0.8);
+    pdf.line(margin, 8, pageW - margin, 8);
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(13);
+    pdf.setTextColor(26, 35, 50);
+    pdf.text(`${bldgName}  —  Stacking Plan`, margin, 15);
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9);
+    pdf.setTextColor(138, 155, 176);
+    pdf.text(dateStr, margin, 20);
+
+    // Imagen centrada horizontalmente
+    const xOffset = (pageW - imgW) / 2;
+    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', xOffset, headerH, imgW, imgH);
+
+    const filename = `stacking_${AB}_${new Date().toISOString().slice(0, 10)}.pdf`;
+    pdf.save(filename);
+
+  } catch (err) {
+    console.error('Error exportando PDF:', err);
+    restoreStyles();
+    alert('Error al generar el PDF. Revisa la consola (F12).');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar PDF`;
+}
 </script>
 </body>
 </html>
