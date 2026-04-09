@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VISOR INSITU</title>
+<title>INSITU — Visor Multi-edificio</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='16' fill='%23000'/><text x='16' y='21' font-family='Segoe UI,system-ui,sans-serif' font-size='13' font-weight='700' fill='%23fff' text-anchor='middle' letter-spacing='0.5'>VI</text></svg>">
 <style>
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -188,17 +188,6 @@ tr:hover td { background: #f8fafc; }
 .evol-check-label { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #8a9bb0; font-weight: 600; cursor: pointer; user-select: none; }
 .evol-check-label input { cursor: pointer; accent-color: #44546A; }
 .evol-chart-wrap { position: relative; height: 340px; }
-
-/* ── CHART CAPTURE BUTTON ── */
-.btn-capture {
-  display: flex; align-items: center; gap: 5px;
-  padding: 4px 11px; border-radius: 6px; border: 1px solid #e2e6ea;
-  background: #fff; color: #8a9bb0; font-size: 10px; font-weight: 700;
-  letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer;
-  transition: all 0.15s; white-space: nowrap; flex-shrink: 0;
-}
-.btn-capture:hover:not(:disabled) { background: #1a2332; color: #fff; border-color: #1a2332; }
-.btn-capture:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>
 </head>
 <body>
@@ -354,7 +343,7 @@ tr:hover td { background: #f8fafc; }
 
 <div id="panel-evolucion" class="panel">
   <div class="evol-layout">
-    <div class="evol-card" id="evol-card-ocupacion">
+    <div class="evol-card">
       <div class="evol-card-header">
         <span class="evol-card-title">Ocupación de Departamentos</span>
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
@@ -365,10 +354,6 @@ tr:hover td { background: #f8fafc; }
             <label>Hasta</label>
             <select id="evol-hasta" onchange="renderBothEvolCharts()"></select>
           </div>
-          <button class="btn-capture" id="btn-cap-evol" onclick="captureChart('evol-card-ocupacion','ocupacion')">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-            PNG
-          </button>
         </div>
       </div>
       <div class="evol-chart-wrap">
@@ -376,7 +361,7 @@ tr:hover td { background: #f8fafc; }
       </div>
     </div>
 
-    <div class="evol-card" id="evol-card-netos">
+    <div class="evol-card">
       <div class="evol-card-header">
         <span class="evol-card-title">Nuevos Arriendos Netos</span>
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
@@ -387,10 +372,6 @@ tr:hover td { background: #f8fafc; }
             <label>Hasta</label>
             <select id="netos-hasta" onchange="renderNetosChart()"></select>
           </div>
-          <button class="btn-capture" id="btn-cap-netos" onclick="captureChart('evol-card-netos','netos')">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-            PNG
-          </button>
         </div>
       </div>
       <div class="evol-chart-wrap" style="height:260px;">
@@ -459,15 +440,6 @@ Chart.register(ChartDataLabels);
                      Sincronización matemática garantiza que línea % siempre coincide con tope de barras.
    v20 (2026-04-07): Fix stacking gris al cargar: renderStacking()+applyFilters() se llaman antes
                      de las llamadas async a mindicador.cl (IPC). Colores aparecen al cargar CSVs.
-   v24 (2026-04-08): Título cambiado a "VISOR INSITU" (pestaña y barra de tareas).
-                     Botón PNG en cada gráfico de Evolución: captura el card completo
-                     (título + controles + gráfico) con html2canvas a escala 2x y
-                     descarga como PNG listo para pegar en PPT. Sin jsPDF, sin
-                     manipulación de estilos — los cards son contenedores fijos.
-   v25 (2026-04-09): Tabs "Vencimientos" y "Salidas" para ambos edificios.
-                     URLs 5 y 6 por edificio (12 fetches en total).
-                     BD.venc[] y BD.sal[] por edificio. table5/table6 en DOM.
-                     switchBuilding renderiza las dos tablas nuevas al cambiar edificio.
    v23 (2026-04-08): Favicon SVG inline: pelota negra con letras "VI" blancas.
                      Fix canon/GGCC en tooltips de estacionamientos y bodegas:
                      parseCLP ahora stripea "$" y espacios antes de parsear
@@ -1776,44 +1748,6 @@ Promise.all(URLS.irr.concat(URLS.ech).map(u => fetch(u)))
     document.getElementById('ipc-notice').textContent = `UF ref (${refKey}): ${refUF?.toFixed(2) ?? '—'}`;
   })
   .catch(err => console.error('Error cargando datos:', err));
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   CAPTURA DE GRÁFICOS COMO PNG
-   Usa html2canvas para capturar el card completo (título + controles + canvas).
-   Escala 2x → alta resolución para pegar directo en PowerPoint.
-   Sin jsPDF, sin manipulación de estilos — los cards son contenedores fijos.
-═══════════════════════════════════════════════════════════════════════════════ */
-async function captureChart(cardId, name) {
-  const btnId = cardId === 'evol-card-ocupacion' ? 'btn-cap-evol' : 'btn-cap-netos';
-  const btn   = document.getElementById(btnId);
-  btn.disabled = true;
-  btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> …`;
-
-  try {
-    const card   = document.getElementById(cardId);
-    const canvas = await html2canvas(card, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff'
-    });
-
-    const bldgSlug = AB === 'irr' ? 'irr' : 'ech';
-    const date     = new Date().toISOString().slice(0, 10);
-    const filename = `${name}_${bldgSlug}_${date}.png`;
-
-    const link    = document.createElement('a');
-    link.download = filename;
-    link.href     = canvas.toDataURL('image/png');
-    link.click();
-  } catch (err) {
-    console.error('Error capturando gráfico:', err);
-    alert('Error al capturar el gráfico. Revisa la consola (F12).');
-  }
-
-  btn.disabled = false;
-  btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> PNG`;
-}
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    EXPORTAR STACKING PLAN COMO PDF
