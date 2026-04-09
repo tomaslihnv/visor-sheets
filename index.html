@@ -221,6 +221,8 @@ tr:hover td { background: #f8fafc; }
   <button class="tab-btn" onclick="showTab('hoja2',this)">Evolución de Arriendos</button>
   <button class="tab-btn" onclick="showTab('estac',this)">Estacionamientos</button>
   <button class="tab-btn" onclick="showTab('bodegas',this)">Bodegas</button>
+  <button class="tab-btn" onclick="showTab('venc',this)">Vencimientos</button>
+  <button class="tab-btn" onclick="showTab('sal',this)">Salidas</button>
 </div>
 
 <div id="panel-stacking" class="panel active">
@@ -342,6 +344,14 @@ tr:hover td { background: #f8fafc; }
   <div class="table-wrap" id="table4"><p style="padding:40px;text-align:center;color:#8a9bb0">Cargando…</p></div>
 </div>
 
+<div id="panel-venc" class="panel">
+  <div class="table-wrap" id="table5"><p style="padding:40px;text-align:center;color:#8a9bb0">Cargando…</p></div>
+</div>
+
+<div id="panel-sal" class="panel">
+  <div class="table-wrap" id="table6"><p style="padding:40px;text-align:center;color:#8a9bb0">Cargando…</p></div>
+</div>
+
 <div id="panel-evolucion" class="panel">
   <div class="evol-layout">
     <div class="evol-card" id="evol-card-ocupacion">
@@ -454,6 +464,10 @@ Chart.register(ChartDataLabels);
                      (título + controles + gráfico) con html2canvas a escala 2x y
                      descarga como PNG listo para pegar en PPT. Sin jsPDF, sin
                      manipulación de estilos — los cards son contenedores fijos.
+   v25 (2026-04-09): Tabs "Vencimientos" y "Salidas" para ambos edificios.
+                     URLs 5 y 6 por edificio (12 fetches en total).
+                     BD.venc[] y BD.sal[] por edificio. table5/table6 en DOM.
+                     switchBuilding renderiza las dos tablas nuevas al cambiar edificio.
    v23 (2026-04-08): Favicon SVG inline: pelota negra con letras "VI" blancas.
                      Fix canon/GGCC en tooltips de estacionamientos y bodegas:
                      parseCLP ahora stripea "$" y espacios antes de parsear
@@ -480,8 +494,8 @@ let AB = 'irr';
 
 /* Almacén por edificio */
 const BD = {
-  irr: { umap:{}, data:[], evol:[], park:[], bod:[], fields:[], refKey:'', refUF:0, evolChart:null, netosChart:null },
-  ech: { umap:{}, data:[], evol:[], park:[], bod:[], fields:[], refKey:'', refUF:0, evolChart:null, netosChart:null }
+  irr: { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], fields:[], refKey:'', refUF:0, evolChart:null, netosChart:null },
+  ech: { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], fields:[], refKey:'', refUF:0, evolChart:null, netosChart:null }
 };
 
 /* Layouts por edificio */
@@ -536,13 +550,17 @@ const URLS = {
     'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_SrPMC9v_h6szyyZUjhqywYeyrwp8AwiguskyC7PzNt8CCE_W6HA_wUTrKA1PWew77AAC1qhVR88i/pub?gid=822970761&single=true&output=csv',
     'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_SrPMC9v_h6szyyZUjhqywYeyrwp8AwiguskyC7PzNt8CCE_W6HA_wUTrKA1PWew77AAC1qhVR88i/pub?gid=777209700&single=true&output=csv',
     'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_SrPMC9v_h6szyyZUjhqywYeyrwp8AwiguskyC7PzNt8CCE_W6HA_wUTrKA1PWew77AAC1qhVR88i/pub?gid=1386167013&single=true&output=csv',
-    'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_SrPMC9v_h6szyyZUjhqywYeyrwp8AwiguskyC7PzNt8CCE_W6HA_wUTrKA1PWew77AAC1qhVR88i/pub?gid=1128968324&single=true&output=csv'
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_SrPMC9v_h6szyyZUjhqywYeyrwp8AwiguskyC7PzNt8CCE_W6HA_wUTrKA1PWew77AAC1qhVR88i/pub?gid=1128968324&single=true&output=csv',
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_SrPMC9v_h6szyyZUjhqywYeyrwp8AwiguskyC7PzNt8CCE_W6HA_wUTrKA1PWew77AAC1qhVR88i/pub?gid=1256476780&single=true&output=csv',
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_SrPMC9v_h6szyyZUjhqywYeyrwp8AwiguskyC7PzNt8CCE_W6HA_wUTrKA1PWew77AAC1qhVR88i/pub?gid=1440415170&single=true&output=csv'
   ],
   ech: [
     'https://docs.google.com/spreadsheets/d/e/2PACX-1vRAuordQ35zGoq-VV0PTJYtoebha0PyUuWS1YTPLo69nTzytyNzg9AtOUMegCmhV1Q7_Ouiv8YGQCXv/pub?gid=826961382&single=true&output=csv',
     'https://docs.google.com/spreadsheets/d/e/2PACX-1vRAuordQ35zGoq-VV0PTJYtoebha0PyUuWS1YTPLo69nTzytyNzg9AtOUMegCmhV1Q7_Ouiv8YGQCXv/pub?gid=1582918076&single=true&output=csv',
     'https://docs.google.com/spreadsheets/d/e/2PACX-1vRAuordQ35zGoq-VV0PTJYtoebha0PyUuWS1YTPLo69nTzytyNzg9AtOUMegCmhV1Q7_Ouiv8YGQCXv/pub?gid=1894857461&single=true&output=csv',
-    'https://docs.google.com/spreadsheets/d/e/2PACX-1vRAuordQ35zGoq-VV0PTJYtoebha0PyUuWS1YTPLo69nTzytyNzg9AtOUMegCmhV1Q7_Ouiv8YGQCXv/pub?gid=609925187&single=true&output=csv'
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vRAuordQ35zGoq-VV0PTJYtoebha0PyUuWS1YTPLo69nTzytyNzg9AtOUMegCmhV1Q7_Ouiv8YGQCXv/pub?gid=609925187&single=true&output=csv',
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vRAuordQ35zGoq-VV0PTJYtoebha0PyUuWS1YTPLo69nTzytyNzg9AtOUMegCmhV1Q7_Ouiv8YGQCXv/pub?gid=1032765337&single=true&output=csv',
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vRAuordQ35zGoq-VV0PTJYtoebha0PyUuWS1YTPLo69nTzytyNzg9AtOUMegCmhV1Q7_Ouiv8YGQCXv/pub?gid=1992855976&single=true&output=csv'
   ]
 };
 
@@ -1664,6 +1682,8 @@ function switchBuilding(id) {
   renderRawTable('table2', { data: BD[AB].evol, meta: { fields: Object.keys(BD[AB].evol[0] || {}) } });
   renderRawTable('table3', { data: BD[AB].park, meta: { fields: Object.keys(BD[AB].park[0] || {}) } });
   renderRawTable('table4', { data: BD[AB].bod,  meta: { fields: Object.keys(BD[AB].bod[0]  || {}) } });
+  renderRawTable('table5', { data: BD[AB].venc, meta: { fields: Object.keys(BD[AB].venc[0] || {}) } });
+  renderRawTable('table6', { data: BD[AB].sal,  meta: { fields: Object.keys(BD[AB].sal[0]  || {}) } });
   renderSubterraneoStacking(BD[AB].park, BD[AB].bod);
   initEvolSelects(BD[AB].evol);
   initNetosSelects(BD[AB].evol);
@@ -1686,22 +1706,28 @@ renderStacking();
 
 Promise.all(URLS.irr.concat(URLS.ech).map(u => fetch(u)))
   .then(rs => Promise.all(rs.map(r => r.text())))
-  .then(async ([c1i,c2i,c3i,c4i,c1e,c2e,c3e,c4e]) => {
+  .then(async ([c1i,c2i,c3i,c4i,c5i,c6i,c1e,c2e,c3e,c4e,c5e,c6e]) => {
     const p1i = Papa.parse(c1i.trim(), {header:true, skipEmptyLines:true});
     const p2i = Papa.parse(c2i.trim(), {header:true, skipEmptyLines:true});
     const p3i = Papa.parse(c3i.trim(), {header:true, skipEmptyLines:true});
     const p4i = Papa.parse(c4i.trim(), {header:true, skipEmptyLines:true});
+    const p5i = Papa.parse(c5i.trim(), {header:true, skipEmptyLines:true});
+    const p6i = Papa.parse(c6i.trim(), {header:true, skipEmptyLines:true});
 
     const p1e = Papa.parse(c1e.trim(), {header:true, skipEmptyLines:true});
     const p2e = Papa.parse(c2e.trim(), {header:true, skipEmptyLines:true});
     const p3e = Papa.parse(c3e.trim(), {header:true, skipEmptyLines:true});
     const p4e = Papa.parse(c4e.trim(), {header:true, skipEmptyLines:true});
+    const p5e = Papa.parse(c5e.trim(), {header:true, skipEmptyLines:true});
+    const p6e = Papa.parse(c6e.trim(), {header:true, skipEmptyLines:true});
 
     BD.irr.data  = p1i.data;
     BD.irr.fields = p1i.meta.fields;
     BD.irr.evol  = p2i.data;
     BD.irr.park  = p3i.data;
     BD.irr.bod   = p4i.data;
+    BD.irr.venc  = p5i.data;
+    BD.irr.sal   = p6i.data;
     p1i.data.forEach(row => { const n = parseInt((row['Unidad']||'').trim()); if (!isNaN(n)) BD.irr.umap[n] = row; });
 
     BD.ech.data  = p1e.data;
@@ -1709,6 +1735,8 @@ Promise.all(URLS.irr.concat(URLS.ech).map(u => fetch(u)))
     BD.ech.evol  = p2e.data;
     BD.ech.park  = p3e.data;
     BD.ech.bod   = p4e.data;
+    BD.ech.venc  = p5e.data;
+    BD.ech.sal   = p6e.data;
     p1e.data.forEach(row => { const n = parseInt((row['Unidad']||'').trim()); if (!isNaN(n)) BD.ech.umap[n] = row; });
 
     resolveColumns(p1i.meta.fields);
@@ -1735,6 +1763,8 @@ Promise.all(URLS.irr.concat(URLS.ech).map(u => fetch(u)))
     renderRawTable('table2', p2i);
     renderRawTable('table3', p3i);
     renderRawTable('table4', p4i);
+    renderRawTable('table5', p5i);
+    renderRawTable('table6', p6i);
     renderSubterraneoStacking(BD.irr.park, BD.irr.bod);
     initEvolSelects(BD.irr.evol);
     initNetosSelects(BD.irr.evol);
