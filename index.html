@@ -518,6 +518,13 @@ Chart.register(ChartDataLabels);
                      Sincronización matemática garantiza que línea % siempre coincide con tope de barras.
    v20 (2026-04-07): Fix stacking gris al cargar: renderStacking()+applyFilters() se llaman antes
                      de las llamadas async a mindicador.cl (IPC). Colores aparecen al cargar CSVs.
+   v31 (2026-04-13): FIX v2 — Irarrázaval stacking gris (fix anterior insuficiente).
+                     v30 separó IRR y ECH pero aún esperaba los 6 CSVs de IRR juntos.
+                     Si Salidas o Vencimientos de IRR eran lentos, stacking seguía gris.
+                     Fix definitivo: carga en 2 fases por edificio.
+                     Fase 1: fetch(URLS[bld][0]) → solo ESTATUS ACTUAL → applyFilters() al tiro.
+                     Fase 2: Promise.all(URLS[bld].slice(1)) → resto de hojas (evol/park/bod/venc/sal).
+                     El stacking se colorea con solo 1 request exitoso, no 6.
    v30 (2026-04-13): FIX — Irarrázaval stacking gris al cargar en GitHub Pages.
                      Causa: Promise.all único esperaba los 12 CSVs (6 IRR + 6 ECH) antes de
                      llamar applyFilters(). Si cualquier URL de ECH era lenta, IRR quedaba gris.
@@ -2298,34 +2305,50 @@ function showTab(id, btn) {
 
 renderStacking();
 
-// ── Carga IRR independiente: colorea stacking en cuanto llegan sus 6 CSVs ──
-Promise.all(URLS.irr.map(u => fetch(u).then(r => r.text())))
-  .then(async ([c1i,c2i,c3i,c4i,c5i,c6i]) => {
-    const p1i = Papa.parse(c1i.trim(), {header:true, skipEmptyLines:true});
+// ── FASE 1 IRR: carga solo ESTATUS ACTUAL → colorea stacking inmediatamente ──
+fetch(URLS.irr[0]).then(r => r.text()).then(csv => {
+  const p1i = Papa.parse(csv.trim(), {header:true, skipEmptyLines:true});
+  BD.irr.data   = p1i.data;
+  BD.irr.fields = p1i.meta.fields;
+  p1i.data.forEach(row => { const n = parseInt((row['Unidad']||'').trim()); if (!isNaN(n)) BD.irr.umap[n] = row; });
+  resolveColumns(p1i.meta.fields);
+  populateDropdowns(BD.irr.data);
+  renderStacking();
+  applyFilters(); // ← colorea stacking IRR sin esperar ningún otro CSV
+}).catch(err => console.error('Error cargando ESTATUS IRR:', err));
+
+// ── FASE 1 ECH: carga solo ESTATUS ACTUAL → tiene datos listos para cuando el usuario cambie ──
+fetch(URLS.ech[0]).then(r => r.text()).then(csv => {
+  const p1e = Papa.parse(csv.trim(), {header:true, skipEmptyLines:true});
+  BD.ech.data   = p1e.data;
+  BD.ech.fields = p1e.meta.fields;
+  p1e.data.forEach(row => { const n = parseInt((row['Unidad']||'').trim()); if (!isNaN(n)) BD.ech.umap[n] = row; });
+  if (AB === 'ech') {
+    resolveColumns(p1e.meta.fields);
+    populateDropdowns(BD.ech.data);
+    renderStacking();
+    applyFilters();
+  }
+}).catch(err => console.error('Error cargando ESTATUS ECH:', err));
+
+// ── FASE 2 IRR: resto de hojas en paralelo (evol, estac, bod, venc, sal) ──
+Promise.all(URLS.irr.slice(1).map(u => fetch(u).then(r => r.text())))
+  .then(async ([c2i,c3i,c4i,c5i,c6i]) => {
     const p2i = Papa.parse(c2i.trim(), {header:true, skipEmptyLines:true});
     const p3i = Papa.parse(c3i.trim(), {header:true, skipEmptyLines:true});
     const p4i = Papa.parse(c4i.trim(), {header:true, skipEmptyLines:true});
     const p5i = Papa.parse(c5i.trim(), {header:true, skipEmptyLines:true});
     const p6i = Papa.parse(c6i.trim(), {header:true, skipEmptyLines:true});
 
-    BD.irr.data   = p1i.data;
-    BD.irr.fields = p1i.meta.fields;
-    BD.irr.evol   = p2i.data;
-    BD.irr.park   = p3i.data;
-    BD.irr.bod    = p4i.data;
-    BD.irr.venc   = p5i.data;
-    BD.irr.sal    = p6i.data;
-    p1i.data.forEach(row => { const n = parseInt((row['Unidad']||'').trim()); if (!isNaN(n)) BD.irr.umap[n] = row; });
+    BD.irr.evol = p2i.data;
+    BD.irr.park = p3i.data;
+    BD.irr.bod  = p4i.data;
+    BD.irr.venc = p5i.data;
+    BD.irr.sal  = p6i.data;
 
-    // Resolver columnas y colorear stacking IRR sin esperar ECH
-    resolveColumns(p1i.meta.fields);
     resolveParkingColumns(p3i.meta.fields);
     resolveBodegaColumns(p4i.meta.fields);
     resolveEvolColumns(p2i.meta.fields);
-
-    populateDropdowns(BD.irr.data);
-    renderStacking();
-    applyFilters();
 
     const { refKey, refUF } = await calcIPC(BD.irr.data);
     BD.irr.refKey = refKey; BD.irr.refUF = refUF;
@@ -2351,40 +2374,31 @@ Promise.all(URLS.irr.map(u => fetch(u).then(r => r.text())))
       document.getElementById('ipc-notice').textContent = `UF ref (${refKey}): ${refUF?.toFixed(2) ?? '—'}`;
     }
   })
-  .catch(err => console.error('Error cargando datos IRR:', err));
+  .catch(err => console.error('Error cargando hojas secundarias IRR:', err));
 
-// ── Carga ECH independiente: no bloquea ni retrasa la carga de IRR ──
-Promise.all(URLS.ech.map(u => fetch(u).then(r => r.text())))
-  .then(async ([c1e,c2e,c3e,c4e,c5e,c6e]) => {
-    const p1e = Papa.parse(c1e.trim(), {header:true, skipEmptyLines:true});
+// ── FASE 2 ECH: resto de hojas en paralelo (evol, estac, bod, venc, sal) ──
+Promise.all(URLS.ech.slice(1).map(u => fetch(u).then(r => r.text())))
+  .then(async ([c2e,c3e,c4e,c5e,c6e]) => {
     const p2e = Papa.parse(c2e.trim(), {header:true, skipEmptyLines:true});
     const p3e = Papa.parse(c3e.trim(), {header:true, skipEmptyLines:true});
     const p4e = Papa.parse(c4e.trim(), {header:true, skipEmptyLines:true});
     const p5e = Papa.parse(c5e.trim(), {header:true, skipEmptyLines:true});
     const p6e = Papa.parse(c6e.trim(), {header:true, skipEmptyLines:true});
 
-    BD.ech.data   = p1e.data;
-    BD.ech.fields = p1e.meta.fields;
-    BD.ech.evol   = p2e.data;
-    BD.ech.park   = p3e.data;
-    BD.ech.bod    = p4e.data;
-    BD.ech.venc   = p5e.data;
-    BD.ech.sal    = p6e.data;
-    p1e.data.forEach(row => { const n = parseInt((row['Unidad']||'').trim()); if (!isNaN(n)) BD.ech.umap[n] = row; });
+    BD.ech.evol = p2e.data;
+    BD.ech.park = p3e.data;
+    BD.ech.bod  = p4e.data;
+    BD.ech.venc = p5e.data;
+    BD.ech.sal  = p6e.data;
 
     const { refKey: refKeyE, refUF: refUFE } = await calcIPC(BD.ech.data);
     BD.ech.refKey = refKeyE; BD.ech.refUF = refUFE;
     precompute(BD.ech.data, refUFE);
 
-    // Si el usuario ya está en ECH cuando llegan los datos, actualizar UI
     if (AB === 'ech') {
-      resolveColumns(p1e.meta.fields);
       resolveParkingColumns(p3e.meta.fields);
       resolveBodegaColumns(p4e.meta.fields);
       resolveEvolColumns(p2e.meta.fields);
-      populateDropdowns(BD.ech.data);
-      renderStacking();
-      applyFilters();
       updateMetrics(BD.ech.data, BD.ech.park, BD.ech.bod);
       renderEstatusTable(BD.ech.data, BD.ech.fields, BD.ech.refKey, BD.ech.refUF);
       renderRawTable('table2', p2e);
@@ -2404,7 +2418,7 @@ Promise.all(URLS.ech.map(u => fetch(u).then(r => r.text())))
       document.getElementById('ipc-notice').textContent = `UF ref (${refKeyE}): ${refUFE?.toFixed(2) ?? '—'}`;
     }
   })
-  .catch(err => console.error('Error cargando datos ECH:', err));
+  .catch(err => console.error('Error cargando hojas secundarias ECH:', err));
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    EXPORTAR STACKING PLAN COMO PDF
