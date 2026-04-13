@@ -347,7 +347,7 @@ tr:hover td { background: #f8fafc; }
       <div class="evol-card-header">
         <span class="evol-card-title">Ocupación de Departamentos</span>
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-          <label class="evol-check-label"><input type="checkbox" id="evol-labels" onchange="renderEvolChart()"> Etiquetas</label>
+          <label class="evol-check-label"><input type="checkbox" id="evol-labels" onchange="renderEvolChart()" checked> Etiquetas</label>
           <div class="evol-range">
             <label>Desde</label>
             <select id="evol-desde" onchange="renderBothEvolCharts()"></select>
@@ -365,7 +365,7 @@ tr:hover td { background: #f8fafc; }
       <div class="evol-card-header">
         <span class="evol-card-title">Nuevos Arriendos Netos</span>
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-          <label class="evol-check-label"><input type="checkbox" id="netos-labels" onchange="renderNetosChart()"> Etiquetas</label>
+          <label class="evol-check-label"><input type="checkbox" id="netos-labels" onchange="renderNetosChart()" checked> Etiquetas</label>
           <div class="evol-range">
             <label>Desde</label>
             <select id="netos-desde" onchange="renderNetosChart()"></select>
@@ -383,7 +383,7 @@ tr:hover td { background: #f8fafc; }
       <div class="evol-card-header">
         <span class="evol-card-title">Vencimientos Mensuales</span>
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-          <label class="evol-check-label"><input type="checkbox" id="venc-chart-labels" onchange="renderVencChart()"> Etiquetas</label>
+          <label class="evol-check-label"><input type="checkbox" id="venc-chart-labels" onchange="renderVencChart()" checked> Etiquetas</label>
           <div class="evol-range">
             <label>Tipología</label>
             <select id="venc-chart-tipo" onchange="renderVencChart()">
@@ -407,7 +407,7 @@ tr:hover td { background: #f8fafc; }
       <div class="evol-card-header">
         <span class="evol-card-title">Renewal Rate (%)</span>
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-          <label class="evol-check-label"><input type="checkbox" id="renewal-chart-labels" onchange="renderRenewalChart()"> Etiquetas</label>
+          <label class="evol-check-label"><input type="checkbox" id="renewal-chart-labels" onchange="renderRenewalChart()" checked> Etiquetas</label>
           <div class="evol-range">
             <label>Tipología</label>
             <select id="renewal-chart-tipo" onchange="renderRenewalChart()">
@@ -488,6 +488,17 @@ Chart.register(ChartDataLabels);
                      Sincronización matemática garantiza que línea % siempre coincide con tope de barras.
    v20 (2026-04-07): Fix stacking gris al cargar: renderStacking()+applyFilters() se llaman antes
                      de las llamadas async a mindicador.cl (IPC). Colores aparecen al cargar CSVs.
+   v28 (2026-04-13): FIX CRÍTICO — ambos edificios mostraban los mismos datos en Evolución.
+                     Causa: BD[irr/ech].xChart guardaban instancias Chart.js por edificio,
+                     pero todos apuntan al mismo canvas DOM. Al cambiar edificio, el chart
+                     del anterior seguía vivo en el canvas → Chart.js entraba en conflicto.
+                     Fix: registro global CHARTS{evol,netos,venc,renewal} + destroyChart(key)
+                     que destruye siempre la instancia activa antes de crear una nueva.
+   v27 (2026-04-13): Etiquetas activadas por defecto en los 4 gráficos.
+                     Renewal Rate: eje Y extendido a 120% (más espacio visual).
+                     Renewal Rate: línea punteada roja suave (rgba 55% opacidad, dash 6-5)
+                     mostrando el promedio histórico del período visible.
+                     Promedio recalcula al cambiar filtros o rango de fechas.
    v26 (2026-04-13): Gráfico "Renewal Rate (%)" en panel Evolución.
                      Línea suavizada (tension 0.4) con área rellena (#44546A).
                      Renewal Rate = contratos con Evento Final "R" o "R (CU)" / total
@@ -527,9 +538,18 @@ let AB = 'irr';
 
 /* Almacén por edificio */
 const BD = {
-  irr: { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], fields:[], refKey:'', refUF:0, evolChart:null, netosChart:null, vencChart:null, renewalChart:null },
-  ech: { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], fields:[], refKey:'', refUF:0, evolChart:null, netosChart:null, vencChart:null, renewalChart:null }
+  irr: { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], fields:[], refKey:'', refUF:0 },
+  ech: { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], fields:[], refKey:'', refUF:0 }
 };
+
+/* Registro único de instancias Chart.js — una por canvas, independiente del edificio.
+   Esto evita el bug donde BD[irr].evolChart sigue vivo apuntando al mismo canvas
+   que BD[ech].evolChart, causando que ambos edificios muestren los mismos datos. */
+const CHARTS = { evol: null, netos: null, venc: null, renewal: null };
+
+function destroyChart(key) {
+  if (CHARTS[key]) { CHARTS[key].destroy(); CHARTS[key] = null; }
+}
 
 /* Layouts por edificio */
 const LAYOUT_IRR = [
@@ -1494,9 +1514,9 @@ function renderEvolChart() {
   const cutoffIdx = rows.reduce((acc, r, i) => isPast(r) ? i : acc, -1);
 
   const canvas = document.getElementById('evol-chart');
-  if (BD[AB].evolChart) { BD[AB].evolChart.destroy(); BD[AB].evolChart = null; }
+  destroyChart('evol');
 
-  BD[AB].evolChart = new Chart(canvas, {
+  CHARTS.evol = new Chart(canvas, {
     data: {
       labels,
       datasets: [
@@ -1624,9 +1644,9 @@ function renderNetosChart() {
   const legendFcast = { type:'bar', label:'Netos proyectados', data: rows.map(() => null), backgroundColor:'#cbd5e1', datalabels:{display:false} };
 
   const canvas = document.getElementById('netos-chart');
-  if (BD[AB].netosChart) { BD[AB].netosChart.destroy(); BD[AB].netosChart = null; }
+  destroyChart('netos');
 
-  BD[AB].netosChart = new Chart(canvas, {
+  CHARTS.netos = new Chart(canvas, {
     data: {
       labels,
       datasets: [
@@ -1782,9 +1802,9 @@ function renderVencChart() {
   const legendFcast = { type:'bar', label:'Vencimientos proyectados', data: allMonths.map(()=>null), backgroundColor:'#cbd5e1', datalabels:{display:false} };
 
   const canvas = document.getElementById('venc-chart-canvas');
-  if (BD[AB].vencChart) { BD[AB].vencChart.destroy(); BD[AB].vencChart = null; }
+  destroyChart('venc');
 
-  BD[AB].vencChart = new Chart(canvas, {
+  CHARTS.venc = new Chart(canvas, {
     data: {
       labels,
       datasets: [
@@ -1940,46 +1960,71 @@ function renderRenewalChart() {
     return total > 0 ? Math.round((renovados / total) * 1000) / 10 : null;
   });
 
-  const canvas = document.getElementById('renewal-chart-canvas');
-  if (BD[AB].renewalChart) { BD[AB].renewalChart.destroy(); BD[AB].renewalChart = null; }
+  // Promedio histórico del período visible
+  const validData = data.filter(v => v != null);
+  const avgRate = validData.length > 0
+    ? Math.round(validData.reduce((a, b) => a + b, 0) / validData.length * 10) / 10
+    : null;
 
-  BD[AB].renewalChart = new Chart(canvas, {
+  const canvas = document.getElementById('renewal-chart-canvas');
+  destroyChart('renewal');
+
+  CHARTS.renewal = new Chart(canvas, {
     type: 'line',
     data: {
       labels,
-      datasets: [{
-        label: 'Renewal Rate',
-        data,
-        borderColor: '#44546A',
-        backgroundColor: 'rgba(68,84,106,0.07)',
-        borderWidth: 2.5,
-        tension: 0.4,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        pointBackgroundColor: '#44546A',
-        fill: true,
-        spanGaps: true,
-        datalabels: {
-          display: ctx => !!document.getElementById('renewal-chart-labels')?.checked && data[ctx.dataIndex] != null,
-          anchor: 'top', align: 'top', offset: 4,
-          color: '#44546A',
-          font: { size: 8, weight: '600' },
-          formatter: v => v.toFixed(1) + '%'
+      datasets: [
+        {
+          label: 'Renewal Rate',
+          data,
+          borderColor: '#44546A',
+          backgroundColor: 'rgba(68,84,106,0.07)',
+          borderWidth: 2.5,
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#44546A',
+          fill: true,
+          spanGaps: true,
+          datalabels: {
+            display: ctx => !!document.getElementById('renewal-chart-labels')?.checked && data[ctx.dataIndex] != null,
+            anchor: 'top', align: 'top', offset: 4,
+            color: '#44546A',
+            font: { size: 8, weight: '600' },
+            formatter: v => v.toFixed(1) + '%'
+          }
+        },
+        {
+          label: 'Promedio',
+          data: allMonths.map(() => avgRate),
+          borderColor: 'rgba(239,68,68,0.55)',
+          borderWidth: 1.5,
+          borderDash: [6, 5],
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          fill: false,
+          tension: 0,
+          spanGaps: true,
+          datalabels: { display: false }
         }
-      }]
+      ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 14, padding: 16 } },
+        legend: {
+          position: 'top',
+          labels: { font: { size: 11 }, boxWidth: 14, padding: 16 }
+        },
         datalabels: {},
         tooltip: {
           callbacks: {
             label: ctx => {
+              if (ctx.datasetIndex === 1) return avgRate != null ? ` Promedio: ${avgRate.toFixed(1)}%` : null;
               const v = ctx.parsed.y; if (v == null) return null;
               const { renovados, total } = stats[allMonths[ctx.dataIndex]];
-              return ` Renewal Rate: ${v.toFixed(1)}%  (${renovados} de ${total} contratos)`;
+              return ` Renewal Rate: ${v.toFixed(1)}%  (${renovados} de ${total})`;
             }
           }
         }
@@ -1988,9 +2033,9 @@ function renderRenewalChart() {
       scales: {
         x: { grid: { display: false }, ticks: { font: { size: 10 } } },
         y: {
-          type: 'linear', position: 'left', min: 0, max: 100,
+          type: 'linear', position: 'left', min: 0, max: 120,
           grid: { color: '#f0f3f6' },
-          ticks: { font: { size: 10 }, callback: v => v + '%' },
+          ticks: { font: { size: 10 }, stepSize: 20, callback: v => v + '%' },
           title: { display: true, text: 'Renewal Rate (%)', font: { size: 10 }, color: '#8a9bb0' }
         }
       }
