@@ -518,6 +518,12 @@ Chart.register(ChartDataLabels);
                      Sincronización matemática garantiza que línea % siempre coincide con tope de barras.
    v20 (2026-04-07): Fix stacking gris al cargar: renderStacking()+applyFilters() se llaman antes
                      de las llamadas async a mindicador.cl (IPC). Colores aparecen al cargar CSVs.
+   v30 (2026-04-13): FIX — Irarrázaval stacking gris al cargar en GitHub Pages.
+                     Causa: Promise.all único esperaba los 12 CSVs (6 IRR + 6 ECH) antes de
+                     llamar applyFilters(). Si cualquier URL de ECH era lenta, IRR quedaba gris.
+                     Fix: se dividen en dos Promise chains independientes. IRR colorea su
+                     stacking en cuanto sus 6 URLs resuelven, sin esperar ECH.
+                     ECH actualiza UI solo si AB === 'ech' cuando llegan sus datos.
    v29 (2026-04-13): Gráfico "Análisis de Salidas" en panel Evolución.
                      Barras mismo formato que Netos (#44546A — todos son pasados).
                      Datos: hoja SALIDAS — cuenta de filas por mes usando columna FECHA.
@@ -2292,9 +2298,9 @@ function showTab(id, btn) {
 
 renderStacking();
 
-Promise.all(URLS.irr.concat(URLS.ech).map(u => fetch(u)))
-  .then(rs => Promise.all(rs.map(r => r.text())))
-  .then(async ([c1i,c2i,c3i,c4i,c5i,c6i,c1e,c2e,c3e,c4e,c5e,c6e]) => {
+// ── Carga IRR independiente: colorea stacking en cuanto llegan sus 6 CSVs ──
+Promise.all(URLS.irr.map(u => fetch(u).then(r => r.text())))
+  .then(async ([c1i,c2i,c3i,c4i,c5i,c6i]) => {
     const p1i = Papa.parse(c1i.trim(), {header:true, skipEmptyLines:true});
     const p2i = Papa.parse(c2i.trim(), {header:true, skipEmptyLines:true});
     const p3i = Papa.parse(c3i.trim(), {header:true, skipEmptyLines:true});
@@ -2302,39 +2308,22 @@ Promise.all(URLS.irr.concat(URLS.ech).map(u => fetch(u)))
     const p5i = Papa.parse(c5i.trim(), {header:true, skipEmptyLines:true});
     const p6i = Papa.parse(c6i.trim(), {header:true, skipEmptyLines:true});
 
-    const p1e = Papa.parse(c1e.trim(), {header:true, skipEmptyLines:true});
-    const p2e = Papa.parse(c2e.trim(), {header:true, skipEmptyLines:true});
-    const p3e = Papa.parse(c3e.trim(), {header:true, skipEmptyLines:true});
-    const p4e = Papa.parse(c4e.trim(), {header:true, skipEmptyLines:true});
-    const p5e = Papa.parse(c5e.trim(), {header:true, skipEmptyLines:true});
-    const p6e = Papa.parse(c6e.trim(), {header:true, skipEmptyLines:true});
-
-    BD.irr.data  = p1i.data;
+    BD.irr.data   = p1i.data;
     BD.irr.fields = p1i.meta.fields;
-    BD.irr.evol  = p2i.data;
-    BD.irr.park  = p3i.data;
-    BD.irr.bod   = p4i.data;
-    BD.irr.venc  = p5i.data;
-    BD.irr.sal   = p6i.data;
+    BD.irr.evol   = p2i.data;
+    BD.irr.park   = p3i.data;
+    BD.irr.bod    = p4i.data;
+    BD.irr.venc   = p5i.data;
+    BD.irr.sal    = p6i.data;
     p1i.data.forEach(row => { const n = parseInt((row['Unidad']||'').trim()); if (!isNaN(n)) BD.irr.umap[n] = row; });
 
-    BD.ech.data  = p1e.data;
-    BD.ech.fields = p1e.meta.fields;
-    BD.ech.evol  = p2e.data;
-    BD.ech.park  = p3e.data;
-    BD.ech.bod   = p4e.data;
-    BD.ech.venc  = p5e.data;
-    BD.ech.sal   = p6e.data;
-    p1e.data.forEach(row => { const n = parseInt((row['Unidad']||'').trim()); if (!isNaN(n)) BD.ech.umap[n] = row; });
-
+    // Resolver columnas y colorear stacking IRR sin esperar ECH
     resolveColumns(p1i.meta.fields);
     resolveParkingColumns(p3i.meta.fields);
     resolveBodegaColumns(p4i.meta.fields);
     resolveEvolColumns(p2i.meta.fields);
 
     populateDropdowns(BD.irr.data);
-
-    // Colorear stacking inmediatamente con datos CSV, sin esperar llamadas IPC
     renderStacking();
     applyFilters();
 
@@ -2342,31 +2331,80 @@ Promise.all(URLS.irr.concat(URLS.ech).map(u => fetch(u)))
     BD.irr.refKey = refKey; BD.irr.refUF = refUF;
     precompute(BD.irr.data, refUF);
 
+    if (AB === 'irr') {
+      updateMetrics(BD.irr.data, BD.irr.park, BD.irr.bod);
+      renderEstatusTable(BD.irr.data, BD.irr.fields, BD.irr.refKey, BD.irr.refUF);
+      renderRawTable('table2', p2i);
+      renderRawTable('table3', p3i);
+      renderRawTable('table4', p4i);
+      renderRawTable('table5', p5i);
+      renderRawTable('table6', p6i);
+      renderSubterraneoStacking(BD.irr.park, BD.irr.bod);
+      initEvolSelects(BD.irr.evol);
+      initNetosSelects(BD.irr.evol);
+      initVencChartSelects(BD.irr.venc);
+      initRenewalChartSelects(BD.irr.venc);
+      initSalidasChartSelects(BD.irr.sal);
+      initVencFilter(BD.irr.data);
+      initUFFilter(BD.irr.data);
+      applyFilters();
+      document.getElementById('ipc-notice').textContent = `UF ref (${refKey}): ${refUF?.toFixed(2) ?? '—'}`;
+    }
+  })
+  .catch(err => console.error('Error cargando datos IRR:', err));
+
+// ── Carga ECH independiente: no bloquea ni retrasa la carga de IRR ──
+Promise.all(URLS.ech.map(u => fetch(u).then(r => r.text())))
+  .then(async ([c1e,c2e,c3e,c4e,c5e,c6e]) => {
+    const p1e = Papa.parse(c1e.trim(), {header:true, skipEmptyLines:true});
+    const p2e = Papa.parse(c2e.trim(), {header:true, skipEmptyLines:true});
+    const p3e = Papa.parse(c3e.trim(), {header:true, skipEmptyLines:true});
+    const p4e = Papa.parse(c4e.trim(), {header:true, skipEmptyLines:true});
+    const p5e = Papa.parse(c5e.trim(), {header:true, skipEmptyLines:true});
+    const p6e = Papa.parse(c6e.trim(), {header:true, skipEmptyLines:true});
+
+    BD.ech.data   = p1e.data;
+    BD.ech.fields = p1e.meta.fields;
+    BD.ech.evol   = p2e.data;
+    BD.ech.park   = p3e.data;
+    BD.ech.bod    = p4e.data;
+    BD.ech.venc   = p5e.data;
+    BD.ech.sal    = p6e.data;
+    p1e.data.forEach(row => { const n = parseInt((row['Unidad']||'').trim()); if (!isNaN(n)) BD.ech.umap[n] = row; });
+
     const { refKey: refKeyE, refUF: refUFE } = await calcIPC(BD.ech.data);
     BD.ech.refKey = refKeyE; BD.ech.refUF = refUFE;
     precompute(BD.ech.data, refUFE);
 
-    updateMetrics(BD.irr.data, BD.irr.park, BD.irr.bod);
-    renderEstatusTable(BD.irr.data, BD.irr.fields, BD.irr.refKey, BD.irr.refUF);
-    renderRawTable('table2', p2i);
-    renderRawTable('table3', p3i);
-    renderRawTable('table4', p4i);
-    renderRawTable('table5', p5i);
-    renderRawTable('table6', p6i);
-    renderSubterraneoStacking(BD.irr.park, BD.irr.bod);
-    initEvolSelects(BD.irr.evol);
-    initNetosSelects(BD.irr.evol);
-    initVencChartSelects(BD.irr.venc);
-    initRenewalChartSelects(BD.irr.venc);
-    initSalidasChartSelects(BD.irr.sal);
-
-    initVencFilter(BD.irr.data);
-    initUFFilter(BD.irr.data);
-    applyFilters();
-
-    document.getElementById('ipc-notice').textContent = `UF ref (${refKey}): ${refUF?.toFixed(2) ?? '—'}`;
+    // Si el usuario ya está en ECH cuando llegan los datos, actualizar UI
+    if (AB === 'ech') {
+      resolveColumns(p1e.meta.fields);
+      resolveParkingColumns(p3e.meta.fields);
+      resolveBodegaColumns(p4e.meta.fields);
+      resolveEvolColumns(p2e.meta.fields);
+      populateDropdowns(BD.ech.data);
+      renderStacking();
+      applyFilters();
+      updateMetrics(BD.ech.data, BD.ech.park, BD.ech.bod);
+      renderEstatusTable(BD.ech.data, BD.ech.fields, BD.ech.refKey, BD.ech.refUF);
+      renderRawTable('table2', p2e);
+      renderRawTable('table3', p3e);
+      renderRawTable('table4', p4e);
+      renderRawTable('table5', p5e);
+      renderRawTable('table6', p6e);
+      renderSubterraneoStacking(BD.ech.park, BD.ech.bod);
+      initEvolSelects(BD.ech.evol);
+      initNetosSelects(BD.ech.evol);
+      initVencChartSelects(BD.ech.venc);
+      initRenewalChartSelects(BD.ech.venc);
+      initSalidasChartSelects(BD.ech.sal);
+      initVencFilter(BD.ech.data);
+      initUFFilter(BD.ech.data);
+      applyFilters();
+      document.getElementById('ipc-notice').textContent = `UF ref (${refKeyE}): ${refUFE?.toFixed(2) ?? '—'}`;
+    }
   })
-  .catch(err => console.error('Error cargando datos:', err));
+  .catch(err => console.error('Error cargando datos ECH:', err));
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    EXPORTAR STACKING PLAN COMO PDF
