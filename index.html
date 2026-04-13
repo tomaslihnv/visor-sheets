@@ -402,6 +402,30 @@ tr:hover td { background: #f8fafc; }
         <canvas id="venc-chart-canvas"></canvas>
       </div>
     </div>
+
+    <div class="evol-card">
+      <div class="evol-card-header">
+        <span class="evol-card-title">Renewal Rate (%)</span>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <label class="evol-check-label"><input type="checkbox" id="renewal-chart-labels" onchange="renderRenewalChart()"> Etiquetas</label>
+          <div class="evol-range">
+            <label>Tipología</label>
+            <select id="renewal-chart-tipo" onchange="renderRenewalChart()">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div class="evol-range">
+            <label>Desde</label>
+            <select id="renewal-chart-desde" onchange="renderRenewalChart()"></select>
+            <label>Hasta</label>
+            <select id="renewal-chart-hasta" onchange="renderRenewalChart()"></select>
+          </div>
+        </div>
+      </div>
+      <div class="evol-chart-wrap" style="height:260px;">
+        <canvas id="renewal-chart-canvas"></canvas>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -464,6 +488,13 @@ Chart.register(ChartDataLabels);
                      Sincronización matemática garantiza que línea % siempre coincide con tope de barras.
    v20 (2026-04-07): Fix stacking gris al cargar: renderStacking()+applyFilters() se llaman antes
                      de las llamadas async a mindicador.cl (IPC). Colores aparecen al cargar CSVs.
+   v26 (2026-04-13): Gráfico "Renewal Rate (%)" en panel Evolución.
+                     Línea suavizada (tension 0.4) con área rellena (#44546A).
+                     Renewal Rate = contratos con Evento Final "R" o "R (CU)" / total
+                     contratos con Evento Final no vacío (R + R(CU) + NR) × 100.
+                     Rango: solo hasta el mes anterior al actual (vacíos = futuro, excluidos).
+                     Mismos filtros que Vencimientos: Tipología + Desde/Hasta + etiquetas.
+                     Tooltip muestra porcentaje + detalle (N de M contratos).
    v25 (2026-04-09): Título de página cambiado a "VISOR INSITU".
                      Gráfico "Vencimientos Mensuales" en panel Evolución:
                      misma estética que Netos (barras #44546A pasado / #cbd5e1 proyectado).
@@ -496,8 +527,8 @@ let AB = 'irr';
 
 /* Almacén por edificio */
 const BD = {
-  irr: { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], fields:[], refKey:'', refUF:0, evolChart:null, netosChart:null, vencChart:null },
-  ech: { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], fields:[], refKey:'', refUF:0, evolChart:null, netosChart:null, vencChart:null }
+  irr: { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], fields:[], refKey:'', refUF:0, evolChart:null, netosChart:null, vencChart:null, renewalChart:null },
+  ech: { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], fields:[], refKey:'', refUF:0, evolChart:null, netosChart:null, vencChart:null, renewalChart:null }
 };
 
 /* Layouts por edificio */
@@ -1807,10 +1838,171 @@ function renderVencChart() {
   });
 }
 
+function initRenewalChartSelects(vencData) {
+  const desdeEl  = document.getElementById('renewal-chart-desde');
+  const hastaEl  = document.getElementById('renewal-chart-hasta');
+  const tipoEl   = document.getElementById('renewal-chart-tipo');
+  if (!desdeEl) return;
+
+  const sample   = vencData[0] || {};
+  const tipoCol  = Object.keys(sample).find(k => nfdKey(k).includes('TIPOLOG')) || 'Tipología';
+  const fechaCol = Object.keys(sample).find(k => nfdKey(k) === 'FECHA') || Object.keys(sample)[0];
+  const eventoCol= Object.keys(sample).find(k => nfdKey(k).includes('EVENTO')) || 'Evento Final';
+
+  // Poblar filtro Tipología
+  if (tipoEl) {
+    const tipos = new Set();
+    vencData.forEach(r => { const t = (r[tipoCol]||'').toString().trim(); if (t) tipos.add(t); });
+    tipoEl.innerHTML = '<option value="">Todas</option>';
+    [...tipos].sort().forEach(t => tipoEl.appendChild(new Option(t, t)));
+  }
+
+  // Cap = mes anterior al actual
+  const now = new Date();
+  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const capKey = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth()+1).padStart(2,'0')}`;
+
+  // Meses con al menos un Evento Final resuelto (no vacío) y dentro del cap
+  const monthsWithData = new Set();
+  vencData.forEach(r => {
+    const p = parseDate((r[fechaCol]||'').toString().trim());
+    if (!p) return;
+    const mk = `${p.year}-${String(p.month).padStart(2,'0')}`;
+    if (mk > capKey) return;
+    if ((r[eventoCol]||'').toString().trim()) monthsWithData.add(mk);
+  });
+
+  const months = [...monthsWithData].sort();
+  desdeEl.innerHTML = hastaEl.innerHTML = '';
+  months.forEach(mk => {
+    const [y, m] = mk.split('-');
+    const label = _MESES[parseInt(m)-1] + '-' + String(y).slice(-2);
+    desdeEl.appendChild(new Option(label, mk));
+    hastaEl.appendChild(new Option(label, mk));
+  });
+  if (months.length) {
+    desdeEl.value = months[0];
+    hastaEl.value = months[months.length - 1];
+  }
+}
+
+function renderRenewalChart() {
+  const vencData  = BD[AB].venc;
+  const desdeEl   = document.getElementById('renewal-chart-desde');
+  const hastaEl   = document.getElementById('renewal-chart-hasta');
+  const tipoEl    = document.getElementById('renewal-chart-tipo');
+  if (!desdeEl || !vencData.length) return;
+
+  const desde    = desdeEl.value;
+  const hasta    = hastaEl.value;
+  const tipoFilt = tipoEl ? tipoEl.value : '';
+  if (!desde || !hasta || desde > hasta) return;
+
+  // Resolver columnas
+  const sample    = vencData[0] || {};
+  const tipoCol   = Object.keys(sample).find(k => nfdKey(k).includes('TIPOLOG')) || 'Tipología';
+  const fechaCol  = Object.keys(sample).find(k => nfdKey(k) === 'FECHA') || Object.keys(sample)[0];
+  const eventoCol = Object.keys(sample).find(k => nfdKey(k).includes('EVENTO')) || 'Evento Final';
+
+  // Generar meses en rango
+  const [dy, dm] = desde.split('-').map(Number);
+  const [hy, hm] = hasta.split('-').map(Number);
+  const allMonths = [];
+  let cy = dy, cm = dm;
+  while (cy < hy || (cy === hy && cm <= hm)) {
+    allMonths.push(`${cy}-${String(cm).padStart(2,'0')}`);
+    cm++; if (cm > 12) { cm = 1; cy++; }
+  }
+
+  // Calcular renewal rate por mes
+  const stats = {};
+  allMonths.forEach(mk => stats[mk] = { renovados: 0, total: 0 });
+
+  vencData.forEach(r => {
+    const p = parseDate((r[fechaCol]||'').toString().trim());
+    if (!p) return;
+    const mk = `${p.year}-${String(p.month).padStart(2,'0')}`;
+    if (!(mk in stats)) return;
+    if (tipoFilt && (r[tipoCol]||'').toString().trim() !== tipoFilt) return;
+    const evento = (r[eventoCol]||'').toString().trim();
+    if (!evento) return; // Vacío = no resuelto, excluir
+    stats[mk].total++;
+    // R = Renovó, R (CU) = Renovó con cambio de unidad — ambos cuentan como renovación
+    if (evento === 'R' || evento.toUpperCase().startsWith('R (')) stats[mk].renovados++;
+  });
+
+  const labels = allMonths.map(mk => {
+    const [y, m] = mk.split('-');
+    return _MESES[parseInt(m)-1] + '-' + String(y).slice(-2);
+  });
+  const data = allMonths.map(mk => {
+    const { renovados, total } = stats[mk];
+    return total > 0 ? Math.round((renovados / total) * 1000) / 10 : null;
+  });
+
+  const canvas = document.getElementById('renewal-chart-canvas');
+  if (BD[AB].renewalChart) { BD[AB].renewalChart.destroy(); BD[AB].renewalChart = null; }
+
+  BD[AB].renewalChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Renewal Rate',
+        data,
+        borderColor: '#44546A',
+        backgroundColor: 'rgba(68,84,106,0.07)',
+        borderWidth: 2.5,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: '#44546A',
+        fill: true,
+        spanGaps: true,
+        datalabels: {
+          display: ctx => !!document.getElementById('renewal-chart-labels')?.checked && data[ctx.dataIndex] != null,
+          anchor: 'top', align: 'top', offset: 4,
+          color: '#44546A',
+          font: { size: 8, weight: '600' },
+          formatter: v => v.toFixed(1) + '%'
+        }
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 14, padding: 16 } },
+        datalabels: {},
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const v = ctx.parsed.y; if (v == null) return null;
+              const { renovados, total } = stats[allMonths[ctx.dataIndex]];
+              return ` Renewal Rate: ${v.toFixed(1)}%  (${renovados} de ${total} contratos)`;
+            }
+          }
+        }
+      },
+      clip: false,
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+        y: {
+          type: 'linear', position: 'left', min: 0, max: 100,
+          grid: { color: '#f0f3f6' },
+          ticks: { font: { size: 10 }, callback: v => v + '%' },
+          title: { display: true, text: 'Renewal Rate (%)', font: { size: 10 }, color: '#8a9bb0' }
+        }
+      }
+    }
+  });
+}
+
 function renderBothEvolCharts() {
   renderEvolChart();
   renderNetosChart();
   renderVencChart();
+  renderRenewalChart();
 }
 
 function switchBuilding(id) {
@@ -1839,6 +2031,7 @@ function switchBuilding(id) {
   initEvolSelects(BD[AB].evol);
   initNetosSelects(BD[AB].evol);
   initVencChartSelects(BD[AB].venc);
+  initRenewalChartSelects(BD[AB].venc);
   renderBothEvolCharts();
   populateDropdowns(BD[AB].data);
   initVencFilter(BD[AB].data);
@@ -1921,6 +2114,7 @@ Promise.all(URLS.irr.concat(URLS.ech).map(u => fetch(u)))
     initEvolSelects(BD.irr.evol);
     initNetosSelects(BD.irr.evol);
     initVencChartSelects(BD.irr.venc);
+    initRenewalChartSelects(BD.irr.venc);
 
     initVencFilter(BD.irr.data);
     initUFFilter(BD.irr.data);
