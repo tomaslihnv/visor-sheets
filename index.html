@@ -488,6 +488,12 @@ Chart.register(ChartDataLabels);
                      Sincronización matemática garantiza que línea % siempre coincide con tope de barras.
    v20 (2026-04-07): Fix stacking gris al cargar: renderStacking()+applyFilters() se llaman antes
                      de las llamadas async a mindicador.cl (IPC). Colores aparecen al cargar CSVs.
+   v28 (2026-04-13): FIX CRÍTICO — ambos edificios mostraban los mismos datos en Evolución.
+                     Causa: BD[irr/ech].xChart guardaban instancias Chart.js por edificio,
+                     pero todos apuntan al mismo canvas DOM. Al cambiar edificio, el chart
+                     del anterior seguía vivo en el canvas → Chart.js entraba en conflicto.
+                     Fix: registro global CHARTS{evol,netos,venc,renewal} + destroyChart(key)
+                     que destruye siempre la instancia activa antes de crear una nueva.
    v27 (2026-04-13): Etiquetas activadas por defecto en los 4 gráficos.
                      Renewal Rate: eje Y extendido a 120% (más espacio visual).
                      Renewal Rate: línea punteada roja suave (rgba 55% opacidad, dash 6-5)
@@ -532,9 +538,18 @@ let AB = 'irr';
 
 /* Almacén por edificio */
 const BD = {
-  irr: { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], fields:[], refKey:'', refUF:0, evolChart:null, netosChart:null, vencChart:null, renewalChart:null },
-  ech: { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], fields:[], refKey:'', refUF:0, evolChart:null, netosChart:null, vencChart:null, renewalChart:null }
+  irr: { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], fields:[], refKey:'', refUF:0 },
+  ech: { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], fields:[], refKey:'', refUF:0 }
 };
+
+/* Registro único de instancias Chart.js — una por canvas, independiente del edificio.
+   Esto evita el bug donde BD[irr].evolChart sigue vivo apuntando al mismo canvas
+   que BD[ech].evolChart, causando que ambos edificios muestren los mismos datos. */
+const CHARTS = { evol: null, netos: null, venc: null, renewal: null };
+
+function destroyChart(key) {
+  if (CHARTS[key]) { CHARTS[key].destroy(); CHARTS[key] = null; }
+}
 
 /* Layouts por edificio */
 const LAYOUT_IRR = [
@@ -1499,9 +1514,9 @@ function renderEvolChart() {
   const cutoffIdx = rows.reduce((acc, r, i) => isPast(r) ? i : acc, -1);
 
   const canvas = document.getElementById('evol-chart');
-  if (BD[AB].evolChart) { BD[AB].evolChart.destroy(); BD[AB].evolChart = null; }
+  destroyChart('evol');
 
-  BD[AB].evolChart = new Chart(canvas, {
+  CHARTS.evol = new Chart(canvas, {
     data: {
       labels,
       datasets: [
@@ -1629,9 +1644,9 @@ function renderNetosChart() {
   const legendFcast = { type:'bar', label:'Netos proyectados', data: rows.map(() => null), backgroundColor:'#cbd5e1', datalabels:{display:false} };
 
   const canvas = document.getElementById('netos-chart');
-  if (BD[AB].netosChart) { BD[AB].netosChart.destroy(); BD[AB].netosChart = null; }
+  destroyChart('netos');
 
-  BD[AB].netosChart = new Chart(canvas, {
+  CHARTS.netos = new Chart(canvas, {
     data: {
       labels,
       datasets: [
@@ -1787,9 +1802,9 @@ function renderVencChart() {
   const legendFcast = { type:'bar', label:'Vencimientos proyectados', data: allMonths.map(()=>null), backgroundColor:'#cbd5e1', datalabels:{display:false} };
 
   const canvas = document.getElementById('venc-chart-canvas');
-  if (BD[AB].vencChart) { BD[AB].vencChart.destroy(); BD[AB].vencChart = null; }
+  destroyChart('venc');
 
-  BD[AB].vencChart = new Chart(canvas, {
+  CHARTS.venc = new Chart(canvas, {
     data: {
       labels,
       datasets: [
@@ -1952,9 +1967,9 @@ function renderRenewalChart() {
     : null;
 
   const canvas = document.getElementById('renewal-chart-canvas');
-  if (BD[AB].renewalChart) { BD[AB].renewalChart.destroy(); BD[AB].renewalChart = null; }
+  destroyChart('renewal');
 
-  BD[AB].renewalChart = new Chart(canvas, {
+  CHARTS.renewal = new Chart(canvas, {
     type: 'line',
     data: {
       labels,
