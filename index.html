@@ -16,7 +16,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; colo
 
 /* ── HEADER ── */
 :root { --accent: #00D166; }
-.hdr { background: #0a0a0a; padding: 0; height: 52px; display: flex; align-items: stretch; border-bottom: 2px solid var(--accent); transition: border-color 0.25s; }
+.hdr { background: #0a0a0a; padding: 0; height: 52px; display: flex; align-items: stretch; border-bottom: 2px solid var(--accent); transition: border-color 0.25s; position: sticky; top: 0; z-index: 100; }
 .bldg-tab {
   display: flex; align-items: center; gap: 10px; padding: 0 22px;
   border: none; background: transparent; cursor: pointer;
@@ -36,7 +36,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; colo
 .bldg-tab:hover:not(.active) .bldg-name { color: #777; }
 
 /* ── TABS ── */
-.tabs { display: flex; background: #fff; border-bottom: 2px solid #e8ecf0; padding: 0 20px; gap: 2px; }
+.tabs { display: flex; background: #fff; border-bottom: 2px solid #e8ecf0; padding: 0 20px; gap: 2px; position: sticky; top: 52px; z-index: 99; }
 .tab-btn {
   padding: 11px 16px; border: none; background: transparent;
   color: #9aabb8; cursor: pointer; font-size: 11px; font-weight: 700;
@@ -518,6 +518,17 @@ Chart.register(ChartDataLabels);
                      Sincronización matemática garantiza que línea % siempre coincide con tope de barras.
    v20 (2026-04-07): Fix stacking gris al cargar: renderStacking()+applyFilters() se llaman antes
                      de las llamadas async a mindicador.cl (IPC). Colores aparecen al cargar CSVs.
+   v33 (2026-04-13): Header y tabs sticky — permanecen visibles al hacer scroll.
+                     .hdr: position:sticky; top:0; z-index:100
+                     .tabs: position:sticky; top:52px; z-index:99
+   v32 (2026-04-13): FIX v3 — Deptos IRR grises y métricas en '—'.
+                     Causa raíz: umap se construía con row['Unidad'] hardcoded.
+                     Si la columna en el CSV de IRR tiene un nombre distinto
+                     ('UNIDAD', 'Unidad ', BOM en primer header, etc.), parseInt
+                     recibe undefined → NaN → umap queda vacío. ECH funciona porque
+                     su planilla tiene la columna exactamente como 'Unidad'.
+                     Fix: usar nfdKey() para encontrar la columna dinámicamente,
+                     igual que ya hace resolveColumns con todas las demás columnas.
    v31 (2026-04-13): FIX v2 — Irarrázaval stacking gris (fix anterior insuficiente).
                      v30 separó IRR y ECH pero aún esperaba los 6 CSVs de IRR juntos.
                      Si Salidas o Vencimientos de IRR eran lentos, stacking seguía gris.
@@ -2310,7 +2321,8 @@ fetch(URLS.irr[0]).then(r => r.text()).then(csv => {
   const p1i = Papa.parse(csv.trim(), {header:true, skipEmptyLines:true});
   BD.irr.data   = p1i.data;
   BD.irr.fields = p1i.meta.fields;
-  p1i.data.forEach(row => { const n = parseInt((row['Unidad']||'').trim()); if (!isNaN(n)) BD.irr.umap[n] = row; });
+  const unidadColI = p1i.meta.fields.find(h => nfdKey(h) === 'UNIDAD') || 'Unidad';
+  p1i.data.forEach(row => { const n = parseInt((row[unidadColI]||'').trim()); if (!isNaN(n)) BD.irr.umap[n] = row; });
   resolveColumns(p1i.meta.fields);
   populateDropdowns(BD.irr.data);
   renderStacking();
@@ -2322,7 +2334,8 @@ fetch(URLS.ech[0]).then(r => r.text()).then(csv => {
   const p1e = Papa.parse(csv.trim(), {header:true, skipEmptyLines:true});
   BD.ech.data   = p1e.data;
   BD.ech.fields = p1e.meta.fields;
-  p1e.data.forEach(row => { const n = parseInt((row['Unidad']||'').trim()); if (!isNaN(n)) BD.ech.umap[n] = row; });
+  const unidadColE = p1e.meta.fields.find(h => nfdKey(h) === 'UNIDAD') || 'Unidad';
+  p1e.data.forEach(row => { const n = parseInt((row[unidadColE]||'').trim()); if (!isNaN(n)) BD.ech.umap[n] = row; });
   if (AB === 'ech') {
     resolveColumns(p1e.meta.fields);
     populateDropdowns(BD.ech.data);
