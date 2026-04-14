@@ -231,9 +231,12 @@ tr:hover td { background: #f8fafc; }
         <div class="legend-metric"><span class="metric-label">Estac.</span><span class="metric-val" id="occ-estac">—</span></div>
         <div class="legend-metric"><span class="metric-label">Bodega</span><span class="metric-val" id="occ-bod">—</span></div>
         <div class="legend-sep"></div>
-        <div class="legend-metric"><span class="metric-label">DEPTO PROY (%)</span><span class="metric-val" id="occ-proy-pct">—</span></div>
-        <div class="legend-metric"><span class="metric-label">DEPTO PROY (un.)</span><span class="metric-val" id="occ-proy-un">—</span></div>
-        <div class="legend-metric"><span class="metric-label">NA NETOS (un.)</span><span class="metric-val" id="occ-netos-un">—</span></div>
+        <div class="legend-metric">
+          <span class="metric-label">Depto. Proy.</span>
+          <span class="metric-val" id="occ-proy-pct">—</span>
+          <span id="occ-proy-un" style="font-size:10px;color:#8a9bb0;margin-left:3px;">—</span>
+        </div>
+        <div class="legend-metric"><span class="metric-label">NA Netos</span><span class="metric-val" id="occ-netos-un">—</span></div>
         <button class="btn-export-pdf" id="btn-export-pdf" onclick="exportStackingPDF()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Exportar PDF
@@ -1157,7 +1160,7 @@ function updateMetrics(deptoData, estacData, bodData) {
       const un  = parseFloat((row[EVOL_COL.unFcast] ||'').toString().replace(',','.'));
       const net = parseFloat((row[EVOL_COL.netos]   ||'').toString().replace(',','.'));
       if (!isNaN(pct)) proyPct = Math.round(pct * (pct <= 1 ? 100 : 1)) + '%';
-      if (!isNaN(un))  proyUn  = Math.round(un) + ' un.';
+      if (!isNaN(un))  proyUn  = `(${Math.round(un)} un.)`;
       if (!isNaN(net)) naNetos = (net > 0 ? '+' : '') + Math.round(net) + ' un.';
     }
   }
