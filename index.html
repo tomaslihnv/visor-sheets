@@ -223,9 +223,17 @@ tr:hover td { background: #f8fafc; }
         <div class="legend-item"><div class="legend-dot" style="background:#fee2e2;border-color:#fca5a5"></div>Vacantes <span class="legend-count" id="lc-vac">—</span></div>
         <div class="legend-item"><div class="legend-dot" style="background:#ffedd5;border-color:#fdba74"></div>Pilotos <span class="legend-count" id="lc-pilot">—</span></div>
         <div class="legend-sep"></div>
-        <div class="legend-metric"><span class="metric-label">Depto.</span><span class="metric-val" id="occ-depto">—</span></div>
+        <div class="legend-metric">
+          <span class="metric-label">Depto.</span>
+          <span class="metric-val" id="occ-depto">—</span>
+          <span id="occ-depto-un" style="font-size:10px;color:#8a9bb0;margin-left:3px;">—</span>
+        </div>
         <div class="legend-metric"><span class="metric-label">Estac.</span><span class="metric-val" id="occ-estac">—</span></div>
         <div class="legend-metric"><span class="metric-label">Bodega</span><span class="metric-val" id="occ-bod">—</span></div>
+        <div class="legend-sep"></div>
+        <div class="legend-metric"><span class="metric-label">DEPTO PROY (%)</span><span class="metric-val" id="occ-proy-pct">—</span></div>
+        <div class="legend-metric"><span class="metric-label">DEPTO PROY (un.)</span><span class="metric-val" id="occ-proy-un">—</span></div>
+        <div class="legend-metric"><span class="metric-label">NA NETOS (un.)</span><span class="metric-val" id="occ-netos-un">—</span></div>
         <button class="btn-export-pdf" id="btn-export-pdf" onclick="exportStackingPDF()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Exportar PDF
@@ -548,6 +556,13 @@ Chart.register(ChartDataLabels);
                      Sincronización matemática garantiza que línea % siempre coincide con tope de barras.
    v20 (2026-04-07): Fix stacking gris al cargar: renderStacking()+applyFilters() se llaman antes
                      de las llamadas async a mindicador.cl (IPC). Colores aparecen al cargar CSVs.
+   v35 (2026-04-14): 3 métricas proyectadas en barra del Stacking Plan.
+                     Depto. ahora muestra % + unidades en renta (contratos + RC).
+                     DEPTO PROY (%): col "Arriendos acumulados (reales+forecast) (%)"
+                     DEPTO PROY (un.): col "Arriendos acumulados (reales+forecast) (un.)"
+                     NA NETOS (un.): col "Nuevos arriendos netos (reales + forecast)"
+                     Todas leen el mes en curso de BD[AB].evol usando parseEvolDate.
+                     Segundo separador visual antes de las 3 métricas proyectadas.
    v34 (2026-04-14): Gráfico "Motivo de Salida (%)" horizontal en panel Evolución.
                      Barras horizontales ordenadas de mayor a menor (mayor arriba).
                      Eje X: % sobre total de salidas filtradas (excluye blancos).
@@ -1103,6 +1118,8 @@ function updateMetrics(deptoData, estacData, bodData) {
   document.getElementById('lc-pilot').textContent  = dPilot;
   document.getElementById('occ-depto').textContent =
     dBase > 0 ? Math.round(dEnRenta / dBase * 100) + '%' : '—';
+  document.getElementById('occ-depto-un').textContent =
+    dBase > 0 ? `(${dEnRenta} un.)` : '';
 
   let eContr = 0, eRC = 0, eVac = 0;
   estacData.forEach(row => {
@@ -1124,6 +1141,29 @@ function updateMetrics(deptoData, estacData, bodData) {
   const bTotal = bodData.length;
   document.getElementById('occ-bod').textContent =
     bTotal > 0 ? Math.round(bContr / bTotal * 100) + '%' : '—';
+
+  // ── Métricas proyectadas del mes en curso desde hoja EVOLUCIÓN ──
+  const evolData = BD[AB].evol;
+  const now = new Date();
+  const curYear = now.getFullYear(), curMonth = now.getMonth(); // 0-indexed
+  let proyPct = '—', proyUn = '—', naNetos = '—';
+  if (evolData && evolData.length) {
+    const row = evolData.find(r => {
+      const d = parseEvolDate((r[EVOL_COL.fecha]||'').toString());
+      return d && d.getFullYear() === curYear && d.getMonth() === curMonth;
+    });
+    if (row) {
+      const pct = parseFloat((row[EVOL_COL.pctFcast]||'').toString().replace('%','').replace(',','.'));
+      const un  = parseFloat((row[EVOL_COL.unFcast] ||'').toString().replace(',','.'));
+      const net = parseFloat((row[EVOL_COL.netos]   ||'').toString().replace(',','.'));
+      if (!isNaN(pct)) proyPct = Math.round(pct * (pct <= 1 ? 100 : 1)) + '%';
+      if (!isNaN(un))  proyUn  = Math.round(un) + ' un.';
+      if (!isNaN(net)) naNetos = (net > 0 ? '+' : '') + Math.round(net) + ' un.';
+    }
+  }
+  document.getElementById('occ-proy-pct').textContent = proyPct;
+  document.getElementById('occ-proy-un').textContent  = proyUn;
+  document.getElementById('occ-netos-un').textContent = naNetos;
 }
 
 function updateCellTipo() {
