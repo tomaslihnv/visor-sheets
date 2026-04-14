@@ -456,6 +456,36 @@ tr:hover td { background: #f8fafc; }
         <canvas id="salidas-chart-canvas"></canvas>
       </div>
     </div>
+
+    <div class="evol-card">
+      <div class="evol-card-header">
+        <span class="evol-card-title">Motivo de Salida (%)</span>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <label class="evol-check-label"><input type="checkbox" id="motivo-chart-labels" onchange="renderMotivoChart()" checked> Etiquetas</label>
+          <div class="evol-range">
+            <label>Tipología</label>
+            <select id="motivo-chart-tipologia" onchange="renderMotivoChart()">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div class="evol-range">
+            <label>Tipo</label>
+            <select id="motivo-chart-tipo" onchange="renderMotivoChart()">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div class="evol-range">
+            <label>Desde</label>
+            <select id="motivo-chart-desde" onchange="renderMotivoChart()"></select>
+            <label>Hasta</label>
+            <select id="motivo-chart-hasta" onchange="renderMotivoChart()"></select>
+          </div>
+        </div>
+      </div>
+      <div class="evol-chart-wrap" style="height:300px;">
+        <canvas id="motivo-chart-canvas"></canvas>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -518,6 +548,12 @@ Chart.register(ChartDataLabels);
                      Sincronización matemática garantiza que línea % siempre coincide con tope de barras.
    v20 (2026-04-07): Fix stacking gris al cargar: renderStacking()+applyFilters() se llaman antes
                      de las llamadas async a mindicador.cl (IPC). Colores aparecen al cargar CSVs.
+   v34 (2026-04-14): Gráfico "Motivo de Salida (%)" horizontal en panel Evolución.
+                     Barras horizontales ordenadas de mayor a menor (mayor arriba).
+                     Eje X: % sobre total de salidas filtradas (excluye blancos).
+                     Filtros: Tipología, Tipo (SA/NR), Desde/Hasta — cap mes anterior.
+                     Paleta de 10 colores claros distintos (uno por motivo).
+                     Funciona para IRR y ECH. CHARTS.motivo en registro global.
    v33 (2026-04-13): Header y tabs sticky — permanecen visibles al hacer scroll.
                      .hdr: position:sticky; top:0; z-index:100
                      .tabs: position:sticky; top:52px; z-index:99
@@ -607,7 +643,7 @@ const BD = {
 /* Registro único de instancias Chart.js — una por canvas, independiente del edificio.
    Esto evita el bug donde BD[irr].evolChart sigue vivo apuntando al mismo canvas
    que BD[ech].evolChart, causando que ambos edificios muestren los mismos datos. */
-const CHARTS = { evol: null, netos: null, venc: null, renewal: null, salidas: null };
+const CHARTS = { evol: null, netos: null, venc: null, renewal: null, salidas: null, motivo: null };
 
 function destroyChart(key) {
   if (CHARTS[key]) { CHARTS[key].destroy(); CHARTS[key] = null; }
@@ -2263,12 +2299,160 @@ function renderSalidasChart() {
   });
 }
 
+function initMotivoChartSelects(salData) {
+  const desdeEl   = document.getElementById('motivo-chart-desde');
+  const hastaEl   = document.getElementById('motivo-chart-hasta');
+  const tipEl     = document.getElementById('motivo-chart-tipologia');
+  const tipoEl    = document.getElementById('motivo-chart-tipo');
+  if (!desdeEl) return;
+
+  const sample    = salData[0] || {};
+  const fechaCol  = Object.keys(sample).find(k => nfdKey(k) === 'FECHA') || Object.keys(sample)[0];
+  const tipologiaCol = Object.keys(sample).find(k => nfdKey(k).includes('TIPOLOG')) || 'Tipología';
+  const tipoCol   = Object.keys(sample).find(k => nfdKey(k) === 'TIPO') || 'Tipo';
+  const motivoCol = Object.keys(sample).find(k => nfdKey(k).includes('MOTIVO')) || 'Motivo de Salida';
+
+  const now       = new Date();
+  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const capKey    = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth()+1).padStart(2,'0')}`;
+
+  const months = new Set();
+  salData.forEach(r => {
+    const p = parseDate((r[fechaCol]||'').toString().trim());
+    if (!p) return;
+    const mk = `${p.year}-${String(p.month).padStart(2,'0')}`;
+    if (mk <= capKey && (r[motivoCol]||'').toString().trim()) months.add(mk);
+  });
+  const sorted = [...months].sort();
+  if (!sorted.length) return;
+
+  desdeEl.innerHTML = sorted.map(mk => { const [y,m]=mk.split('-'); return `<option value="${mk}">${_MESES[+m-1]}-${y.slice(-2)}</option>`; }).join('');
+  hastaEl.innerHTML = desdeEl.innerHTML;
+  hastaEl.value = sorted[sorted.length - 1];
+
+  if (tipEl) {
+    const tips = new Set();
+    salData.forEach(r => { const t=(r[tipologiaCol]||'').toString().trim(); if(t) tips.add(t); });
+    tipEl.innerHTML = '<option value="">Todas</option>';
+    [...tips].sort().forEach(t => tipEl.appendChild(new Option(t,t)));
+  }
+  if (tipoEl) {
+    const tipos = new Set();
+    salData.forEach(r => { const t=(r[tipoCol]||'').toString().trim(); if(t) tipos.add(t); });
+    tipoEl.innerHTML = '<option value="">Todos</option>';
+    [...tipos].sort().forEach(t => tipoEl.appendChild(new Option(t,t)));
+  }
+}
+
+function renderMotivoChart() {
+  const salData   = BD[AB].sal;
+  const desdeEl   = document.getElementById('motivo-chart-desde');
+  const hastaEl   = document.getElementById('motivo-chart-hasta');
+  const tipEl     = document.getElementById('motivo-chart-tipologia');
+  const tipoEl    = document.getElementById('motivo-chart-tipo');
+  if (!desdeEl || !salData.length) return;
+
+  const desde    = desdeEl.value;
+  const hasta    = hastaEl.value;
+  const tipFilt  = tipEl  ? tipEl.value  : '';
+  const tipoFilt = tipoEl ? tipoEl.value : '';
+  if (!desde || !hasta || desde > hasta) return;
+
+  const sample       = salData[0] || {};
+  const fechaCol     = Object.keys(sample).find(k => nfdKey(k) === 'FECHA') || Object.keys(sample)[0];
+  const motivoCol    = Object.keys(sample).find(k => nfdKey(k).includes('MOTIVO')) || 'Motivo de Salida';
+  const tipologiaCol = Object.keys(sample).find(k => nfdKey(k).includes('TIPOLOG')) || 'Tipología';
+  const tipoCol      = Object.keys(sample).find(k => nfdKey(k) === 'TIPO') || 'Tipo';
+
+  // Filtrar filas en rango y con motivo no vacío
+  const counts = {};
+  let total = 0;
+  salData.forEach(r => {
+    const p = parseDate((r[fechaCol]||'').toString().trim());
+    if (!p) return;
+    const mk = `${p.year}-${String(p.month).padStart(2,'0')}`;
+    if (mk < desde || mk > hasta) return;
+    if (tipFilt  && (r[tipologiaCol]||'').toString().trim() !== tipFilt)  return;
+    if (tipoFilt && (r[tipoCol]    ||'').toString().trim() !== tipoFilt)  return;
+    const motivo = (r[motivoCol]||'').toString().trim();
+    if (!motivo) return; // excluir blancos del total
+    counts[motivo] = (counts[motivo] || 0) + 1;
+    total++;
+  });
+
+  if (total === 0) {
+    destroyChart('motivo');
+    return;
+  }
+
+  // Ordenar de mayor a menor
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const labels = sorted.map(([m]) => m);
+  const pcts   = sorted.map(([, c]) => Math.round(c / total * 1000) / 10); // 1 decimal
+
+  // Paleta de colores distintos y claros
+  const PALETTE = [
+    '#93c5fd','#86efac','#fca5a5','#fcd34d',
+    '#c4b5fd','#fdba74','#a5f3fc','#f9a8d4',
+    '#6ee7b7','#bef264'
+  ];
+  const bgColors = labels.map((_, i) => PALETTE[i % PALETTE.length]);
+
+  const showLabels = !!document.getElementById('motivo-chart-labels')?.checked;
+
+  const canvas = document.getElementById('motivo-chart-canvas');
+  destroyChart('motivo');
+
+  CHARTS.motivo = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Motivo de Salida',
+        data: pcts,
+        backgroundColor: bgColors,
+        borderRadius: 4,
+        datalabels: {
+          display: showLabels,
+          anchor: 'end', align: 'right', offset: 4,
+          color: '#3a4f63',
+          font: { size: 10, weight: '600' },
+          formatter: v => v + '%'
+        }
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: {},
+        tooltip: {
+          callbacks: { label: ctx => ` ${ctx.parsed.x}%` }
+        }
+      },
+      scales: {
+        x: {
+          min: 0, max: 100,
+          grid: { color: '#f0f3f6' },
+          ticks: { font: { size: 10 }, callback: v => v + '%' }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { font: { size: 11 } }
+        }
+      }
+    }
+  });
+}
+
 function renderBothEvolCharts() {
   renderEvolChart();
   renderNetosChart();
   renderVencChart();
   renderRenewalChart();
   renderSalidasChart();
+  renderMotivoChart();
 }
 
 function switchBuilding(id) {
@@ -2299,6 +2483,7 @@ function switchBuilding(id) {
   initVencChartSelects(BD[AB].venc);
   initRenewalChartSelects(BD[AB].venc);
   initSalidasChartSelects(BD[AB].sal);
+  initMotivoChartSelects(BD[AB].sal);
   renderBothEvolCharts();
   populateDropdowns(BD[AB].data);
   initVencFilter(BD[AB].data);
@@ -2381,6 +2566,7 @@ Promise.all(URLS.irr.slice(1).map(u => fetch(u).then(r => r.text())))
       initVencChartSelects(BD.irr.venc);
       initRenewalChartSelects(BD.irr.venc);
       initSalidasChartSelects(BD.irr.sal);
+      initMotivoChartSelects(BD.irr.sal);
       initVencFilter(BD.irr.data);
       initUFFilter(BD.irr.data);
       applyFilters();
@@ -2425,6 +2611,7 @@ Promise.all(URLS.ech.slice(1).map(u => fetch(u).then(r => r.text())))
       initVencChartSelects(BD.ech.venc);
       initRenewalChartSelects(BD.ech.venc);
       initSalidasChartSelects(BD.ech.sal);
+      initMotivoChartSelects(BD.ech.sal);
       initVencFilter(BD.ech.data);
       initUFFilter(BD.ech.data);
       applyFilters();
