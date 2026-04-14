@@ -559,6 +559,13 @@ Chart.register(ChartDataLabels);
                      Sincronización matemática garantiza que línea % siempre coincide con tope de barras.
    v20 (2026-04-07): Fix stacking gris al cargar: renderStacking()+applyFilters() se llaman antes
                      de las llamadas async a mindicador.cl (IPC). Colores aparecen al cargar CSVs.
+   v38 (2026-04-14): Filtro Canon UF/m² contextual — rango dinámico.
+                     refreshUFRange() recalcula min/max sobre las unidades que pasan
+                     todos los filtros activos EXCEPTO el propio filtro de canon.
+                     Se llama al final de applyFilters(). Si el rango cambió, resetea
+                     los handles al nuevo rango completo (filtro canon queda limpio).
+                     Si el rango no cambió (ej. el usuario movió el slider de canon),
+                     no hace nada — evita el loop y preserva la posición de los handles.
    v35 (2026-04-14): 3 métricas proyectadas en barra del Stacking Plan.
                      Depto. ahora muestra % + unidades en renta (contratos + RC).
                      DEPTO PROY (%): col "Arriendos acumulados (reales+forecast) (%)"
@@ -1434,6 +1441,51 @@ function applyFilters() {
     el.style.color       = s.color;
     el.classList.toggle('dimmed', !show);
   });
+
+  // Actualizar rango contextual del slider UF al terminar de aplicar filtros
+  refreshUFRange(fu, ftb, ftT, ftS1, ftS2, foC, foA, vencOn, vencVal);
+}
+
+/* Recalcula min/max del slider Canon UF/m² según las unidades que pasan
+   todos los filtros activos EXCEPTO el propio filtro de canon.
+   Si los bounds cambian, resetea los handles al nuevo rango completo
+   (el filtro de canon queda "limpio" cuando cambia el contexto). */
+function refreshUFRange(fu, ftb, ftT, ftS1, ftS2, foC, foA, vencOn, vencVal) {
+  const layout = AB === 'irr' ? LAYOUT_IRR : LAYOUT_ECH;
+  const umap   = BD[AB].umap;
+  if (!Object.keys(umap).length) return;
+
+  const vals = [];
+  layout.forEach(floor => floor.cells.forEach(cell => {
+    const u = umap[cell.n];
+    if (!u || u.__canonUFm2 == null) return;
+    const cat = getCategory(u);
+
+    // Aplicar los mismos filtros que applyFilters(), excepto el de canon
+    if (!(ftb === 'todos' || ftb === 'departamentos')) return;
+    if (fu === 'contratos' && cat !== 'contrato') return;
+    if (fu === 'en-renta'  && cat !== 'contrato' && cat !== 'rc') return;
+    if (fu === 'vacantes'  && cat !== 'vacante') return;
+    if (ftT  && (u['Tipo']         || '').trim() !== ftT)  return;
+    if (ftS1 && (u['Sub Tip. (1)'] || '').trim() !== ftS1) return;
+    if (ftS2 && (u['Sub. Tip (2)'] || '').trim() !== ftS2) return;
+    if (foA  && !foC.includes((u['Orientación'] || '').trim())) return;
+    if (vencOn && cat === 'contrato' && !(u.__diasRemanentes != null && u.__diasRemanentes <= vencVal)) return;
+
+    vals.push(u.__canonUFm2);
+  }));
+
+  if (!vals.length) return;
+  const newMin = Math.floor(Math.min(...vals) * 100) / 100;
+  const newMax = Math.ceil( Math.max(...vals) * 100) / 100;
+
+  // Si no cambió el rango, no hacer nada (evita resetear handles al mover el slider UF)
+  if (newMin === _ufMin && newMax === _ufMax) return;
+
+  _ufMin = newMin;
+  _ufMax = newMax;
+  // Reset handles al nuevo rango completo — filtro UF queda limpio cuando cambia el contexto
+  _setUFSliders(newMin, newMax, newMin, newMax);
 }
 
 function resetFilters() {
