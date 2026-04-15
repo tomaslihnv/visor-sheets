@@ -395,6 +395,7 @@ tr:hover td { background: #f8fafc; }
         <span class="evol-card-title">Vencimientos Mensuales</span>
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
           <label class="evol-check-label"><input type="checkbox" id="venc-chart-labels" onchange="renderVencChart()" checked> Etiquetas</label>
+          <label class="evol-check-label"><input type="checkbox" id="venc-chart-avg" onchange="renderVencChart()" checked> Promedio</label>
           <div class="evol-range">
             <label>Tipología</label>
             <select id="venc-chart-tipo" onchange="renderVencChart()">
@@ -419,6 +420,7 @@ tr:hover td { background: #f8fafc; }
         <span class="evol-card-title">Renewal Rate (%)</span>
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
           <label class="evol-check-label"><input type="checkbox" id="renewal-chart-labels" onchange="renderRenewalChart()" checked> Etiquetas</label>
+          <label class="evol-check-label"><input type="checkbox" id="renewal-chart-avg" onchange="renderRenewalChart()" checked> Promedio</label>
           <div class="evol-range">
             <label>Tipología</label>
             <select id="renewal-chart-tipo" onchange="renderRenewalChart()">
@@ -443,6 +445,7 @@ tr:hover td { background: #f8fafc; }
         <span class="evol-card-title">Análisis de Salidas</span>
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
           <label class="evol-check-label"><input type="checkbox" id="salidas-chart-labels" onchange="renderSalidasChart()" checked> Etiquetas</label>
+          <label class="evol-check-label"><input type="checkbox" id="salidas-chart-avg" onchange="renderSalidasChart()" checked> Promedio</label>
           <div class="evol-range">
             <label>Motivo</label>
             <select id="salidas-chart-motivo" onchange="renderSalidasChart()">
@@ -559,6 +562,14 @@ Chart.register(ChartDataLabels);
                      Sincronización matemática garantiza que línea % siempre coincide con tope de barras.
    v20 (2026-04-07): Fix stacking gris al cargar: renderStacking()+applyFilters() se llaman antes
                      de las llamadas async a mindicador.cl (IPC). Colores aparecen al cargar CSVs.
+   v39 (2026-04-14): 3 mejoras en gráficos de Evolución.
+                     1) Checkbox "Promedio" en Vencimientos Mensuales y Análisis de Salidas
+                        (activado por defecto). Usa avgLineDataset() helper reutilizable.
+                     2) Checkbox "Promedio" en Renewal Rate (antes hardcoded, ahora desmarcable).
+                        Los 3 se comportan igual: checked=promedio visible, unchecked=oculto.
+                     3) Colores fijos por motivo en Motivo de Salida (%).
+                        MOTIVO_COLOR_MAP global asigna color la primera vez que aparece un motivo
+                        y lo reutiliza siempre — no cambia al aplicar filtros.
    v38 (2026-04-14): Filtro Canon UF/m² contextual — rango dinámico.
                      refreshUFRange() recalcula min/max sobre las unidades que pasan
                      todos los filtros activos EXCEPTO el propio filtro de canon.
@@ -669,6 +680,39 @@ const BD = {
    Esto evita el bug donde BD[irr].evolChart sigue vivo apuntando al mismo canvas
    que BD[ech].evolChart, causando que ambos edificios muestren los mismos datos. */
 const CHARTS = { evol: null, netos: null, venc: null, renewal: null, salidas: null, motivo: null };
+
+// Colores fijos por motivo de salida — se asignan la primera vez que aparece un motivo
+// y se reutilizan siempre, independiente del filtro activo.
+const MOTIVO_PALETTE = [
+  '#93c5fd','#86efac','#fca5a5','#fcd34d',
+  '#c4b5fd','#fdba74','#a5f3fc','#f9a8d4',
+  '#6ee7b7','#bef264'
+];
+const MOTIVO_COLOR_MAP = {}; // { 'Cambio de domicilio': '#93c5fd', ... }
+
+function getMotivoColor(motivo) {
+  if (!MOTIVO_COLOR_MAP[motivo]) {
+    const idx = Object.keys(MOTIVO_COLOR_MAP).length % MOTIVO_PALETTE.length;
+    MOTIVO_COLOR_MAP[motivo] = MOTIVO_PALETTE[idx];
+  }
+  return MOTIVO_COLOR_MAP[motivo];
+}
+
+// Línea de promedio reutilizable para gráficos de barras
+function avgLineDataset(allMonths, data) {
+  const vals = data.filter(v => v != null && v > 0);
+  if (!vals.length) return null;
+  const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+  return {
+    type: 'line', label: 'Promedio',
+    data: allMonths.map(() => avg),
+    borderColor: 'rgba(239,68,68,0.55)', borderWidth: 1.5,
+    borderDash: [6, 5], pointRadius: 0, pointHoverRadius: 0,
+    fill: false, tension: 0, spanGaps: true,
+    datalabels: { display: false },
+    _avgValue: avg
+  };
+}
 
 function destroyChart(key) {
   if (CHARTS[key]) { CHARTS[key].destroy(); CHARTS[key] = null; }
@@ -1993,42 +2037,46 @@ function renderVencChart() {
 
   const legendReal  = { type:'bar', label:'Vencimientos reales',      data: allMonths.map(()=>null), backgroundColor:'#44546A',  datalabels:{display:false} };
   const legendFcast = { type:'bar', label:'Vencimientos proyectados', data: allMonths.map(()=>null), backgroundColor:'#cbd5e1', datalabels:{display:false} };
+  const showAvg  = !!document.getElementById('venc-chart-avg')?.checked;
+  const avgDS    = avgLineDataset(allMonths, data);
+  const datasets = [
+    { type:'bar', label:'Vencimientos', data,
+      backgroundColor: colors, borderRadius: 3,
+      datalabels: {
+        display: ctx => {
+          const v = data[ctx.dataIndex];
+          return !!document.getElementById('venc-chart-labels')?.checked && v != null && v !== 0;
+        },
+        anchor: 'end', align: 'top', offset: 2,
+        color: ctx => labelColors[ctx.dataIndex],
+        font: { size: 8, weight: '600' },
+        formatter: v => v
+      }
+    },
+    legendReal, legendFcast,
+    ...(showAvg && avgDS ? [avgDS] : [])
+  ];
 
   const canvas = document.getElementById('venc-chart-canvas');
   destroyChart('venc');
 
   CHARTS.venc = new Chart(canvas, {
-    data: {
-      labels,
-      datasets: [
-        { type:'bar', label:'Vencimientos', data,
-          backgroundColor: colors, borderRadius: 3,
-          datalabels: {
-            display: ctx => {
-              const v = data[ctx.dataIndex];
-              return !!document.getElementById('venc-chart-labels')?.checked && v != null && v !== 0;
-            },
-            anchor: 'end', align: 'top', offset: 2,
-            color: ctx => labelColors[ctx.dataIndex],
-            font: { size: 8, weight: '600' },
-            formatter: v => v
-          }
-        },
-        legendReal, legendFcast
-      ]
-    },
+    data: { labels, datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode:'index', intersect:false },
       plugins: {
         legend: {
           position: 'top',
-          labels: { font:{ size:11 }, boxWidth:14, padding:16, filter: item => item.datasetIndex !== 0 }
+          labels: { font:{ size:11 }, boxWidth:14, padding:16,
+            filter: item => item.label === 'Vencimientos reales' || item.label === 'Vencimientos proyectados' || item.label === 'Promedio'
+          }
         },
         datalabels: {},
         tooltip: {
           callbacks: {
             label: ctx => {
+              if (ctx.dataset.label === 'Promedio') return avgDS ? ` Promedio: ${avgDS._avgValue.toFixed(1)} un.` : null;
               if (ctx.datasetIndex !== 0) return null;
               const v = ctx.parsed.y; if (v == null) return null;
               const past = isPastMk(allMonths[ctx.dataIndex]);
@@ -2187,7 +2235,7 @@ function renderRenewalChart() {
             formatter: v => v.toFixed(1) + '%'
           }
         },
-        {
+        ...(!!document.getElementById('renewal-chart-avg')?.checked && avgRate != null ? [{
           label: 'Promedio',
           data: allMonths.map(() => avgRate),
           borderColor: 'rgba(239,68,68,0.55)',
@@ -2199,7 +2247,7 @@ function renderRenewalChart() {
           tension: 0,
           spanGaps: true,
           datalabels: { display: false }
-        }
+        }] : [])
       ]
     },
     options: {
@@ -2338,29 +2386,29 @@ function renderSalidasChart() {
   const labels = allMonths.map(mk => { const [y,m] = mk.split('-'); return _MESES[parseInt(m)-1]+'-'+String(y).slice(-2); });
   const data   = allMonths.map(mk => counts[mk]);
 
-  // Todos pasados → color único #44546A
-  const legendItem = { type:'bar', label:'Salidas reales', data: allMonths.map(()=>null), backgroundColor:'#44546A', datalabels:{display:false} };
+  const legendItem  = { type:'bar', label:'Salidas reales', data: allMonths.map(()=>null), backgroundColor:'#44546A', datalabels:{display:false} };
+  const showAvgSal  = !!document.getElementById('salidas-chart-avg')?.checked;
+  const avgDSSal    = avgLineDataset(allMonths, data);
+  const datasetsSal = [
+    { type:'bar', label:'Salidas', data,
+      backgroundColor: '#44546A', borderRadius: 3,
+      datalabels: {
+        display: ctx => !!document.getElementById('salidas-chart-labels')?.checked && data[ctx.dataIndex] != null && data[ctx.dataIndex] !== 0,
+        anchor: 'end', align: 'top', offset: 2,
+        color: '#44546A',
+        font: { size: 8, weight: '600' },
+        formatter: v => v
+      }
+    },
+    legendItem,
+    ...(showAvgSal && avgDSSal ? [avgDSSal] : [])
+  ];
 
   const canvas = document.getElementById('salidas-chart-canvas');
   destroyChart('salidas');
 
   CHARTS.salidas = new Chart(canvas, {
-    data: {
-      labels,
-      datasets: [
-        { type:'bar', label:'Salidas', data,
-          backgroundColor: '#44546A', borderRadius: 3,
-          datalabels: {
-            display: ctx => !!document.getElementById('salidas-chart-labels')?.checked && data[ctx.dataIndex] != null && data[ctx.dataIndex] !== 0,
-            anchor: 'end', align: 'top', offset: 2,
-            color: '#44546A',
-            font: { size: 8, weight: '600' },
-            formatter: v => v
-          }
-        },
-        legendItem
-      ]
-    },
+    data: { labels, datasets: datasetsSal },
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode:'index', intersect:false },
@@ -2373,6 +2421,7 @@ function renderSalidasChart() {
         tooltip: {
           callbacks: {
             label: ctx => {
+              if (ctx.dataset.label === 'Promedio') return avgDSSal ? ` Promedio: ${avgDSSal._avgValue.toFixed(1)} un.` : null;
               if (ctx.datasetIndex !== 0) return null;
               const v = ctx.parsed.y; if (v == null) return null;
               return ` Salidas: ${v} un.`;
@@ -2485,13 +2534,8 @@ function renderMotivoChart() {
   const labels = sorted.map(([m]) => m);
   const pcts   = sorted.map(([, c]) => Math.round(c / total * 1000) / 10); // 1 decimal
 
-  // Paleta de colores distintos y claros
-  const PALETTE = [
-    '#93c5fd','#86efac','#fca5a5','#fcd34d',
-    '#c4b5fd','#fdba74','#a5f3fc','#f9a8d4',
-    '#6ee7b7','#bef264'
-  ];
-  const bgColors = labels.map((_, i) => PALETTE[i % PALETTE.length]);
+  // Colores fijos por motivo — getMotivoColor asigna y recuerda el color de cada motivo
+  const bgColors = labels.map(m => getMotivoColor(m));
 
   const showLabels = !!document.getElementById('motivo-chart-labels')?.checked;
 
