@@ -69,18 +69,11 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; colo
 .unit-tipo { font-size: 5.5px; font-weight: 500; line-height: 1; opacity: 0.75; }
 
 /* ── COLUMN HEADERS ── */
-.col-hdr-wrap {
-  position: sticky; top: 0; z-index: 10;
-  background: #fff;
-  border-bottom: 2px solid #e8ecf0;
-  margin-bottom: 6px;
-  padding-bottom: 4px;
-}
+.col-hdr-wrap { border-bottom: 2px solid #e8ecf0; margin-bottom: 6px; padding-bottom: 4px; }
 .col-hdr-row  { display: flex; align-items: center; gap: 2px; }
-.col-hdr-lbl  { width: 36px; text-align: right; padding-right: 8px; font-size: 8.5px; font-weight: 700; color: #44546A; flex-shrink: 0; white-space: nowrap; line-height: 18px; }
-.col-hdr-cell { width: 32px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 7.5px; font-weight: 600; color: #1a2332; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.col-hdr-lbl  { width: 36px; text-align: left; font-size: 10px; font-weight: 600; color: #8a9bb0; flex-shrink: 0; white-space: nowrap; line-height: 18px; overflow: visible; }
+.col-hdr-cell { width: 32px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: #8a9bb0; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .col-hdr-gap  { width: 32px; height: 18px; flex-shrink: 0; }
-.col-hdr-row-pct .col-hdr-cell { color: #44546A; font-weight: 700; font-size: 8px; }
 
 /* ── FILTER PANEL (dark sidebar) ── */
 .filters-panel {
@@ -1438,7 +1431,11 @@ function renderColumnHeaders() {
       const u = umap[n];
       if (!u) return;
       if (!tipo) tipo = (u['Tipo']         || '').trim();
-      if (!prod) prod = (u['Sub Tip. (1)'] || '').trim();
+      if (!prod) {
+        // Sub-Tipología II — buscar dinámicamente con nfdKey
+        const sub2Key = Object.keys(u).find(k => nfdKey(k).includes('SUB') && nfdKey(k).includes('2'));
+        prod = sub2Key ? (u[sub2Key] || '').trim() : (u['Sub. Tip (2)'] || '').trim();
+      }
       const cat = getCategory(u);
       if (cat === 'piloto') return; // pilotos excluidos del denominador
       base++;
@@ -1451,10 +1448,10 @@ function renderColumnHeaders() {
 
   // Renderizar las 4 filas
   const rows = [
-    { id: 'col-hdr-col',  label: 'Col.',  val: c => colInfo[c] ? String(colInfo[c].colNum) : '' },
-    { id: 'col-hdr-tipo', label: 'Tip.',  val: c => colInfo[c]?.tipo ?? '' },
-    { id: 'col-hdr-prod', label: 'Prod.', val: c => colInfo[c]?.prod ?? '' },
-    { id: 'col-hdr-pct',  label: '%',     val: c => colInfo[c]?.pct  ?? '' },
+    { id: 'col-hdr-col',  label: 'Columna',        val: c => colInfo[c] ? String(colInfo[c].colNum) : '' },
+    { id: 'col-hdr-tipo', label: 'Tipología',       val: c => colInfo[c]?.tipo ?? '' },
+    { id: 'col-hdr-prod', label: 'Sub-Tipología',   val: c => colInfo[c]?.prod ?? '' },
+    { id: 'col-hdr-pct',  label: 'Ocupación (%)',   val: c => colInfo[c]?.pct  ?? '' },
   ];
 
   rows.forEach(({ id, label, val }) => {
