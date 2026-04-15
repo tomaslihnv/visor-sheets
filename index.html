@@ -60,13 +60,20 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; colo
 .stacking-wrap { flex: 1; min-height: 0; overflow: auto; background: #fff; border: 1px solid #e2e6ea; border-radius: 8px; padding: 16px; }
 .building { display: flex; flex-direction: column; gap: 2px; }
 .floor-row { display: flex; align-items: center; gap: 2px; }
-.floor-label { width: 36px; text-align: right; padding-right: 8px; font-size: 10px; font-weight: 600; color: #8a9bb0; flex-shrink: 0; }
+.floor-label { width: 90px; text-align: left; padding-right: 8px; font-size: 10px; font-weight: 600; color: #8a9bb0; flex-shrink: 0; }
 .floor-cells { display: flex; gap: 2px; }
 .cell-gap { width: 32px; height: 36px; flex-shrink: 0; }
 .unit { width: 32px; height: 36px; background: #f0f4f8; border: 1px solid #d1dae3; border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; flex-shrink: 0; transition: opacity 0.18s; cursor: pointer; color: #3a4f63; }
 .unit.dimmed { opacity: 0.08; }
 .unit-num  { font-size: 6.5px; font-weight: 700; line-height: 1; }
 .unit-tipo { font-size: 5.5px; font-weight: 500; line-height: 1; opacity: 0.75; }
+
+/* ── COLUMN HEADERS ── */
+.col-hdr-wrap { border-bottom: 2px solid #e8ecf0; margin-bottom: 6px; padding-bottom: 4px; }
+.col-hdr-row  { display: flex; align-items: center; gap: 2px; }
+.col-hdr-lbl  { width: 90px; text-align: left; font-size: 10px; font-weight: 600; color: #8a9bb0; flex-shrink: 0; white-space: nowrap; line-height: 18px; }
+.col-hdr-cell { width: 32px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: #8a9bb0; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.col-hdr-gap  { width: 32px; height: 18px; flex-shrink: 0; }
 
 /* ── FILTER PANEL (dark sidebar) ── */
 .filters-panel {
@@ -242,7 +249,15 @@ tr:hover td { background: #f8fafc; }
           Exportar PDF
         </button>
       </div>
-      <div class="stacking-wrap"><div class="building" id="building"></div></div>
+      <div class="stacking-wrap">
+        <div class="col-hdr-wrap" id="col-hdr-wrap">
+          <div class="col-hdr-row" id="col-hdr-col"></div>
+          <div class="col-hdr-row" id="col-hdr-tipo"></div>
+          <div class="col-hdr-row" id="col-hdr-prod"></div>
+          <div class="col-hdr-row col-hdr-row-pct" id="col-hdr-pct"></div>
+        </div>
+        <div class="building" id="building"></div>
+      </div>
     </div>
 
     <div class="filters-panel">
@@ -562,6 +577,14 @@ Chart.register(ChartDataLabels);
                      Sincronización matemática garantiza que línea % siempre coincide con tope de barras.
    v20 (2026-04-07): Fix stacking gris al cargar: renderStacking()+applyFilters() se llaman antes
                      de las llamadas async a mindicador.cl (IPC). Colores aparecen al cargar CSVs.
+   v40 (2026-04-14): Encabezado de columnas en Stacking Plan.
+                     4 filas sticky sobre el grid: Col. / Tip. / Prod. / %.
+                     Col: últimos 2 dígitos del número de unidad (n % 100).
+                     Tip/Prod: primer depto con datos en esa columna (Tipo / Sub Tip.(1)).
+                     %: en renta (contrato+RC) / (total columna - pilotos).
+                     renderColumnHeaders() llamada desde applyFilters() → se actualiza
+                     al cambiar edificio, al cargar datos y al aplicar filtros.
+                     Sticky top:0 dentro del scroll del stacking-wrap.
    v39 (2026-04-14): 3 mejoras en gráficos de Evolución.
                      1) Checkbox "Promedio" en Vencimientos Mensuales y Análisis de Salidas
                         (activado por defecto). Usa avgLineDataset() helper reutilizable.
@@ -1387,6 +1410,70 @@ function updateUFFill(min, max, lo, hi) {
   fill.style.width = ((hi - lo)  / r * 100) + '%';
 }
 
+function renderColumnHeaders() {
+  const layout = AB === 'irr' ? LAYOUT_IRR : LAYOUT_ECH;
+  const maxCol = AB === 'irr' ? MAX_COL_IRR : MAX_COL_ECH;
+  const umap   = BD[AB].umap;
+
+  // Recopilar info por columna (posición c en el layout)
+  const colInfo = {};
+  layout.forEach(floor => {
+    floor.cells.forEach(cell => {
+      if (!colInfo[cell.c]) colInfo[cell.c] = { colNum: cell.n % 100, units: [] };
+      colInfo[cell.c].units.push(cell.n);
+    });
+  });
+
+  // Calcular tipología, producto y % por columna
+  Object.values(colInfo).forEach(info => {
+    let tipo = '', prod = '', enRenta = 0, base = 0;
+    info.units.forEach(n => {
+      const u = umap[n];
+      if (!u) return;
+      if (!tipo) tipo = (u['Tipo']         || '').trim();
+      if (!prod) {
+        // Sub-Tipología II — buscar dinámicamente con nfdKey
+        const sub2Key = Object.keys(u).find(k => nfdKey(k).includes('SUB') && nfdKey(k).includes('2'));
+        prod = sub2Key ? (u[sub2Key] || '').trim() : (u['Sub. Tip (2)'] || '').trim();
+      }
+      const cat = getCategory(u);
+      if (cat === 'piloto') return; // pilotos excluidos del denominador
+      base++;
+      if (cat === 'contrato' || cat === 'rc') enRenta++;
+    });
+    info.tipo = tipo;
+    info.prod = prod;
+    info.pct  = base > 0 ? Math.round(enRenta / base * 100) + '%' : '—';
+  });
+
+  // Renderizar las 4 filas
+  const rows = [
+    { id: 'col-hdr-col',  label: 'Columna',        val: c => colInfo[c] ? String(colInfo[c].colNum) : '' },
+    { id: 'col-hdr-tipo', label: 'Tipología',       val: c => colInfo[c]?.tipo ?? '' },
+    { id: 'col-hdr-prod', label: 'Sub-Tipología',   val: c => colInfo[c]?.prod ?? '' },
+    { id: 'col-hdr-pct',  label: 'Ocupación (%)',   val: c => colInfo[c]?.pct  ?? '' },
+  ];
+
+  rows.forEach(({ id, label, val }) => {
+    const rowEl = document.getElementById(id);
+    if (!rowEl) return;
+    rowEl.innerHTML = '';
+    const lbl = document.createElement('div');
+    lbl.className = 'col-hdr-lbl';
+    lbl.textContent = label;
+    rowEl.appendChild(lbl);
+    const cells = document.createElement('div');
+    cells.className = 'floor-cells';
+    for (let c = 1; c <= maxCol; c++) {
+      const el = document.createElement('div');
+      el.className = colInfo[c] ? 'col-hdr-cell' : 'col-hdr-gap';
+      if (colInfo[c]) el.textContent = val(c);
+      cells.appendChild(el);
+    }
+    rowEl.appendChild(cells);
+  });
+}
+
 function applyFilters() {
   const layout = AB === 'irr' ? LAYOUT_IRR : LAYOUT_ECH;
   const umap   = BD[AB].umap;
@@ -1485,6 +1572,9 @@ function applyFilters() {
     el.style.color       = s.color;
     el.classList.toggle('dimmed', !show);
   });
+
+  // Encabezado de columnas (Tip/Prod/%) — se actualiza en cada render
+  renderColumnHeaders();
 
   // Actualizar rango contextual del slider UF al terminar de aplicar filtros
   refreshUFRange(fu, ftb, ftT, ftS1, ftS2, foC, foA, vencOn, vencVal);
