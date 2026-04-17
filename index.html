@@ -418,6 +418,12 @@ tr:hover td { background: #f8fafc; }
             </select>
           </div>
           <div class="evol-range">
+            <label>Evento Final</label>
+            <select id="venc-chart-evento" onchange="renderVencChart()">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div class="evol-range">
             <label>Desde</label>
             <select id="venc-chart-desde" onchange="renderVencChart()"></select>
             <label>Hasta</label>
@@ -577,6 +583,12 @@ Chart.register(ChartDataLabels);
                      Sincronización matemática garantiza que línea % siempre coincide con tope de barras.
    v20 (2026-04-07): Fix stacking gris al cargar: renderStacking()+applyFilters() se llaman antes
                      de las llamadas async a mindicador.cl (IPC). Colores aparecen al cargar CSVs.
+   v45 (2026-04-17): Filtro "Evento Final" en gráfico Vencimientos Mensuales.
+                     Dropdown con valores reales de la columna EVENTO FINAL (hoja VENCIMIENTOS).
+                     Opciones en orden fijo: Todas, R, R(CU), NR, - (vacío).
+                     "-" filtra filas con EVENTO FINAL vacío; los demás por valor exacto.
+                     initVencChartSelects() puebla el dropdown leyendo los valores presentes.
+                     renderVencChart() aplica el filtro antes de contar por mes.
    v44 (2026-04-17): Tipología en encabezado de columnas simplificada.
                      "1D-1B" → "1D", "2D-2B" → "2D", "S" → "S".
                      split('-')[0] en la val function de col-hdr-tipo.
@@ -2067,6 +2079,22 @@ function initVencChartSelects(vencData) {
     [...tipos].sort().forEach(t => tipoEl.appendChild(new Option(t, t)));
   }
 
+  // Poblar filtro de Evento Final
+  const eventoEl = document.getElementById('venc-chart-evento');
+  if (eventoEl) {
+    const eventoCol = Object.keys(vencData[0] || {}).find(k => nfdKey(k).includes('EVENTO') && nfdKey(k).includes('FINAL'));
+    const ORDER = ['R', 'R(CU)', 'NR', '-'];
+    const valSet = new Set();
+    vencData.forEach(r => {
+      const v = eventoCol ? (r[eventoCol] || '').toString().trim() : '';
+      valSet.add(v === '' ? '-' : v);
+    });
+    // Ordenar: primero los del ORDER definido, luego cualquier otro valor alfabético
+    const sorted = [...ORDER.filter(o => valSet.has(o)), ...[...valSet].filter(v => !ORDER.includes(v)).sort()];
+    eventoEl.innerHTML = '<option value="">Todas</option>';
+    sorted.forEach(v => eventoEl.appendChild(new Option(v, v)));
+  }
+
   // Obtener meses únicos ordenados
   const monthsSet = new Set();
   vencData.forEach(r => {
@@ -2097,15 +2125,17 @@ function renderVencChart() {
   const tipoEl   = document.getElementById('venc-chart-tipo');
   if (!desdeEl || !vencData.length) return;
 
-  const desde    = desdeEl.value;
-  const hasta    = hastaEl.value;
-  const tipoFilt = tipoEl ? tipoEl.value : '';
+  const desde      = desdeEl.value;
+  const hasta      = hastaEl.value;
+  const tipoFilt   = tipoEl ? tipoEl.value : '';
+  const eventoFilt = (document.getElementById('venc-chart-evento')?.value) || '';
   if (!desde || !hasta || desde > hasta) return;
 
   // Resolver columnas dinámicamente
-  const sample   = vencData[0] || {};
-  const tipoCol  = Object.keys(sample).find(k => nfdKey(k).includes('TIPOLOG')) || 'Tipología';
-  const fechaCol = Object.keys(sample).find(k => nfdKey(k) === 'FECHA') || Object.keys(sample)[0];
+  const sample     = vencData[0] || {};
+  const tipoCol    = Object.keys(sample).find(k => nfdKey(k).includes('TIPOLOG')) || 'Tipología';
+  const fechaCol   = Object.keys(sample).find(k => nfdKey(k) === 'FECHA') || Object.keys(sample)[0];
+  const eventoCol  = Object.keys(sample).find(k => nfdKey(k).includes('EVENTO') && nfdKey(k).includes('FINAL'));
 
   // Generar todos los meses en el rango
   const [dy, dm] = desde.split('-').map(Number);
@@ -2126,6 +2156,11 @@ function renderVencChart() {
     const mk = `${p.year}-${String(p.month).padStart(2,'0')}`;
     if (!(mk in counts)) return;
     if (tipoFilt && (r[tipoCol] || '').toString().trim() !== tipoFilt) return;
+    if (eventoFilt) {
+      const ev = eventoCol ? (r[eventoCol] || '').toString().trim() : '';
+      const evNorm = ev === '' ? '-' : ev;
+      if (evNorm !== eventoFilt) return;
+    }
     counts[mk]++;
   });
 
