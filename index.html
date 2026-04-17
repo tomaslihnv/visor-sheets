@@ -577,6 +577,18 @@ Chart.register(ChartDataLabels);
                      Sincronización matemática garantiza que línea % siempre coincide con tope de barras.
    v20 (2026-04-07): Fix stacking gris al cargar: renderStacking()+applyFilters() se llaman antes
                      de las llamadas async a mindicador.cl (IPC). Colores aparecen al cargar CSVs.
+   v44 (2026-04-17): Tipología en encabezado de columnas simplificada.
+                     "1D-1B" → "1D", "2D-2B" → "2D", "S" → "S".
+                     split('-')[0] en la val function de col-hdr-tipo.
+   v43 (2026-04-14): Labels de piso (P22, P21…) alineados a la izquierda.
+                     .floor-label text-align: left (antes: right/center).
+   v42 (2026-04-14): Fix alineación encabezado de columnas con las celdas.
+                     .col-hdr-lbl y .floor-label ampliados a 90px (antes 36px).
+                     Ambos a la izquierda — labels de fila y pisos quedan alineados.
+   v41 (2026-04-14): Ajuste encabezados de columnas post-feedback.
+                     Sub-Tipología usa columna "Sub Tip.(2)" (no la I).
+                     Labels sin sticky, mismo formato visual que el grid.
+                     Nombres completos: Columna, Tipología, Sub-Tipología, Ocupación (%).
    v40 (2026-04-14): Encabezado de columnas en Stacking Plan.
                      4 filas sticky sobre el grid: Col. / Tip. / Prod. / %.
                      Col: últimos 2 dígitos del número de unidad (n % 100).
@@ -1449,7 +1461,7 @@ function renderColumnHeaders() {
   // Renderizar las 4 filas
   const rows = [
     { id: 'col-hdr-col',  label: 'Columna',        val: c => colInfo[c] ? String(colInfo[c].colNum) : '' },
-    { id: 'col-hdr-tipo', label: 'Tipología',       val: c => colInfo[c]?.tipo ?? '' },
+    { id: 'col-hdr-tipo', label: 'Tipología',       val: c => (colInfo[c]?.tipo ?? '').split('-')[0] },
     { id: 'col-hdr-prod', label: 'Sub-Tipología',   val: c => colInfo[c]?.prod ?? '' },
     { id: 'col-hdr-pct',  label: 'Ocupación (%)',   val: c => colInfo[c]?.pct  ?? '' },
   ];
