@@ -583,6 +583,11 @@ Chart.register(ChartDataLabels);
                      Sincronización matemática garantiza que línea % siempre coincide con tope de barras.
    v20 (2026-04-07): Fix stacking gris al cargar: renderStacking()+applyFilters() se llaman antes
                      de las llamadas async a mindicador.cl (IPC). Colores aparecen al cargar CSVs.
+   v46 (2026-04-28): FIX filtro Evento Final en Vencimientos Mensuales.
+                     El lookup buscaba columna con 'EVENTO'+'FINAL' pero en el Drive
+                     la columna se llama "EVENTO DE TÉRMINO". Corregido a 'TERMINO'
+                     (sin tilde, porque nfdKey normaliza). Aplica en initVencChartSelects
+                     y renderVencChart (2 ocurrencias). Ahora R, R(CU), NR y - funcionan.
    v45 (2026-04-17): Filtro "Evento Final" en gráfico Vencimientos Mensuales.
                      Dropdown con valores reales de la columna EVENTO FINAL (hoja VENCIMIENTOS).
                      Opciones en orden fijo: Todas, R, R(CU), NR, - (vacío).
@@ -2082,7 +2087,7 @@ function initVencChartSelects(vencData) {
   // Poblar filtro de Evento Final
   const eventoEl = document.getElementById('venc-chart-evento');
   if (eventoEl) {
-    const eventoCol = Object.keys(vencData[0] || {}).find(k => nfdKey(k).includes('EVENTO') && nfdKey(k).includes('FINAL'));
+    const eventoCol = Object.keys(vencData[0] || {}).find(k => nfdKey(k).includes('EVENTO') && nfdKey(k).includes('TERMINO'));
     const ORDER = ['R', 'R(CU)', 'NR', '-'];
     const valSet = new Set();
     vencData.forEach(r => {
@@ -2135,7 +2140,7 @@ function renderVencChart() {
   const sample     = vencData[0] || {};
   const tipoCol    = Object.keys(sample).find(k => nfdKey(k).includes('TIPOLOG')) || 'Tipología';
   const fechaCol   = Object.keys(sample).find(k => nfdKey(k) === 'FECHA') || Object.keys(sample)[0];
-  const eventoCol  = Object.keys(sample).find(k => nfdKey(k).includes('EVENTO') && nfdKey(k).includes('FINAL'));
+  const eventoCol  = Object.keys(sample).find(k => nfdKey(k).includes('EVENTO') && nfdKey(k).includes('TERMINO'));
 
   // Generar todos los meses en el rango
   const [dy, dm] = desde.split('-').map(Number);
