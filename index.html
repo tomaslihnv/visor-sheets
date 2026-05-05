@@ -276,6 +276,24 @@
 
     <div class="evol-card">
       <div class="evol-card-header">
+        <span class="evol-card-title">Eventos de Entrada</span>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <label class="evol-check-label"><input type="checkbox" id="entrada-chart-labels" onchange="renderEntradaChart()" checked> Etiquetas</label>
+          <div class="evol-range">
+            <label>Desde</label>
+            <select id="entrada-chart-desde" onchange="renderEntradaChart()"></select>
+            <label>Hasta</label>
+            <select id="entrada-chart-hasta" onchange="renderEntradaChart()"></select>
+          </div>
+        </div>
+      </div>
+      <div class="evol-chart-wrap" style="height:300px;">
+        <canvas id="entrada-chart-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="evol-card">
+      <div class="evol-card-header">
         <span class="evol-card-title">Análisis de Salidas</span>
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
           <label class="evol-check-label"><input type="checkbox" id="salidas-chart-labels" onchange="renderSalidasChart()" checked> Etiquetas</label>

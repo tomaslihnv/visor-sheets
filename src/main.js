@@ -11,12 +11,14 @@ import { initEvolSelects, initNetosSelects, renderEvolChart, renderNetosChart } 
 import { initVencChartSelects, renderVencChart } from './render/charts/vencimiento.js';
 import { initRenewalChartSelects, renderRenewalChart } from './render/charts/renewal.js';
 import { initSalidasChartSelects, renderSalidasChart, initMotivoChartSelects, renderMotivoChart } from './render/charts/salidas.js';
+import { initEntradaChartSelects, renderEntradaChart } from './render/charts/entrada.js';
 
 function renderBothEvolCharts() {
   renderEvolChart();
   renderNetosChart();
   renderVencChart();
   renderRenewalChart();
+  renderEntradaChart();
   renderSalidasChart();
   renderMotivoChart();
 }
@@ -46,6 +48,7 @@ function switchBuilding(id) {
   initNetosSelects(BD[state.AB].evol);
   initVencChartSelects(BD[state.AB].venc);
   initRenewalChartSelects(BD[state.AB].venc);
+  initEntradaChartSelects(BD[state.AB].venc);
   initSalidasChartSelects(BD[state.AB].sal);
   initMotivoChartSelects(BD[state.AB].sal);
   renderBothEvolCharts();
@@ -177,6 +180,7 @@ window.renderBothEvolCharts = renderBothEvolCharts;
 window.renderNetosChart   = renderNetosChart;
 window.renderVencChart    = renderVencChart;
 window.renderRenewalChart = renderRenewalChart;
+window.renderEntradaChart = renderEntradaChart;
 window.renderSalidasChart = renderSalidasChart;
 window.renderMotivoChart  = renderMotivoChart;
 
@@ -248,6 +252,7 @@ Promise.all(URLS.irr.slice(1).map(u => fetch(u).then(r => r.text())))
       initNetosSelects(BD.irr.evol);
       initVencChartSelects(BD.irr.venc);
       initRenewalChartSelects(BD.irr.venc);
+      initEntradaChartSelects(BD.irr.venc);
       initSalidasChartSelects(BD.irr.sal);
       initMotivoChartSelects(BD.irr.sal);
       initVencFilter(BD.irr.data);
@@ -293,6 +298,7 @@ Promise.all(URLS.ech.slice(1).map(u => fetch(u).then(r => r.text())))
       initNetosSelects(BD.ech.evol);
       initVencChartSelects(BD.ech.venc);
       initRenewalChartSelects(BD.ech.venc);
+      initEntradaChartSelects(BD.ech.venc);
       initSalidasChartSelects(BD.ech.sal);
       initMotivoChartSelects(BD.ech.sal);
       initVencFilter(BD.ech.data);
