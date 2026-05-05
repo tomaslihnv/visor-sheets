@@ -279,13 +279,6 @@
         <span class="evol-card-title">Análisis de Salidas</span>
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
           <label class="evol-check-label"><input type="checkbox" id="salidas-chart-labels" onchange="renderSalidasChart()" checked> Etiquetas</label>
-          <label class="evol-check-label"><input type="checkbox" id="salidas-chart-avg" onchange="renderSalidasChart()" checked> Promedio</label>
-          <div class="evol-range">
-            <label>Motivo</label>
-            <select id="salidas-chart-motivo" onchange="renderSalidasChart()">
-              <option value="">Todos</option>
-            </select>
-          </div>
           <div class="evol-range">
             <label>Tipo</label>
             <select id="salidas-chart-tipo" onchange="renderSalidasChart()">
@@ -300,7 +293,7 @@
           </div>
         </div>
       </div>
-      <div class="evol-chart-wrap" style="height:260px;">
+      <div class="evol-chart-wrap" style="height:320px;">
         <canvas id="salidas-chart-canvas"></canvas>
       </div>
     </div>
