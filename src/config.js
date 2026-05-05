@@ -54,6 +54,23 @@ export const LAYOUT_ECH = [
 ];
 export const MAX_COL_ECH = 23;
 
+// Lista maestra de motivos de salida (todos los disponibles en el dropdown del Google Sheets).
+// Agregar o quitar motivos acá para que aparezcan en los gráficos aunque no tengan datos aún.
+export const MOTIVOS = [
+  'Cambio de domicilio',
+  'Compra de vivienda',
+  'Conflicto con vecino',
+  'Fin de contrato',
+  'Motivos económicos',
+  'Motivos familiares',
+  'Motivos laborales',
+  'No renueva',
+  'Problemas con la propiedad',
+  'Término anticipado',
+  'Desconformidad financiera',
+  'Desconformidad por servicio',
+];
+
 export const CAT_STYLE = {
   contrato: { bg:'#d1fae5', border:'#6ee7b7', color:'#065f46' },
   rc:       { bg:'#ede9fe', border:'#c4b5fd', color:'#5b21b6' },
