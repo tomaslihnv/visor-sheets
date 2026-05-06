@@ -294,9 +294,28 @@
 
     <div class="evol-card">
       <div class="evol-card-header">
+        <span class="evol-card-title">Eventos de Término</span>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <label class="evol-check-label"><input type="checkbox" id="termino-chart-labels" onchange="renderTerminoChart()" checked> Etiquetas</label>
+          <div class="evol-range">
+            <label>Desde</label>
+            <select id="termino-chart-desde" onchange="renderTerminoChart()"></select>
+            <label>Hasta</label>
+            <select id="termino-chart-hasta" onchange="renderTerminoChart()"></select>
+          </div>
+        </div>
+      </div>
+      <div class="evol-chart-wrap" style="height:300px;">
+        <canvas id="termino-chart-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="evol-card">
+      <div class="evol-card-header">
         <span class="evol-card-title">Análisis de Salidas</span>
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
           <label class="evol-check-label"><input type="checkbox" id="salidas-chart-labels" onchange="renderSalidasChart()" checked> Etiquetas</label>
+          <label class="evol-check-label"><input type="checkbox" id="salidas-chart-pct" onchange="renderSalidasChart()"> % del total</label>
           <div class="evol-range">
             <label>Tipo</label>
             <select id="salidas-chart-tipo" onchange="renderSalidasChart()">

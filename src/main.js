@@ -1,5 +1,5 @@
 import { state, BD } from './state.js';
-import { URLS } from './config.js';
+import { URLS, URLS_CONTRATOS } from './config.js';
 import { nfdKey } from './utils.js';
 import { resolveColumns, resolveParkingColumns, resolveBodegaColumns, resolveEvolColumns } from './columns.js';
 import { calcIPC, precompute } from './data.js';
@@ -11,7 +11,7 @@ import { initEvolSelects, initNetosSelects, renderEvolChart, renderNetosChart } 
 import { initVencChartSelects, renderVencChart } from './render/charts/vencimiento.js';
 import { initRenewalChartSelects, renderRenewalChart } from './render/charts/renewal.js';
 import { initSalidasChartSelects, renderSalidasChart, initMotivoChartSelects, renderMotivoChart } from './render/charts/salidas.js';
-import { initEntradaChartSelects, renderEntradaChart } from './render/charts/entrada.js';
+import { initEntradaChartSelects, renderEntradaChart, initTerminoChartSelects, renderTerminoChart } from './render/charts/entrada.js';
 
 function renderBothEvolCharts() {
   renderEvolChart();
@@ -19,6 +19,7 @@ function renderBothEvolCharts() {
   renderVencChart();
   renderRenewalChart();
   renderEntradaChart();
+  renderTerminoChart();
   renderSalidasChart();
   renderMotivoChart();
 }
@@ -48,7 +49,8 @@ function switchBuilding(id) {
   initNetosSelects(BD[state.AB].evol);
   initVencChartSelects(BD[state.AB].venc);
   initRenewalChartSelects(BD[state.AB].venc);
-  initEntradaChartSelects(BD[state.AB].venc);
+  initEntradaChartSelects(BD[state.AB].contratos);
+  initTerminoChartSelects(BD[state.AB].contratos);
   initSalidasChartSelects(BD[state.AB].sal);
   initMotivoChartSelects(BD[state.AB].sal);
   renderBothEvolCharts();
@@ -181,6 +183,7 @@ window.renderNetosChart   = renderNetosChart;
 window.renderVencChart    = renderVencChart;
 window.renderRenewalChart = renderRenewalChart;
 window.renderEntradaChart = renderEntradaChart;
+window.renderTerminoChart = renderTerminoChart;
 window.renderSalidasChart = renderSalidasChart;
 window.renderMotivoChart  = renderMotivoChart;
 
@@ -252,7 +255,8 @@ Promise.all(URLS.irr.slice(1).map(u => fetch(u).then(r => r.text())))
       initNetosSelects(BD.irr.evol);
       initVencChartSelects(BD.irr.venc);
       initRenewalChartSelects(BD.irr.venc);
-      initEntradaChartSelects(BD.irr.venc);
+      initEntradaChartSelects(BD.irr.contratos);
+      initTerminoChartSelects(BD.irr.contratos);
       initSalidasChartSelects(BD.irr.sal);
       initMotivoChartSelects(BD.irr.sal);
       initVencFilter(BD.irr.data);
@@ -298,7 +302,8 @@ Promise.all(URLS.ech.slice(1).map(u => fetch(u).then(r => r.text())))
       initNetosSelects(BD.ech.evol);
       initVencChartSelects(BD.ech.venc);
       initRenewalChartSelects(BD.ech.venc);
-      initEntradaChartSelects(BD.ech.venc);
+      initEntradaChartSelects(BD.ech.contratos);
+      initTerminoChartSelects(BD.ech.contratos);
       initSalidasChartSelects(BD.ech.sal);
       initMotivoChartSelects(BD.ech.sal);
       initVencFilter(BD.ech.data);
@@ -308,3 +313,42 @@ Promise.all(URLS.ech.slice(1).map(u => fetch(u).then(r => r.text())))
     }
   })
   .catch(err => console.error('Error cargando hojas secundarias ECH:', err));
+
+// Parsea un CSV donde la primera fila podría ser un título vacío o decorativo.
+// Busca la primera fila con suficientes celdas no vacías y la usa como encabezado.
+function parseContratosCSV(csv) {
+  const raw = Papa.parse(csv.trim(), { header: false, skipEmptyLines: false });
+  const rows = raw.data;
+  const headerIdx = 4; // fila 5 en Google Sheets (índice 0-based)
+  const headers = rows[headerIdx].map(h => h.toString().trim());
+  return rows.slice(headerIdx + 1)
+    .filter(row => row.some(c => c && c.toString().trim()))
+    .map(row => Object.fromEntries(headers.map((h, i) => [h, row[i] ?? ''])));
+}
+
+// ── Hoja I. Contratos IRR ──────────────────────────────────────────────────
+if (!URLS_CONTRATOS.irr.startsWith('PENDIENTE')) {
+  fetch(URLS_CONTRATOS.irr).then(r => r.text()).then(csv => {
+    BD.irr.contratos = parseContratosCSV(csv);
+    console.log('[contratos IRR] filas:', BD.irr.contratos.length, '| cols row0:', Object.keys(BD.irr.contratos[0] || {}));
+    if (state.AB === 'irr') {
+      initEntradaChartSelects(BD.irr.contratos);
+      initTerminoChartSelects(BD.irr.contratos);
+      renderEntradaChart();
+      renderTerminoChart();
+    }
+  }).catch(err => console.error('Error cargando I. Contratos IRR:', err));
+}
+
+// ── Hoja I. Contratos ECH ──────────────────────────────────────────────────
+if (!URLS_CONTRATOS.ech.startsWith('PENDIENTE')) {
+  fetch(URLS_CONTRATOS.ech).then(r => r.text()).then(csv => {
+    BD.ech.contratos = parseContratosCSV(csv);
+    if (state.AB === 'ech') {
+      initEntradaChartSelects(BD.ech.contratos);
+      initTerminoChartSelects(BD.ech.contratos);
+      renderEntradaChart();
+      renderTerminoChart();
+    }
+  }).catch(err => console.error('Error cargando I. Contratos ECH:', err));
+}

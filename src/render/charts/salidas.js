@@ -117,23 +117,41 @@ export function renderSalidasChart() {
     return _MESES[parseInt(m)-1] + '-' + String(y).slice(-2);
   });
 
-  // Un dataset por motivo (apilado)
+  // Totales por mes para calcular porcentajes
+  const totalesMes = Object.fromEntries(allMonths.map(mk => [
+    mk, allMotivos.reduce((sum, m) => sum + (counts[m]?.[mk] || 0), 0)
+  ]));
+
   const showLabels = !!document.getElementById('salidas-chart-labels')?.checked;
-  const datasets = allMotivos.map(motivo => ({
-    type: 'bar',
-    label: motivo,
-    data: allMonths.map(mk => counts[motivo]?.[mk] || 0),
-    backgroundColor: getMotivoColor(motivo),
-    stack: 'salidas',
-    borderWidth: 0,
-    datalabels: {
-      display: ctx => showLabels && (counts[motivo]?.[allMonths[ctx.dataIndex]] || 0) > 0,
-      anchor: 'center', align: 'center',
-      color: '#fff',
-      font: { size: 8, weight: '700' },
-      formatter: v => v || ''
-    }
-  }));
+  const showPct    = !!document.getElementById('salidas-chart-pct')?.checked;
+
+  const datasets = allMotivos.map((motivo, mIdx) => {
+    const isLast = mIdx === allMotivos.filter(m => allMonths.some(mk => (counts[m]?.[mk] || 0) > 0)).length - 1;
+    return {
+      type: 'bar',
+      label: motivo,
+      data: allMonths.map(mk => counts[motivo]?.[mk] || 0),
+      backgroundColor: getMotivoColor(motivo),
+      stack: 'salidas',
+      borderWidth: 0,
+      borderRadius: isLast ? { topLeft: 4, topRight: 4 } : 0,
+      borderSkipped: false,
+      datalabels: {
+        display: ctx => showLabels && (counts[motivo]?.[allMonths[ctx.dataIndex]] || 0) > 0,
+        anchor: 'center', align: 'center',
+        color: '#fff',
+        font: { size: 8, weight: '700' },
+        formatter: (v, ctx) => {
+          if (!v) return '';
+          if (showPct) {
+            const total = totalesMes[allMonths[ctx.dataIndex]] || 1;
+            return Math.round(v / total * 100) + '%';
+          }
+          return v;
+        }
+      }
+    };
+  });
 
   const canvas = document.getElementById('salidas-chart-canvas');
   destroyChart('salidas');
@@ -172,6 +190,7 @@ export function renderSalidasChart() {
         y: {
           stacked: true,
           type: 'linear', position: 'left',
+          grace: '15%',
           grid: { color: '#f0f3f6' },
           ticks: { font: { size: 10 }, stepSize: 1, precision: 0 },
           title: { display: true, text: 'Unidades', font: { size: 10 }, color: '#8a9bb0' }

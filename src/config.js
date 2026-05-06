@@ -17,6 +17,14 @@ export const URLS = {
   ]
 };
 
+// URLs de la hoja "I. Contratos" por edificio.
+// Reemplazar el placeholder con la URL publicada como CSV desde:
+// Archivo → Compartir → Publicar en la web → "I. Contratos" → CSV
+export const URLS_CONTRATOS = {
+  irr: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRAuordQ35zGoq-VV0PTJYtoebha0PyUuWS1YTPLo69nTzytyNzg9AtOUMegCmhV1Q7_Ouiv8YGQCXv/pub?gid=1692181581&single=true&output=csv',
+  ech: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRAuordQ35zGoq-VV0PTJYtoebha0PyUuWS1YTPLo69nTzytyNzg9AtOUMegCmhV1Q7_Ouiv8YGQCXv/pub?gid=1692181581&single=true&output=csv',
+};
+
 export const LAYOUT_IRR = [
   {p:22,cells:[{c:10,n:2205},{c:11,n:2204},{c:12,n:2203},{c:13,n:2202},{c:14,n:2201},{c:17,n:2211},{c:18,n:2210},{c:19,n:2209}]},
   {p:21,cells:[{c:10,n:2105},{c:11,n:2104},{c:12,n:2103},{c:13,n:2102},{c:14,n:2101},{c:17,n:2111},{c:18,n:2110},{c:19,n:2109}]},
