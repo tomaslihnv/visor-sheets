@@ -46,12 +46,30 @@ export function positionTooltip(e) {
   ttEl.style.top  = y + 'px';
 }
 
-// Cierra el tooltip al tocar fuera de él o de una celda
-document.addEventListener('touchstart', e => {
+// Toca el propio tooltip → cierra
+ttEl.addEventListener('touchend', hideTooltip, { passive: true });
+
+// Toca fuera de una celda o del tooltip → cierra
+document.addEventListener('touchend', e => {
   if (!e.target.closest('#unit-tt') && !e.target.closest('.unit')) {
     hideTooltip();
   }
 }, { passive: true });
+
+// Helper: registra tap táctil en un elemento (distingue tap de scroll)
+export function addTapToShow(el, showFn) {
+  let sx = 0, sy = 0;
+  el.addEventListener('touchstart', e => {
+    sx = e.touches[0].clientX;
+    sy = e.touches[0].clientY;
+  }, { passive: true });
+  el.addEventListener('touchend', e => {
+    const t = e.changedTouches[0];
+    if (Math.hypot(t.clientX - sx, t.clientY - sy) < 8) {
+      showFn({ clientX: t.clientX, clientY: t.clientY });
+    }
+  }, { passive: true });
+}
 
 export function showParkingTooltip(e, row) {
   const n      = (row[pcol.n]       || '').toString().trim();

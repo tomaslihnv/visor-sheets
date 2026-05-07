@@ -104,7 +104,7 @@ export function renderEvolChart() {
         },
         { type: 'line', label: 'Ocupación %',
           data: allPct, yAxisID: 'yLeft', order: 1,
-          borderWidth: 2.5, tension: 0.4, pointRadius: 3, pointHoverRadius: 5,
+          borderWidth: 2.5, tension: 0.4, pointRadius: 2, pointHoverRadius: 4,
           spanGaps: true, backgroundColor: 'transparent', borderColor: '#44546A',
           pointBackgroundColor: rows.map(r => isPast(r) ? '#44546A' : '#94a3b8'),
           segment: {

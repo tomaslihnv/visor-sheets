@@ -1,7 +1,7 @@
 import { state, BD } from '../state.js';
 import { LAYOUT_IRR, LAYOUT_ECH, MAX_COL_IRR, MAX_COL_ECH, CAT_STYLE } from '../config.js';
 import { getCategory, getParkingCategory, getBodegaCategory } from '../categories.js';
-import { showTooltip, hideTooltip, moveTooltip, showParkingTooltip, showBodegaTooltip } from '../tooltip.js';
+import { showTooltip, hideTooltip, moveTooltip, showParkingTooltip, showBodegaTooltip, addTapToShow } from '../tooltip.js';
 import { pcol, bcol, resolveParkingColumns, resolveBodegaColumns } from '../columns.js';
 
 export function renderStacking() {
@@ -32,7 +32,7 @@ export function renderStacking() {
         el.addEventListener('mouseenter', e => showTooltip(e, n));
         el.addEventListener('mouseleave', hideTooltip);
         el.addEventListener('mousemove',  moveTooltip);
-        el.addEventListener('touchstart', e => { showTooltip(e, n); }, { passive: true });
+        addTapToShow(el, e => showTooltip(e, n));
       } else {
         el.className = 'cell-gap';
       }
@@ -58,7 +58,7 @@ export function makeParkingCell(unit) {
   el.addEventListener('mouseenter', e => showParkingTooltip(e, unit));
   el.addEventListener('mouseleave', hideTooltip);
   el.addEventListener('mousemove',  moveTooltip);
-  el.addEventListener('touchstart', e => { showParkingTooltip(e, unit); }, { passive: true });
+  addTapToShow(el, e => showParkingTooltip(e, unit));
   return el;
 }
 
@@ -76,7 +76,7 @@ export function makeBodegaCell(unit) {
   el.addEventListener('mouseenter', e => showBodegaTooltip(e, unit));
   el.addEventListener('mouseleave', hideTooltip);
   el.addEventListener('mousemove',  moveTooltip);
-  el.addEventListener('touchstart', e => { showBodegaTooltip(e, unit); }, { passive: true });
+  addTapToShow(el, e => showBodegaTooltip(e, unit));
   return el;
 }
 
