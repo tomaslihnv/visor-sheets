@@ -1,6 +1,46 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; color: #1a2332; font-size: 13px; }
 
+/* ── AUTH OVERLAY ── */
+#auth-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #0a0a0a;
+  display: flex; align-items: center; justify-content: center;
+}
+.auth-card {
+  background: #111; border: 1px solid #222; border-radius: 16px;
+  padding: 48px 40px; width: 100%; max-width: 380px;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  text-align: center;
+}
+.auth-logo { margin-bottom: 4px; }
+.auth-title { font-size: 18px; font-weight: 800; letter-spacing: 0.1em; color: #fff; }
+.auth-sub { font-size: 13px; color: #6e7681; line-height: 1.5; }
+.auth-sub strong { color: #aaa; }
+.auth-btn-google {
+  margin-top: 8px; width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 11px 20px; border-radius: 8px;
+  border: 1px solid #333; background: #1a1a1a; color: #e6edf3;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: all 0.15s;
+}
+.auth-btn-google:hover { background: #fff; color: #1a2332; border-color: #fff; }
+.auth-error {
+  font-size: 12px; color: #f85149; min-height: 18px;
+  font-weight: 500;
+}
+
+/* ── HEADER USER ── */
+.hdr-user { margin-left: auto; display: flex; align-items: center; gap: 10px; padding: 0 16px; }
+.hdr-user-email { font-size: 11px; color: #555; letter-spacing: 0.02em; }
+.hdr-signout {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: #555; background: none; border: 1px solid #333; border-radius: 5px;
+  padding: 4px 10px; cursor: pointer; transition: all 0.15s;
+}
+.hdr-signout:hover { color: #f85149; border-color: #f85149; background: rgba(248,81,73,0.08); }
+
 /* ── HEADER ── */
 :root { --accent: #00D166; }
 .hdr { background: #0a0a0a; padding: 0; height: 52px; display: flex; align-items: stretch; border-bottom: 2px solid var(--accent); transition: border-color 0.25s; position: sticky; top: 0; z-index: 100; }
@@ -257,6 +297,11 @@ tr:hover td { background: #f8fafc; }
   .bldg-tab { padding: 0 14px; min-height: 44px; }
   .bldg-tab .bldg-name { font-size: 11px; }
   .bldg-tab .bldg-sub { display: none; }
+  .hdr-user-email { display: none; }
+  .hdr-user { padding: 0 10px; }
+
+  /* Auth card */
+  .auth-card { padding: 36px 24px; margin: 16px; }
 
   /* Tabs: scroll horizontal sin barra visible */
   .tabs { padding: 0 8px; overflow-x: auto; scrollbar-width: none; gap: 0; top: 44px; }
