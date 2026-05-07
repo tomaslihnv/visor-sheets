@@ -119,6 +119,10 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; colo
 
 /* ── HOVER TOOLTIP ── */
 #unit-tt { position: fixed; background: #1a2332; color: #e8edf2; border-radius: 8px; padding: 10px 13px; font-size: 11px; min-width: 175px; max-width: 230px; pointer-events: none; z-index: 9999; display: none; box-shadow: 0 4px 18px rgba(0,0,0,0.4); line-height: 1.6; }
+@media (hover: none) {
+  /* En touch: el tooltip recibe eventos para poder cerrarlo tocándolo */
+  #unit-tt { pointer-events: auto; cursor: pointer; max-width: min(260px, 90vw); }
+}
 #unit-tt .tt-title { font-weight: 700; font-size: 12px; color: #fff; margin-bottom: 7px; border-bottom: 1px solid #2d3a47; padding-bottom: 5px; }
 #unit-tt .tt-row { display: flex; justify-content: space-between; gap: 8px; }
 #unit-tt .tt-key { color: #8a9bb0; white-space: nowrap; }
@@ -171,12 +175,129 @@ tr:hover td { background: #f8fafc; }
 /* ── EVOLUCIÓN PANEL ── */
 .evol-layout { display: flex; flex-direction: column; gap: 16px; max-width: 1100px; }
 .evol-card { background: #fff; border: 1px solid #e2e6ea; border-radius: 10px; padding: 20px 24px; }
-.evol-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
+.evol-card-header { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
 .evol-card-title { font-size: 14px; font-weight: 700; color: #1a2332; }
-.evol-range { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #8a9bb0; font-weight: 600; }
-.evol-range select { background: #f8fafc; border: 1px solid #e2e6ea; border-radius: 6px; padding: 5px 8px;
-  color: #1a2332; font-size: 11px; outline: none; cursor: pointer; }
+.evol-card-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.evol-range { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8a9bb0; font-weight: 600; }
+.evol-range select { background: #f8fafc; border: 1px solid #e2e6ea; border-radius: 6px; padding: 5px 8px; color: #1a2332; font-size: 11px; outline: none; cursor: pointer; }
 .evol-range select:focus { border-color: #2563eb; }
 .evol-check-label { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #8a9bb0; font-weight: 600; cursor: pointer; user-select: none; }
 .evol-check-label input { cursor: pointer; accent-color: #44546A; }
-.evol-chart-wrap { position: relative; height: 340px; }
+.evol-chart-wrap { position: relative; }
+.evol-h-260 { height: 260px; }
+.evol-h-300 { height: 300px; }
+.evol-h-320 { height: 320px; }
+.evol-h-340 { height: 340px; }
+
+/* ── PINCH-TO-ZOOM STACKING ── */
+.stacking-zoom-inner { display: inline-block; min-width: 100%; zoom: 1; }
+
+/* ── RESPONSIVE ── */
+
+/* Tablet: 641px – 1024px */
+@media (max-width: 1024px) {
+  .filters-panel { width: 190px; }
+  .panel { padding: 16px 16px; }
+
+  /* Evolución: grilla 2 columnas */
+  .evol-layout { display: grid; grid-template-columns: 1fr 1fr; max-width: 100%; gap: 14px; }
+  .evol-card { padding: 14px 16px; }
+  .evol-card-header { gap: 8px; margin-bottom: 12px; }
+  .evol-card-title { font-size: 13px; }
+  .evol-card-controls { gap: 8px; }
+  /* Alturas uniformes en grilla tablet */
+  .evol-h-260, .evol-h-300, .evol-h-320, .evol-h-340 { height: 230px; }
+}
+
+/* Stacking: apila layout al reducir espacio horizontal */
+@media (max-width: 900px) {
+  #panel-stacking { height: auto; overflow: visible; }
+  .stacking-layout { flex-direction: column; height: auto; overflow: visible; }
+  .stacking-left { overflow: visible; min-height: 0; }
+
+  /* Scroll táctil fluido: área fija con bounce y sin interferencia de página */
+  .stacking-wrap {
+    max-height: 62vh;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* En tablet ocultar filas de cabecera menos importantes */
+  #col-hdr-pct { display: none; }
+
+  .filters-panel {
+    width: 100%;
+    position: static;
+    max-height: none;
+    overflow: visible;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .filter-section { flex: 1 1 160px; }
+  .filter-divider { display: none; }
+}
+
+/* Mobile: ≤ 640px */
+@media (max-width: 640px) {
+  body { font-size: 12px; }
+
+  /* Header */
+  .hdr { height: auto; min-height: 44px; flex-wrap: wrap; }
+  .bldg-tab { padding: 0 14px; min-height: 44px; }
+  .bldg-tab .bldg-name { font-size: 11px; }
+  .bldg-tab .bldg-sub { display: none; }
+
+  /* Tabs: scroll horizontal sin barra visible */
+  .tabs { padding: 0 8px; overflow-x: auto; scrollbar-width: none; gap: 0; top: 44px; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab-btn { padding: 10px 10px; font-size: 10px; white-space: nowrap; flex-shrink: 0; }
+
+  /* Panels */
+  .panel { padding: 10px 10px; }
+
+  /* Stacking */
+  #panel-stacking { height: auto; overflow: visible; }
+  .stacking-layout { flex-direction: column; height: auto; overflow: visible; gap: 10px; }
+  .stacking-left { overflow: visible; }
+  .stacking-wrap {
+    max-height: 55vh;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* En mobile ocultar tipo, prod y pct — solo queda el número de columna */
+  #col-hdr-tipo, #col-hdr-prod, #col-hdr-pct { display: none; }
+  /* Reducir etiqueta de piso para ganar espacio horizontal */
+  .floor-label { width: 50px; font-size: 9px; }
+  .col-hdr-lbl { width: 50px; }
+
+  /* Legend */
+  .legend { gap: 6px; padding: 8px 10px; }
+  .legend-sep { display: none; }
+  .legend-metric { padding: 0 6px; }
+  .metric-val { font-size: 13px; }
+  .metric-label { font-size: 8px; }
+  .btn-export-pdf { padding: 5px 10px; font-size: 10px; }
+
+  /* Filters panel: full width horizontal */
+  .filters-panel { width: 100%; position: static; max-height: none; overflow: visible; flex-direction: row; flex-wrap: wrap; }
+  .fp-header { width: 100%; }
+  .filter-section { flex: 1 1 140px; min-width: 130px; }
+  .filter-divider { display: none; }
+
+  /* Tables */
+  .table-wrap { max-height: calc(100vh - 100px); border-radius: 6px; }
+  th, td { padding: 6px 8px; font-size: 11px; }
+
+  /* Evolución: columna única, controles compactos */
+  .evol-layout { display: flex; flex-direction: column; gap: 10px; }
+  .evol-card { padding: 12px 12px; }
+  .evol-card-header { gap: 6px; margin-bottom: 10px; }
+  .evol-card-title { font-size: 13px; }
+  .evol-card-controls { gap: 6px; }
+  .evol-h-260, .evol-h-300, .evol-h-320, .evol-h-340 { height: 190px; }
+  .evol-range { flex-wrap: wrap; gap: 4px; font-size: 10px; }
+  .evol-range label { font-size: 10px; }
+  .evol-range select { font-size: 10px; padding: 4px 6px; }
+  .evol-check-label { font-size: 10px; }
+}

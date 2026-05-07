@@ -21,7 +21,7 @@ export const URLS = {
 // Reemplazar el placeholder con la URL publicada como CSV desde:
 // Archivo → Compartir → Publicar en la web → "I. Contratos" → CSV
 export const URLS_CONTRATOS = {
-  irr: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRAuordQ35zGoq-VV0PTJYtoebha0PyUuWS1YTPLo69nTzytyNzg9AtOUMegCmhV1Q7_Ouiv8YGQCXv/pub?gid=1692181581&single=true&output=csv',
+  irr: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_SrPMC9v_h6szyyZUjhqywYeyrwp8AwiguskyC7PzNt8CCE_W6HA_wUTrKA1PWew77AAC1qhVR88i/pub?gid=531179770&single=true&output=csv',
   ech: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRAuordQ35zGoq-VV0PTJYtoebha0PyUuWS1YTPLo69nTzytyNzg9AtOUMegCmhV1Q7_Ouiv8YGQCXv/pub?gid=1692181581&single=true&output=csv',
 };
 

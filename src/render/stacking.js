@@ -32,6 +32,7 @@ export function renderStacking() {
         el.addEventListener('mouseenter', e => showTooltip(e, n));
         el.addEventListener('mouseleave', hideTooltip);
         el.addEventListener('mousemove',  moveTooltip);
+        el.addEventListener('touchstart', e => { showTooltip(e, n); }, { passive: true });
       } else {
         el.className = 'cell-gap';
       }
@@ -57,6 +58,7 @@ export function makeParkingCell(unit) {
   el.addEventListener('mouseenter', e => showParkingTooltip(e, unit));
   el.addEventListener('mouseleave', hideTooltip);
   el.addEventListener('mousemove',  moveTooltip);
+  el.addEventListener('touchstart', e => { showParkingTooltip(e, unit); }, { passive: true });
   return el;
 }
 
@@ -74,6 +76,7 @@ export function makeBodegaCell(unit) {
   el.addEventListener('mouseenter', e => showBodegaTooltip(e, unit));
   el.addEventListener('mouseleave', hideTooltip);
   el.addEventListener('mousemove',  moveTooltip);
+  el.addEventListener('touchstart', e => { showBodegaTooltip(e, unit); }, { passive: true });
   return el;
 }
 

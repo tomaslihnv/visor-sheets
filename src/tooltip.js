@@ -36,12 +36,22 @@ export function moveTooltip(e) { positionTooltip(e); }
 
 export function positionTooltip(e) {
   const pad = 14, tw = ttEl.offsetWidth, th = ttEl.offsetHeight;
-  let x = e.clientX + pad, y = e.clientY + pad;
-  if (x + tw > window.innerWidth  - pad) x = e.clientX - tw - pad;
-  if (y + th > window.innerHeight - pad) y = e.clientY - th - pad;
+  // Acepta tanto MouseEvent como TouchEvent
+  const cx = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
+  const cy = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
+  let x = cx + pad, y = cy + pad;
+  if (x + tw > window.innerWidth  - pad) x = cx - tw - pad;
+  if (y + th > window.innerHeight - pad) y = cy - th - pad;
   ttEl.style.left = x + 'px';
   ttEl.style.top  = y + 'px';
 }
+
+// Cierra el tooltip al tocar fuera de él o de una celda
+document.addEventListener('touchstart', e => {
+  if (!e.target.closest('#unit-tt') && !e.target.closest('.unit')) {
+    hideTooltip();
+  }
+}, { passive: true });
 
 export function showParkingTooltip(e, row) {
   const n      = (row[pcol.n]       || '').toString().trim();
