@@ -6,7 +6,7 @@ export let pcol = { n:'N°', piso:'Piso', tandem:'Tandem', destino:'Destino',
 
 export function resolveParkingColumns(headers) {
   const find = (test) => headers.find(h => test(nfdKey(h))) || null;
-  pcol.n       = find(k => k === 'N°' || k === 'N')                    || headers[0];
+  pcol.n       = find(k => k === 'N°' || k === 'Nº' || k === 'N' || k === '#' || k === 'NUMERO' || k === 'N.') || headers[0];
   pcol.piso    = find(k => k === 'PISO')                               || 'Piso';
   pcol.tandem  = find(k => k === 'TANDEM')                             || 'Tandem';
   pcol.destino = find(k => k === 'DESTINO')                            || 'Destino';
@@ -43,7 +43,7 @@ export let bcol = { n:'N°', piso:'Piso', estatus:'Estatus', titular:'Titular',
 
 export function resolveBodegaColumns(headers) {
   const find = (test) => headers.find(h => test(nfdKey(h))) || null;
-  bcol.n       = find(k => k === 'N°' || k === 'N')                  || headers[0];
+  bcol.n       = find(k => k === 'N°' || k === 'Nº' || k === 'N' || k === '#' || k === 'NUMERO' || k === 'N.') || headers[0];
   bcol.piso    = find(k => k === 'PISO')                             || 'Piso';
   bcol.estatus = find(k => k === 'ESTATUS')                          || 'Estatus';
   bcol.titular = find(k => k === 'TITULAR' || k === 'ARRENDATARIO')  || 'Titular';

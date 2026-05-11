@@ -29,17 +29,32 @@ export function updateMetrics(deptoData, estacData, bodData) {
   document.getElementById('occ-depto-un').textContent =
     dBase > 0 ? `(${dEnRenta} un.)` : '';
 
-  let eContr = 0, eRC = 0, eVac = 0;
+  let eContr = 0, eRC = 0, eVac = 0, eInhab = 0, eVisita = 0, eLocal = 0;
   estacData.forEach(row => {
     const cat = getParkingCategory(row);
-    if      (cat === 'contrato') eContr++;
-    else if (cat === 'rc')       eRC++;
-    else                         eVac++;
+    if      (cat === 'contrato')     eContr++;
+    else if (cat === 'rc')           eRC++;
+    else if (cat === 'inhabilitado') eInhab++;
+    else if (cat === 'visita')       eVisita++;
+    else if (cat === 'local')        eLocal++;
+    else                             eVac++;
   });
   const eEnRenta = eContr + eRC;
-  const eTotal   = estacData.length;
-  document.getElementById('occ-estac').textContent =
-    eTotal > 0 ? Math.round(eEnRenta / eTotal * 100) + '%' : '—';
+  // Total operativo: excluye inhabilitados, visita (no son arrendables residenciales)
+  const eDisp    = eContr + eRC + eVac + eLocal;
+  const eTotal   = eDisp + eInhab + eVisita;
+  const eOccPct  = eDisp > 0 ? Math.round(eEnRenta / eDisp * 100) + '%' : '—';
+  document.getElementById('occ-estac').textContent = eOccPct;
+  // Panel Estacionamientos
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('lc-estac-arr',   eEnRenta);
+  set('lc-estac-vac',   eVac);
+  set('lc-estac-inhab', eInhab);
+  set('lc-estac-visita',eVisita);
+  set('lc-estac-local', eLocal);
+  set('occ-estac-pct',  eOccPct);
+  set('occ-estac-un',   eDisp > 0 ? `(${eEnRenta}/${eDisp})` : '');
+  set('occ-estac-total',eTotal);
 
   let bContr = 0, bVac = 0;
   bodData.forEach(row => {
@@ -49,6 +64,15 @@ export function updateMetrics(deptoData, estacData, bodData) {
   const bTotal = bodData.length;
   document.getElementById('occ-bod').textContent =
     bTotal > 0 ? Math.round(bContr / bTotal * 100) + '%' : '—';
+  // Panel Bodegas
+  const elBodContr = document.getElementById('lc-bod-contr');
+  const elBodVac   = document.getElementById('lc-bod-vac');
+  const elBodPct   = document.getElementById('occ-bod-pct');
+  const elBodUn    = document.getElementById('occ-bod-un');
+  if (elBodContr) elBodContr.textContent = bContr;
+  if (elBodVac)   elBodVac.textContent   = bVac;
+  if (elBodPct)   elBodPct.textContent   = bTotal > 0 ? Math.round(bContr / bTotal * 100) + '%' : '—';
+  if (elBodUn)    elBodUn.textContent    = bTotal > 0 ? `(${bContr} un.)` : '';
 
   const evolData = BD[state.AB].evol;
   const now = new Date();

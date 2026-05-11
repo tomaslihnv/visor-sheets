@@ -16,6 +16,7 @@ export function renderStacking() {
     floor.cells.forEach(c => { colMap[c.c] = c.n; });
     const rowEl = document.createElement('div');
     rowEl.className = 'floor-row';
+    rowEl.dataset.piso = floor.p;
     const lbl = document.createElement('div');
     lbl.className = 'floor-label';
     lbl.textContent = 'P' + floor.p;
@@ -89,7 +90,7 @@ export function renderSubterraneoStacking(estacData, bodData) {
 
   const sep = document.createElement('div');
   sep.className = 'parking-sep';
-  sep.textContent = 'Estacionamientos y Bodegas';
+  sep.textContent = 'Subterráneo';
   bldg.appendChild(sep);
 
   const estacByPiso = {}, bodByPiso = {};
@@ -99,24 +100,31 @@ export function renderSubterraneoStacking(estacData, bodData) {
   });
   bodData.forEach(row => {
     const p = parseInt((row[bcol.piso] || '').toString().trim());
-    if (!isNaN(p)) { if (!bodByPiso[p])   bodByPiso[p]   = []; bodByPiso[p].push(row);   }
+    if (!isNaN(p)) { if (!bodByPiso[p]) bodByPiso[p] = []; bodByPiso[p].push(row); }
   });
 
-  [-1, -2, -3, -4].forEach(piso => {
+  // Solo pisos negativos en la sección subterránea
+  const negPisos = [...new Set(Object.keys(estacByPiso).map(Number).filter(p => p < 0))]
+    .sort((a, b) => b - a);
+
+  if (!negPisos.length) { bldg.removeChild(sep); return; }
+
+  negPisos.forEach(piso => {
     const estacUnits = (estacByPiso[piso] || []).slice().sort((a, b) => parseInt(a[pcol.n]) - parseInt(b[pcol.n]));
     const bodUnits   = (bodByPiso[piso]   || []).slice().sort((a, b) => parseInt(a[bcol.n]) - parseInt(b[bcol.n]));
     if (!estacUnits.length && !bodUnits.length) return;
 
     const estacRW  = estacUnits.length ? Math.ceil(estacUnits.length / 2) : 0;
-    const bodRW    = bodUnits.length   ? Math.ceil(bodUnits.length / 2)   : 0;
+    const bodNeg   = (bodByPiso[piso] || []).slice().sort((a, b) => parseInt(a[bcol.n]) - parseInt(b[bcol.n]));
+    const bodRW    = bodNeg.length ? Math.ceil(bodNeg.length / 2) : 0;
     const numRows  = Math.max(
       estacRW ? Math.ceil(estacUnits.length / estacRW) : 0,
-      bodRW   ? Math.ceil(bodUnits.length   / bodRW)   : 0
+      bodRW   ? Math.ceil(bodNeg.length     / bodRW)   : 0
     );
 
     for (let i = 0; i < numRows; i++) {
       const estacChunk = estacRW ? estacUnits.slice(i * estacRW, (i + 1) * estacRW) : [];
-      const bodChunk   = bodRW   ? bodUnits.slice(i * bodRW,   (i + 1) * bodRW)     : [];
+      const bodChunk   = bodRW   ? bodNeg.slice(i * bodRW, (i + 1) * bodRW)         : [];
 
       const rowEl = document.createElement('div');
       rowEl.className = 'floor-row';
@@ -144,6 +152,56 @@ export function renderSubterraneoStacking(estacData, bodData) {
 
       bldg.appendChild(rowEl);
     }
+  });
+}
+
+// Inserta bodegas de pisos positivos a la derecha de las filas del edificio
+export function injectBodegasIntoFloors(bodData) {
+  if (!bodData.length) return;
+  resolveBodegaColumns(Object.keys(bodData[0]));
+
+  // Agrupar bodegas por piso (solo pisos positivos)
+  const bodByPiso = {};
+  bodData.forEach(row => {
+    const p = parseInt((row[bcol.piso] || '').toString().trim());
+    if (!isNaN(p) && p > 0) {
+      if (!bodByPiso[p]) bodByPiso[p] = [];
+      bodByPiso[p].push(row);
+    }
+  });
+
+  if (!Object.keys(bodByPiso).length) return;
+
+  Object.entries(bodByPiso).forEach(([pisoStr, units]) => {
+    const row = document.querySelector(`.floor-row[data-piso="${pisoStr}"]`);
+    if (!row) return;
+
+    // Evitar duplicados si se llama más de una vez
+    if (row.querySelector('.bod-inline-sep')) return;
+
+    const sorted = units.slice().sort((a, b) => parseInt(a[bcol.n]) - parseInt(b[bcol.n]));
+
+    const sep = document.createElement('div');
+    sep.className = 'estac-bod-div bod-inline-sep';
+    row.appendChild(sep);
+
+    const cells = document.createElement('div');
+    cells.className = 'floor-cells';
+    sorted.forEach(u => cells.appendChild(makeBodegaCell(u)));
+    row.appendChild(cells);
+  });
+
+  requestAnimationFrame(alignBodegaColumns);
+}
+
+export function alignBodegaColumns() {
+  const seps = [...document.querySelectorAll('.bod-inline-sep')];
+  if (!seps.length) return;
+  seps.forEach(s => { s.style.marginLeft = ''; });
+  const maxLeft = Math.max(...seps.map(s => s.getBoundingClientRect().left));
+  seps.forEach(s => {
+    const diff = maxLeft - s.getBoundingClientRect().left;
+    if (diff > 0) s.style.marginLeft = diff + 'px';
   });
 }
 

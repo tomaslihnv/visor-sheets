@@ -80,7 +80,17 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; colo
 #panel-stacking { height: calc(100vh - 92px); overflow: hidden; }
 .stacking-layout { display: flex; gap: 16px; height: 100%; overflow: hidden; }
 .stacking-left { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
-.legend { display: flex; gap: 12px; flex-wrap: wrap; background: #fff; border: 1px solid #e2e6ea; border-radius: 8px; padding: 10px 14px; flex-shrink: 0; }
+.legend { display: flex; flex-direction: column; gap: 8px; background: #fff; border: 1px solid #e2e6ea; border-radius: 8px; padding: 10px 14px; flex-shrink: 0; }
+.legend-tabs { display: flex; align-items: center; gap: 4px; }
+.legend-tab {
+  padding: 3px 10px; border-radius: 5px; border: 1px solid #e2e6ea;
+  background: #f8fafc; color: #9aabb8; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; transition: all 0.15s;
+}
+.legend-tab.active { background: #1a2332; color: #fff; border-color: #1a2332; }
+.legend-tab:hover:not(.active) { color: #1a2332; border-color: #1a2332; }
+.legend-panel { display: none; flex-wrap: wrap; gap: 10px; align-items: center; }
+.legend-panel.active { display: flex; }
 .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #4a5568; }
 .legend-dot { width: 12px; height: 12px; border-radius: 3px; border: 1px solid; flex-shrink: 0; }
 .stacking-wrap { flex: 1; min-height: 0; overflow: auto; background: #fff; border: 1px solid #e2e6ea; border-radius: 8px; padding: 16px; }

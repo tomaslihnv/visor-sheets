@@ -128,9 +128,10 @@ export function applyFilters() {
     let show = (ftb === 'todos' || ftb === 'departamentos');
 
     if (show) {
-      if      (fu === 'contratos') show = cat === 'contrato';
-      else if (fu === 'en-renta')  show = cat === 'contrato' || cat === 'rc';
-      else if (fu === 'vacantes')  show = cat === 'vacante';
+      if      (fu === 'contratos')    show = cat === 'contrato';
+      else if (fu === 'en-renta')     show = cat === 'contrato' || cat === 'rc';
+      else if (fu === 'vacantes')     show = cat === 'vacante';
+      else if (fu === 'inhabilitadas') show = false; // deptos no tienen esta categoría
     }
     if (show && u) {
       if (ftT  && (u['Tipo']         || '').trim() !== ftT)  show = false;
@@ -158,9 +159,10 @@ export function applyFilters() {
 
     let show = (ftb === 'todos' || ftb === 'estacionamientos');
     if (show) {
-      if      (fu === 'contratos') show = cat === 'contrato';
-      else if (fu === 'en-renta')  show = cat === 'contrato' || cat === 'rc';
-      else if (fu === 'vacantes')  show = cat === 'vacante';
+      if      (fu === 'contratos')     show = cat === 'contrato';
+      else if (fu === 'en-renta')      show = cat === 'contrato' || cat === 'rc';
+      else if (fu === 'vacantes')      show = cat === 'vacante';
+      else if (fu === 'inhabilitadas') show = cat === 'inhabilitado';
     }
     el.style.background  = s.bg;
     el.style.borderColor = s.border;
@@ -177,9 +179,10 @@ export function applyFilters() {
 
     let show = (ftb === 'todos' || ftb === 'bodegas');
     if (show) {
-      if      (fu === 'contratos') show = cat === 'contrato';
-      else if (fu === 'en-renta')  show = cat === 'contrato';
-      else if (fu === 'vacantes')  show = cat === 'vacante';
+      if      (fu === 'contratos')     show = cat === 'contrato';
+      else if (fu === 'en-renta')      show = cat === 'contrato';
+      else if (fu === 'vacantes')      show = cat === 'vacante';
+      else if (fu === 'inhabilitadas') show = false; // bodegas no tienen esta categoría
     }
     el.style.background  = s.bg;
     el.style.borderColor = s.border;
@@ -189,6 +192,13 @@ export function applyFilters() {
 
   renderColumnHeaders();
   refreshUFRange(fu, ftb, ftT, ftS1, ftS2, foC, foA, vencOn, vencVal);
+
+  // Sincroniza la leyenda con el filtro "Tipo de bien"
+  const legendTab = ftb === 'estacionamientos' ? 'estac'
+                  : ftb === 'bodegas'           ? 'bodegas'
+                  : 'unidades';
+  const tabBtn = document.querySelector(`.legend-tab[onclick*="'${legendTab}'"]`);
+  if (tabBtn) window.switchLegendTab(legendTab, tabBtn);
 }
 
 export function refreshUFRange(fu, ftb, ftT, ftS1, ftS2, foC, foA, vencOn, vencVal) {

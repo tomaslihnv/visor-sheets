@@ -5,7 +5,7 @@ export const BD = {
   ech: { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], contratos:[], fields:[], refKey:'', refUF:0 }
 };
 
-export const CHARTS = { evol: null, netos: null, venc: null, renewal: null, entrada: null, termino: null, salidas: null, motivo: null };
+export const CHARTS = { evol: null, netos: null, venc: null, renewal: null, entrada: null, termino: null, salidas: null, motivo: null, desglose: null };
 
 export const ENTRADA_COLOR_MAP = {};
 export const ENTRADA_PALETTE = [

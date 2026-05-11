@@ -80,9 +80,12 @@ export const MOTIVOS = [
 ];
 
 export const CAT_STYLE = {
-  contrato: { bg:'#d1fae5', border:'#6ee7b7', color:'#065f46' },
-  rc:       { bg:'#ede9fe', border:'#c4b5fd', color:'#5b21b6' },
-  vacante:  { bg:'#fee2e2', border:'#fca5a5', color:'#991b1b' },
-  piloto:   { bg:'#ffedd5', border:'#fdba74', color:'#9a3412' },
-  default:  { bg:'#f0f4f8', border:'#d1dae3', color:'#3a4f63' },
+  contrato:    { bg:'#d1fae5', border:'#6ee7b7', color:'#065f46' },
+  rc:          { bg:'#ede9fe', border:'#c4b5fd', color:'#5b21b6' },
+  vacante:     { bg:'#fee2e2', border:'#fca5a5', color:'#991b1b' },
+  piloto:      { bg:'#ffedd5', border:'#fdba74', color:'#9a3412' },
+  visita:      { bg:'#e0f2fe', border:'#7dd3fc', color:'#0369a1' },
+  inhabilitado:{ bg:'#3a3a3c', border:'#52525b', color:'#a1a1aa' },
+  local:        { bg:'#fef9c3', border:'#fde047', color:'#854d0e' },
+  default:     { bg:'#f0f4f8', border:'#d1dae3', color:'#3a4f63' },
 };

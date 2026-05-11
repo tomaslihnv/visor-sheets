@@ -1,6 +1,6 @@
 import { state, BD } from './state.js';
 import { col, pcol, bcol } from './columns.js';
-import { parseCLP } from './utils.js';
+import { parseCLP, nfdKey } from './utils.js';
 import { getCategory } from './categories.js';
 
 export const ttEl = document.getElementById('unit-tt');
@@ -72,7 +72,16 @@ export function addTapToShow(el, showFn) {
 }
 
 export function showParkingTooltip(e, row) {
-  const n      = (row[pcol.n]       || '').toString().trim();
+  // Fallback: si pcol.n no resuelve, busca la primera columna que parezca un número/código
+  let n = (row[pcol.n] || '').toString().trim();
+  if (!n) {
+    const numKey = Object.keys(row).find(k => {
+      const nk = nfdKey(k);
+      return nk === 'N°' || nk === 'Nº' || nk === 'N' || nk === '#' || nk === 'NUMERO';
+    });
+    if (numKey) n = (row[numKey] || '').toString().trim();
+  }
+
   const piso   = (row[pcol.piso]    || '').toString().trim();
   const depto  = (row[pcol.depto]   || '').trim();
   const tandem = (row[pcol.tandem]  || '').trim().toUpperCase() === 'SI';
@@ -81,7 +90,8 @@ export function showParkingTooltip(e, row) {
   const ggcc   = parseCLP(row[pcol.ggcc]);
   const titular = (row[pcol.titular] || '').trim();
 
-  document.getElementById('tt-title').textContent = 'Estac. ' + n;
+  const prefix = n.toUpperCase().startsWith('ELC') ? 'Local' : 'Estac.';
+  document.getElementById('tt-title').textContent = prefix + ' ' + n;
   const rows = [
     ['Titular', titular || '—'],
     ['Canon',   canon != null ? '$' + Math.round(canon).toLocaleString('es-CL') : '—'],

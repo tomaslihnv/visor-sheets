@@ -61,29 +61,70 @@
   <div class="stacking-layout">
     <div class="stacking-left">
       <div class="legend">
-        <div class="legend-item"><div class="legend-dot" style="background:#d1fae5;border-color:#6ee7b7"></div>Contratos <span class="legend-count" id="lc-contr">—</span></div>
-        <div class="legend-item"><div class="legend-dot" style="background:#ede9fe;border-color:#c4b5fd"></div>Renta corta <span class="legend-count" id="lc-rc">—</span></div>
-        <div class="legend-item"><div class="legend-dot" style="background:#fee2e2;border-color:#fca5a5"></div>Vacantes <span class="legend-count" id="lc-vac">—</span></div>
-        <div class="legend-item"><div class="legend-dot" style="background:#ffedd5;border-color:#fdba74"></div>Pilotos <span class="legend-count" id="lc-pilot">—</span></div>
-        <div class="legend-sep"></div>
-        <div class="legend-metric">
-          <span class="metric-label">Depto.</span>
-          <span class="metric-val" id="occ-depto">—</span>
-          <span id="occ-depto-un" style="font-size:10px;color:#8a9bb0;margin-left:3px;">—</span>
+        <!-- Tabs -->
+        <div class="legend-tabs">
+          <button class="legend-tab active" onclick="switchLegendTab('unidades',this)">Unidades</button>
+          <button class="legend-tab" onclick="switchLegendTab('bodegas',this)">Bodegas</button>
+          <button class="legend-tab" onclick="switchLegendTab('estac',this)">Estac.</button>
+          <button class="btn-export-pdf" id="btn-export-pdf" onclick="exportStackingPDF()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar PDF
+          </button>
         </div>
-        <div class="legend-metric"><span class="metric-label">Estac.</span><span class="metric-val" id="occ-estac">—</span></div>
-        <div class="legend-metric"><span class="metric-label">Bodega</span><span class="metric-val" id="occ-bod">—</span></div>
-        <div class="legend-sep"></div>
-        <div class="legend-metric">
-          <span class="metric-label">Depto. Proy.</span>
-          <span class="metric-val" id="occ-proy-pct">—</span>
-          <span id="occ-proy-un" style="font-size:10px;color:#8a9bb0;margin-left:3px;">—</span>
+
+        <!-- Panel Unidades -->
+        <div class="legend-panel active" id="legend-panel-unidades">
+          <div class="legend-item"><div class="legend-dot" style="background:#d1fae5;border-color:#6ee7b7"></div>Contratos <span class="legend-count" id="lc-contr">—</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#ede9fe;border-color:#c4b5fd"></div>Renta corta <span class="legend-count" id="lc-rc">—</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#fee2e2;border-color:#fca5a5"></div>Vacantes <span class="legend-count" id="lc-vac">—</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#ffedd5;border-color:#fdba74"></div>Pilotos <span class="legend-count" id="lc-pilot">—</span></div>
+          <div class="legend-sep"></div>
+          <div class="legend-metric">
+            <span class="metric-label">Depto.</span>
+            <span class="metric-val" id="occ-depto">—</span>
+            <span id="occ-depto-un" style="font-size:10px;color:#8a9bb0;margin-left:3px;">—</span>
+          </div>
+          <div class="legend-metric"><span class="metric-label">Estac.</span><span class="metric-val" id="occ-estac">—</span></div>
+          <div class="legend-metric"><span class="metric-label">Bodega</span><span class="metric-val" id="occ-bod">—</span></div>
+          <div class="legend-sep"></div>
+          <div class="legend-metric">
+            <span class="metric-label">Depto. Proy.</span>
+            <span class="metric-val" id="occ-proy-pct">—</span>
+            <span id="occ-proy-un" style="font-size:10px;color:#8a9bb0;margin-left:3px;">—</span>
+          </div>
+          <div class="legend-metric"><span class="metric-label">Netos Proy.</span><span class="metric-val" id="occ-netos-un">—</span></div>
         </div>
-        <div class="legend-metric"><span class="metric-label">Netos Proy.</span><span class="metric-val" id="occ-netos-un">—</span></div>
-        <button class="btn-export-pdf" id="btn-export-pdf" onclick="exportStackingPDF()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Exportar PDF
-        </button>
+
+        <!-- Panel Bodegas -->
+        <div class="legend-panel" id="legend-panel-bodegas">
+          <div class="legend-item"><div class="legend-dot" style="background:#d1fae5;border-color:#6ee7b7"></div>Arrendadas <span class="legend-count" id="lc-bod-contr">—</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#fee2e2;border-color:#fca5a5"></div>Vacantes <span class="legend-count" id="lc-bod-vac">—</span></div>
+          <div class="legend-sep"></div>
+          <div class="legend-metric">
+            <span class="metric-label">Ocupación</span>
+            <span class="metric-val" id="occ-bod-pct">—</span>
+            <span id="occ-bod-un" style="font-size:10px;color:#8a9bb0;margin-left:3px;">—</span>
+          </div>
+        </div>
+
+        <!-- Panel Estacionamientos -->
+        <div class="legend-panel" id="legend-panel-estac">
+          <div class="legend-item"><div class="legend-dot" style="background:#d1fae5;border-color:#6ee7b7"></div>Arrendados <span class="legend-count" id="lc-estac-arr">—</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#fee2e2;border-color:#fca5a5"></div>Vacantes <span class="legend-count" id="lc-estac-vac">—</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#3a3a3c;border-color:#52525b"></div>Inhabilitados <span class="legend-count" id="lc-estac-inhab">—</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#e0f2fe;border-color:#7dd3fc"></div>Visita <span class="legend-count" id="lc-estac-visita">—</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#fef9c3;border-color:#fde047"></div>Local comercial <span class="legend-count" id="lc-estac-local">—</span></div>
+          <div class="legend-sep"></div>
+          <div class="legend-metric">
+            <span class="metric-label">Ocupación</span>
+            <span class="metric-val" id="occ-estac-pct">—</span>
+            <span id="occ-estac-un" style="font-size:10px;color:#8a9bb0;margin-left:3px;">—</span>
+          </div>
+          <div class="legend-metric">
+            <span class="metric-label">Total</span>
+            <span class="metric-val" id="occ-estac-total">—</span>
+          </div>
+        </div>
       </div>
       <div class="stacking-wrap">
         <div class="stacking-zoom-inner" id="stacking-zoom-inner">
@@ -118,10 +159,11 @@
       <div class="filter-section">
         <div class="filter-title">Unidades</div>
         <div class="radio-group">
-          <div class="radio-item"><input type="radio" name="fu" id="fu-todas"    value="todas"     checked onchange="applyFilters()"><label for="fu-todas">Todas</label></div>
-          <div class="radio-item"><input type="radio" name="fu" id="fu-contr"    value="contratos"        onchange="applyFilters()"><label for="fu-contr">Contratos</label></div>
-          <div class="radio-item"><input type="radio" name="fu" id="fu-renta"    value="en-renta"         onchange="applyFilters()"><label for="fu-renta">En renta</label></div>
-          <div class="radio-item"><input type="radio" name="fu" id="fu-vacantes" value="vacantes"         onchange="applyFilters()"><label for="fu-vacantes">Vacantes</label></div>
+          <div class="radio-item"><input type="radio" name="fu" id="fu-todas"    value="todas"         checked onchange="applyFilters()"><label for="fu-todas">Todas</label></div>
+          <div class="radio-item"><input type="radio" name="fu" id="fu-contr"    value="contratos"              onchange="applyFilters()"><label for="fu-contr">Contratos</label></div>
+          <div class="radio-item"><input type="radio" name="fu" id="fu-renta"    value="en-renta"               onchange="applyFilters()"><label for="fu-renta">En renta</label></div>
+          <div class="radio-item"><input type="radio" name="fu" id="fu-vacantes" value="vacantes"               onchange="applyFilters()"><label for="fu-vacantes">Vacantes</label></div>
+          <div class="radio-item"><input type="radio" name="fu" id="fu-inhab"    value="inhabilitadas"          onchange="applyFilters()"><label for="fu-inhab">Inhabilitadas</label></div>
         </div>
       </div>
       <div class="filter-divider"></div>
@@ -371,6 +413,27 @@
       </div>
       <div class="evol-chart-wrap evol-h-320">
         <canvas id="salidas-chart-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="evol-card">
+      <div class="evol-card-header">
+        <div class="evol-card-title-row">
+          <span class="evol-card-title">Desglose de Salidas</span>
+          <button class="btn-copy-chart" onclick="copyChartCard(this)" title="Copiar como imagen"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+        </div>
+        <div class="evol-card-controls">
+          <label class="evol-check-label"><input type="checkbox" id="desglose-labels" onchange="renderDesgloseSalidasChart()" checked> Etiquetas</label>
+          <div class="evol-range">
+            <label>Desde</label>
+            <select id="desglose-desde" onchange="renderDesgloseSalidasChart()"></select>
+            <label>Hasta</label>
+            <select id="desglose-hasta" onchange="renderDesgloseSalidasChart()"></select>
+          </div>
+        </div>
+      </div>
+      <div class="evol-chart-wrap evol-h-300">
+        <canvas id="desglose-chart-canvas"></canvas>
       </div>
     </div>
 

@@ -1,4 +1,4 @@
-import { state, BD, CHARTS, destroyChart } from '../../state.js';
+import { state, BD, CHARTS, destroyChart, MOTIVO_PALETTE } from '../../state.js';
 import { nfdKey, parseDate, _MESES } from '../../utils.js';
 import { getMotivoColor } from '../../categories.js';
 import { MOTIVOS as MOTIVOS_CONFIG } from '../../config.js';
@@ -200,6 +200,192 @@ export function renderSalidasChart() {
   });
 }
 
+// ── DESGLOSE DE SALIDAS (barras apiladas: No Renovación + Salida Anticipada) ──
+
+// Clasifica el valor crudo usando nfdKey (ya probado en el proyecto)
+function clasificarTipo(raw) {
+  const n = nfdKey(raw); // sin tildes, mayúsculas
+  if (n === 'NR' || n.includes('RENOV'))   return 'No Renovación';
+  if (n === 'SA' || n.includes('ANTICIP')) return 'Salida Anticipada';
+  return null;
+}
+
+function resolveDesgloseCol(keys) {
+  return keys.find(k => nfdKey(k) === 'TIPO') ||
+         keys.find(k => nfdKey(k).includes('TERMINO')) ||
+         keys.find(k => nfdKey(k).includes('EVENTO')) ||
+         null;
+}
+
+export function initDesgloseSalidasSelects(salData) {
+  const desdeEl = document.getElementById('desglose-desde');
+  const hastaEl = document.getElementById('desglose-hasta');
+  if (!desdeEl || !salData.length) return;
+
+  const keys     = Object.keys(salData[0] || {});
+  const fechaCol = keys.find(k => nfdKey(k) === 'FECHA') || keys[0];
+  const tipoCol  = resolveDesgloseCol(keys);
+
+  const now    = new Date();
+  const prev   = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const capKey = `${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}`;
+
+  const monthsSet = new Set();
+  salData.forEach(r => {
+    const p = parseDate((r[fechaCol]||'').toString().trim());
+    if (!p) return;
+    const mk = `${p.year}-${String(p.month).padStart(2,'0')}`;
+    if (mk <= capKey && tipoCol && clasificarTipo((r[tipoCol]||'').toString())) monthsSet.add(mk);
+  });
+
+  const months = [...monthsSet].sort();
+  desdeEl.innerHTML = hastaEl.innerHTML = '';
+  months.forEach(mk => {
+    const [y, m] = mk.split('-');
+    const label  = _MESES[parseInt(m)-1] + '-' + String(y).slice(-2);
+    desdeEl.appendChild(new Option(label, mk));
+    hastaEl.appendChild(new Option(label, mk));
+  });
+  if (months.length) {
+    desdeEl.value = months[0];
+    hastaEl.value = months[months.length - 1];
+  }
+}
+
+export function renderDesgloseSalidasChart() {
+  const salData = BD[state.AB].sal;
+  const desdeEl = document.getElementById('desglose-desde');
+  const hastaEl = document.getElementById('desglose-hasta');
+  if (!desdeEl || !salData.length) return;
+
+  const desde = desdeEl.value;
+  const hasta  = hastaEl.value;
+  if (!desde || !hasta || desde > hasta) return;
+
+  const keys     = Object.keys(salData[0] || {});
+  const fechaCol = keys.find(k => nfdKey(k) === 'FECHA') || keys[0];
+  const tipoCol  = resolveDesgloseCol(keys);
+  if (!tipoCol) { console.warn('[desglose] No se encontró columna de tipo'); return; }
+
+  // Rango de meses
+  const [dy, dm] = desde.split('-').map(Number);
+  const [hy, hm] = hasta.split('-').map(Number);
+  const allMonths = [];
+  let cy = dy, cm = dm;
+  while (cy < hy || (cy === hy && cm <= hm)) {
+    allMonths.push(`${cy}-${String(cm).padStart(2,'0')}`);
+    cm++; if (cm > 12) { cm = 1; cy++; }
+  }
+
+  // Conteo: solo "No Renovación" y "Salida Anticipada"
+  const TIPOS = ['No Renovación', 'Salida Anticipada']; // orden: abajo → arriba
+  const counts = { 'No Renovación': {}, 'Salida Anticipada': {} };
+  TIPOS.forEach(t => allMonths.forEach(mk => counts[t][mk] = 0));
+
+  salData.forEach(r => {
+    const p = parseDate((r[fechaCol]||'').toString().trim());
+    if (!p) return;
+    const mk = `${p.year}-${String(p.month).padStart(2,'0')}`;
+    if (mk < desde || mk > hasta) return;
+    const cat = clasificarTipo((r[tipoCol]||'').toString());
+    if (!cat) return;
+    counts[cat][mk]++;
+  });
+
+  const totals = allMonths.map(mk => TIPOS.reduce((s, t) => s + counts[t][mk], 0));
+  const labels = allMonths.map(mk => { const [y,m] = mk.split('-'); return _MESES[+m-1]+'-'+String(y).slice(-2); });
+  const showLbls = !!document.getElementById('desglose-labels')?.checked;
+
+  const COLORES = { 'No Renovación': '#fb923c', 'Salida Anticipada': '#60a5fa' };
+
+  // Barras apiladas — labels interiores blancos en ambas
+  const barDatasets = TIPOS.map((tipo, i) => {
+    const isTop   = i === TIPOS.length - 1;
+    const tipData = allMonths.map(mk => counts[tipo][mk] || 0);
+    return {
+      label: tipo,
+      data: tipData,
+      backgroundColor: COLORES[tipo],
+      stack: 'desglose',
+      borderWidth: 0,
+      borderRadius: isTop ? { topLeft: 3, topRight: 3 } : 0,
+      borderSkipped: false,
+      datalabels: {
+        display: ctx => showLbls && tipData[ctx.dataIndex] > 0,
+        anchor: 'center', align: 'center',
+        color: '#fff',
+        font: { size: 9, weight: '700' },
+        formatter: v => v
+      }
+    };
+  });
+
+  // Línea invisible SIN stack → sus puntos quedan exactamente en y = total,
+  // incluso cuando SA = 0. Sólo porta el label del total encima.
+  const totalLine = {
+    type: 'line',
+    label: '_total',
+    data: totals,
+    borderColor: 'transparent',
+    backgroundColor: 'transparent',
+    pointRadius: 0,
+    pointHoverRadius: 0,
+    borderWidth: 0,
+    datalabels: {
+      display: ctx => totals[ctx.dataIndex] > 0,
+      anchor: 'end', align: 'top', offset: 4,
+      color: '#1a2332',
+      font: { size: 10, weight: '700' },
+      formatter: v => v
+    }
+  };
+
+  const datasets = [...barDatasets, totalLine];
+
+  const canvas = document.getElementById('desglose-chart-canvas');
+  destroyChart('desglose');
+
+  CHARTS.desglose = new Chart(canvas, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            font: { size: 11 }, boxWidth: 12, padding: 10,
+            filter: item => item.text !== '_total'
+          }
+        },
+        datalabels: {},
+        tooltip: {
+          filter: item => item.dataset.label !== '_total',
+          callbacks: {
+            label: ctx => ctx.parsed.y ? ` ${ctx.dataset.label}: ${ctx.parsed.y} un.` : null,
+            footer: items => {
+              const t = items.filter(i => i.dataset.label !== '_total').reduce((s, i) => s + i.parsed.y, 0);
+              return t ? `Total: ${t} un.` : '';
+            }
+          }
+        }
+      },
+      clip: false,
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+        y: {
+          stacked: true,
+          grace: '8%', min: 0,
+          grid: { color: '#f0f3f6' },
+          ticks: { font: { size: 10 }, stepSize: 1, precision: 0 },
+          title: { display: true, text: 'Unidades', font: { size: 10 }, color: '#8a9bb0' }
+        }
+      }
+    }
+  });
+}
+
 export function initMotivoChartSelects(salData) {
   const desdeEl   = document.getElementById('motivo-chart-desde');
   const hastaEl   = document.getElementById('motivo-chart-hasta');
@@ -331,7 +517,7 @@ export function renderMotivoChart() {
       scales: {
         x: {
           min: 0, max: 100,
-          grid: { color: '#f0f3f6' },
+          grid: { color: '#fff' },
           ticks: { font: { size: 10 }, callback: v => v + '%' }
         },
         y: {

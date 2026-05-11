@@ -1,5 +1,5 @@
 import { pcol, bcol } from './columns.js';
-import { parseCLP } from './utils.js';
+import { parseCLP, nfdKey } from './utils.js';
 import { MOTIVO_COLOR_MAP, MOTIVO_PALETTE } from './state.js';
 
 export function getCategory(u) {
@@ -13,9 +13,19 @@ export function getCategory(u) {
 }
 
 export function getParkingCategory(row) {
-  const dest    = (row[pcol.destino] || '').trim().replace('−','-');
-  const destUp  = dest.toUpperCase();
+  // Busca el número normalizando las claves para no depender de mayúsculas/símbolos
+  const nKey = Object.keys(row).find(k => {
+    const nk = nfdKey(k);
+    return nk === 'N°' || nk === 'N' || nk === '#';
+  }) || pcol.n;
+  const n = (row[nKey] || '').toString().trim().toUpperCase();
+  if (n.startsWith('ELC')) return 'local';
   const estatus = (row[pcol.estatus] || '').trim();
+  if (estatus === '2') return 'inhabilitado';
+  const titular = (row[pcol.titular] || '').trim().toLowerCase();
+  if (titular === 'visita') return 'visita';
+  const dest   = (row[pcol.destino] || '').trim().replace('−','-');
+  const destUp = dest.toUpperCase();
   if (destUp === 'RC')   return 'rc';
   if (destUp === 'FORD') return 'rc';
   if (dest !== '' && dest !== '-' && dest !== '—') return 'piloto';

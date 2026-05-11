@@ -4,13 +4,13 @@ import { nfdKey } from './utils.js';
 import { resolveColumns, resolveParkingColumns, resolveBodegaColumns, resolveEvolColumns } from './columns.js';
 import { calcIPC, precompute } from './data.js';
 import { applyFilters, resetFilters, populateDropdowns, initVencFilter, initUFFilter, onVencSlider, onUFRange } from './filters.js';
-import { renderStacking, renderSubterraneoStacking } from './render/stacking.js';
+import { renderStacking, renderSubterraneoStacking, injectBodegasIntoFloors, alignBodegaColumns } from './render/stacking.js';
 import { updateMetrics } from './render/metrics.js';
 import { renderEstatusTable, renderRawTable } from './render/tables.js';
 import { initEvolSelects, initNetosSelects, renderEvolChart, renderNetosChart } from './render/charts/evolucion.js';
 import { initVencChartSelects, renderVencChart } from './render/charts/vencimiento.js';
 import { initRenewalChartSelects, renderRenewalChart } from './render/charts/renewal.js';
-import { initSalidasChartSelects, renderSalidasChart, initMotivoChartSelects, renderMotivoChart } from './render/charts/salidas.js';
+import { initSalidasChartSelects, renderSalidasChart, initMotivoChartSelects, renderMotivoChart, initDesgloseSalidasSelects, renderDesgloseSalidasChart } from './render/charts/salidas.js';
 import { initEntradaChartSelects, renderEntradaChart, initTerminoChartSelects, renderTerminoChart } from './render/charts/entrada.js';
 
 function renderBothEvolCharts() {
@@ -22,6 +22,7 @@ function renderBothEvolCharts() {
   renderTerminoChart();
   renderSalidasChart();
   renderMotivoChart();
+  renderDesgloseSalidasChart();
 }
 
 function switchBuilding(id) {
@@ -45,6 +46,7 @@ function switchBuilding(id) {
   renderRawTable('table5', { data: BD[state.AB].venc, meta: { fields: Object.keys(BD[state.AB].venc[0] || {}) } });
   renderRawTable('table6', { data: BD[state.AB].sal,  meta: { fields: Object.keys(BD[state.AB].sal[0]  || {}) } });
   renderSubterraneoStacking(BD[state.AB].park, BD[state.AB].bod);
+  injectBodegasIntoFloors(BD[state.AB].bod);
   initEvolSelects(BD[state.AB].evol);
   initNetosSelects(BD[state.AB].evol);
   initVencChartSelects(BD[state.AB].venc);
@@ -53,11 +55,19 @@ function switchBuilding(id) {
   initTerminoChartSelects(BD[state.AB].contratos);
   initSalidasChartSelects(BD[state.AB].sal);
   initMotivoChartSelects(BD[state.AB].sal);
+  initDesgloseSalidasSelects(BD[state.AB].sal);
   renderBothEvolCharts();
   populateDropdowns(BD[state.AB].data);
   initVencFilter(BD[state.AB].data);
   initUFFilter(BD[state.AB].data);
   applyFilters();
+}
+
+function switchLegendTab(tab, btn) {
+  document.querySelectorAll('.legend-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.legend-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('legend-panel-' + tab).classList.add('active');
+  btn.classList.add('active');
 }
 
 function showTab(id, btn) {
@@ -226,7 +236,7 @@ async function copyChartCard(btn) {
   }, { passive: false });
 
   wrap.addEventListener('touchend', e => {
-    if (e.touches.length < 2) startDist = 0;
+    if (e.touches.length < 2) { startDist = 0; alignBodegaColumns(); }
   }, { passive: true });
 })();
 
@@ -243,7 +253,8 @@ document.addEventListener('touchstart', e => {
 Chart.register(ChartDataLabels);
 
 // Exponer funciones al scope global para los handlers inline del HTML
-window.switchBuilding  = switchBuilding;
+window.switchBuilding    = switchBuilding;
+window.switchLegendTab   = switchLegendTab;
 window.copyChartCard   = copyChartCard;
 window.showTab            = showTab;
 window.exportStackingPDF  = exportStackingPDF;
@@ -258,8 +269,9 @@ window.renderVencChart    = renderVencChart;
 window.renderRenewalChart = renderRenewalChart;
 window.renderEntradaChart = renderEntradaChart;
 window.renderTerminoChart = renderTerminoChart;
-window.renderSalidasChart = renderSalidasChart;
-window.renderMotivoChart  = renderMotivoChart;
+window.renderSalidasChart        = renderSalidasChart;
+window.renderMotivoChart         = renderMotivoChart;
+window.renderDesgloseSalidasChart = renderDesgloseSalidasChart;
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────
 
@@ -404,7 +416,6 @@ function parseContratosCSV(csv) {
 if (!URLS_CONTRATOS.irr.startsWith('PENDIENTE')) {
   fetch(URLS_CONTRATOS.irr).then(r => r.text()).then(csv => {
     BD.irr.contratos = parseContratosCSV(csv);
-    console.log('[contratos IRR] filas:', BD.irr.contratos.length, '| cols row0:', Object.keys(BD.irr.contratos[0] || {}));
     if (state.AB === 'irr') {
       initEntradaChartSelects(BD.irr.contratos);
       initTerminoChartSelects(BD.irr.contratos);
