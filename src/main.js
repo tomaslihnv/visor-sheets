@@ -4,14 +4,14 @@ import { nfdKey } from './utils.js';
 import { resolveColumns, resolveParkingColumns, resolveBodegaColumns, resolveEvolColumns } from './columns.js';
 import { calcIPC, precompute } from './data.js';
 import { applyFilters, resetFilters, populateDropdowns, initVencFilter, initUFFilter, onVencSlider, onUFRange } from './filters.js';
-import { renderStacking, renderSubterraneoStacking, injectBodegasIntoFloors, alignBodegaColumns } from './render/stacking.js';
+import { renderStacking, renderSubterraneoStacking, injectBodegasIntoFloors, alignBodegaColumns, alignSubterraneoColumns } from './render/stacking.js';
 import { updateMetrics } from './render/metrics.js';
 import { renderEstatusTable, renderRawTable } from './render/tables.js';
 import { initEvolSelects, initNetosSelects, renderEvolChart, renderNetosChart } from './render/charts/evolucion.js';
 import { initVencChartSelects, renderVencChart } from './render/charts/vencimiento.js';
 import { initRenewalChartSelects, renderRenewalChart } from './render/charts/renewal.js';
 import { initSalidasChartSelects, renderSalidasChart, initMotivoChartSelects, renderMotivoChart, initDesgloseSalidasSelects, renderDesgloseSalidasChart } from './render/charts/salidas.js';
-import { initEntradaChartSelects, renderEntradaChart, initTerminoChartSelects, renderTerminoChart } from './render/charts/entrada.js';
+import { initEntradaChartSelects, renderEntradaChart, initFlujoChartSelects, renderFlujoChart } from './render/charts/entrada.js';
 
 function renderBothEvolCharts() {
   renderEvolChart();
@@ -19,7 +19,7 @@ function renderBothEvolCharts() {
   renderVencChart();
   renderRenewalChart();
   renderEntradaChart();
-  renderTerminoChart();
+  renderFlujoChart();
   renderSalidasChart();
   renderMotivoChart();
   renderDesgloseSalidasChart();
@@ -52,7 +52,7 @@ function switchBuilding(id) {
   initVencChartSelects(BD[state.AB].venc);
   initRenewalChartSelects(BD[state.AB].venc);
   initEntradaChartSelects(BD[state.AB].contratos);
-  initTerminoChartSelects(BD[state.AB].contratos);
+  initFlujoChartSelects(BD[state.AB].contratos);
   initSalidasChartSelects(BD[state.AB].sal);
   initMotivoChartSelects(BD[state.AB].sal);
   initDesgloseSalidasSelects(BD[state.AB].sal);
@@ -236,7 +236,7 @@ async function copyChartCard(btn) {
   }, { passive: false });
 
   wrap.addEventListener('touchend', e => {
-    if (e.touches.length < 2) { startDist = 0; alignBodegaColumns(); }
+    if (e.touches.length < 2) { startDist = 0; alignBodegaColumns(); alignSubterraneoColumns(); }
   }, { passive: true });
 })();
 
@@ -268,7 +268,7 @@ window.renderNetosChart   = renderNetosChart;
 window.renderVencChart    = renderVencChart;
 window.renderRenewalChart = renderRenewalChart;
 window.renderEntradaChart = renderEntradaChart;
-window.renderTerminoChart = renderTerminoChart;
+window.renderFlujoChart = renderFlujoChart;
 window.renderSalidasChart        = renderSalidasChart;
 window.renderMotivoChart         = renderMotivoChart;
 window.renderDesgloseSalidasChart = renderDesgloseSalidasChart;
@@ -342,9 +342,10 @@ Promise.all(URLS.irr.slice(1).map(u => fetch(u).then(r => r.text())))
       initVencChartSelects(BD.irr.venc);
       initRenewalChartSelects(BD.irr.venc);
       initEntradaChartSelects(BD.irr.contratos);
-      initTerminoChartSelects(BD.irr.contratos);
+      initFlujoChartSelects(BD.irr.contratos);
       initSalidasChartSelects(BD.irr.sal);
       initMotivoChartSelects(BD.irr.sal);
+      initDesgloseSalidasSelects(BD.irr.sal);
       initVencFilter(BD.irr.data);
       initUFFilter(BD.irr.data);
       applyFilters();
@@ -389,9 +390,10 @@ Promise.all(URLS.ech.slice(1).map(u => fetch(u).then(r => r.text())))
       initVencChartSelects(BD.ech.venc);
       initRenewalChartSelects(BD.ech.venc);
       initEntradaChartSelects(BD.ech.contratos);
-      initTerminoChartSelects(BD.ech.contratos);
+      initFlujoChartSelects(BD.ech.contratos);
       initSalidasChartSelects(BD.ech.sal);
       initMotivoChartSelects(BD.ech.sal);
+      initDesgloseSalidasSelects(BD.ech.sal);
       initVencFilter(BD.ech.data);
       initUFFilter(BD.ech.data);
       applyFilters();
@@ -418,9 +420,9 @@ if (!URLS_CONTRATOS.irr.startsWith('PENDIENTE')) {
     BD.irr.contratos = parseContratosCSV(csv);
     if (state.AB === 'irr') {
       initEntradaChartSelects(BD.irr.contratos);
-      initTerminoChartSelects(BD.irr.contratos);
+      initFlujoChartSelects(BD.irr.contratos);
       renderEntradaChart();
-      renderTerminoChart();
+      renderFlujoChart();
     }
   }).catch(err => console.error('Error cargando I. Contratos IRR:', err));
 }
@@ -431,9 +433,9 @@ if (!URLS_CONTRATOS.ech.startsWith('PENDIENTE')) {
     BD.ech.contratos = parseContratosCSV(csv);
     if (state.AB === 'ech') {
       initEntradaChartSelects(BD.ech.contratos);
-      initTerminoChartSelects(BD.ech.contratos);
+      initFlujoChartSelects(BD.ech.contratos);
       renderEntradaChart();
-      renderTerminoChart();
+      renderFlujoChart();
     }
   }).catch(err => console.error('Error cargando I. Contratos ECH:', err));
 }

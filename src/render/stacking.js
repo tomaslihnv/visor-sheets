@@ -109,50 +109,64 @@ export function renderSubterraneoStacking(estacData, bodData) {
 
   if (!negPisos.length) { bldg.removeChild(sep); return; }
 
-  negPisos.forEach(piso => {
-    const estacUnits = (estacByPiso[piso] || []).slice().sort((a, b) => parseInt(a[pcol.n]) - parseInt(b[pcol.n]));
-    const bodUnits   = (bodByPiso[piso]   || []).slice().sort((a, b) => parseInt(a[bcol.n]) - parseInt(b[bcol.n]));
-    if (!estacUnits.length && !bodUnits.length) return;
+  const MAX_PER_ROW = 20;
 
-    const estacRW  = estacUnits.length ? Math.ceil(estacUnits.length / 2) : 0;
-    const bodNeg   = (bodByPiso[piso] || []).slice().sort((a, b) => parseInt(a[bcol.n]) - parseInt(b[bcol.n]));
-    const bodRW    = bodNeg.length ? Math.ceil(bodNeg.length / 2) : 0;
-    const numRows  = Math.max(
-      estacRW ? Math.ceil(estacUnits.length / estacRW) : 0,
-      bodRW   ? Math.ceil(bodNeg.length     / bodRW)   : 0
-    );
+  function renderEstacGroup(units, bodUnits, firstLabel, isMotoGroup = false) {
+    if (!units.length && !bodUnits.length) return;
+    const perRow  = units.length ? Math.min(MAX_PER_ROW, units.length) : 0;
+    const numRows = perRow ? Math.ceil(units.length / perRow) : 1;
+    const bodRW   = bodUnits.length ? Math.ceil(bodUnits.length / numRows) : 0;
 
     for (let i = 0; i < numRows; i++) {
-      const estacChunk = estacRW ? estacUnits.slice(i * estacRW, (i + 1) * estacRW) : [];
-      const bodChunk   = bodRW   ? bodNeg.slice(i * bodRW, (i + 1) * bodRW)         : [];
+      const chunk    = perRow  ? units.slice(i * perRow, (i + 1) * perRow)   : [];
+      const bodChunk = bodRW   ? bodUnits.slice(i * bodRW, (i + 1) * bodRW) : [];
 
       const rowEl = document.createElement('div');
-      rowEl.className = 'floor-row';
+      rowEl.className = 'floor-row' + (i === 0 && isMotoGroup ? ' moto-group' : '');
 
       const lbl = document.createElement('div');
-      lbl.className = 'floor-label';
-      lbl.textContent = i === 0 ? String(piso) : '';
+      lbl.className = 'floor-label' + (i === 0 && isMotoGroup ? ' moto-label' : '');
+      lbl.textContent = i === 0 ? firstLabel : '';
       rowEl.appendChild(lbl);
 
-      const estacCells = document.createElement('div');
-      estacCells.className = 'floor-cells';
-      estacChunk.forEach(u => estacCells.appendChild(makeParkingCell(u)));
-      rowEl.appendChild(estacCells);
+      const cells = document.createElement('div');
+      cells.className = 'floor-cells';
+      cells.style.minWidth = (perRow * 34 - 2) + 'px'; // 32px cell + 2px gap, keeps separator aligned on partial rows
+      chunk.forEach(u => cells.appendChild(makeParkingCell(u)));
+      rowEl.appendChild(cells);
 
-      if (estacChunk.length && bodChunk.length) {
+      if (bodChunk.length) {
         const div = document.createElement('div');
-        div.className = 'estac-bod-div';
+        div.className = 'estac-bod-div sub-bod-sep';
         rowEl.appendChild(div);
-      }
 
-      const bodCells = document.createElement('div');
-      bodCells.className = 'floor-cells';
-      bodChunk.forEach(u => bodCells.appendChild(makeBodegaCell(u)));
-      rowEl.appendChild(bodCells);
+        const bodCells = document.createElement('div');
+        bodCells.className = 'floor-cells';
+        bodChunk.forEach(u => bodCells.appendChild(makeBodegaCell(u)));
+        rowEl.appendChild(bodCells);
+      }
 
       bldg.appendChild(rowEl);
     }
+  }
+
+  negPisos.forEach(piso => {
+    const all    = (estacByPiso[piso] || []).slice().sort((a, b) => parseInt(a[pcol.n]) - parseInt(b[pcol.n]));
+    const bodNeg = (bodByPiso[piso]   || []).slice().sort((a, b) => parseInt(a[bcol.n]) - parseInt(b[bcol.n]));
+    if (!all.length && !bodNeg.length) return;
+
+    const isMoto = u => (u[pcol.destino] || '').toString().trim().toUpperCase().includes('MOTO');
+    const autos  = all.filter(u => !isMoto(u));
+    const motos  = all.filter(u => isMoto(u));
+
+    if (autos.length || bodNeg.length) renderEstacGroup(autos, bodNeg, String(piso));
+
+    if (motos.length) {
+      renderEstacGroup(motos, [], autos.length ? 'Moto' : String(piso), autos.length > 0);
+    }
   });
+
+  requestAnimationFrame(alignSubterraneoColumns);
 }
 
 // Inserta bodegas de pisos positivos a la derecha de las filas del edificio
@@ -196,6 +210,17 @@ export function injectBodegasIntoFloors(bodData) {
 
 export function alignBodegaColumns() {
   const seps = [...document.querySelectorAll('.bod-inline-sep')];
+  if (!seps.length) return;
+  seps.forEach(s => { s.style.marginLeft = ''; });
+  const maxLeft = Math.max(...seps.map(s => s.getBoundingClientRect().left));
+  seps.forEach(s => {
+    const diff = maxLeft - s.getBoundingClientRect().left;
+    if (diff > 0) s.style.marginLeft = diff + 'px';
+  });
+}
+
+export function alignSubterraneoColumns() {
+  const seps = [...document.querySelectorAll('.sub-bod-sep')];
   if (!seps.length) return;
   seps.forEach(s => { s.style.marginLeft = ''; });
   const maxLeft = Math.max(...seps.map(s => s.getBoundingClientRect().left));

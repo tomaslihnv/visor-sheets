@@ -2,23 +2,33 @@ import { state, BD, CHARTS, destroyChart } from '../../state.js';
 import { EVOL_COL } from '../../columns.js';
 import { parseEvolDate, formatEvolLabel, _MESES } from '../../utils.js';
 
+function defaultEvolHastaIdx(data) {
+  const now = new Date();
+  const curKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  let idx = data.length - 1;
+  data.forEach((row, i) => {
+    const d = parseEvolDate((row[EVOL_COL.fecha] || '').toString());
+    if (!d) return;
+    const mk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    if (mk <= curKey) idx = i;
+  });
+  return idx;
+}
+
 export function initEvolSelects(data) {
   const desdeEl = document.getElementById('evol-desde');
   const hastaEl = document.getElementById('evol-hasta');
   if (!desdeEl) return;
   desdeEl.innerHTML = hastaEl.innerHTML = '';
-  let defDesde = 0, defHasta = data.length - 1;
   data.forEach((row, i) => {
     const f = (row[EVOL_COL.fecha] || '').toString().trim();
     if (!f) return;
     const label = formatEvolLabel(f);
     desdeEl.appendChild(new Option(label, i));
     hastaEl.appendChild(new Option(label, i));
-    const d = parseEvolDate(f);
-    if (d && d.getMonth() === 11) defHasta = i;
   });
-  desdeEl.value = defDesde;
-  hastaEl.value = defHasta;
+  desdeEl.value = 0;
+  hastaEl.value = defaultEvolHastaIdx(data);
 }
 
 export function initNetosSelects(data) {
@@ -26,18 +36,15 @@ export function initNetosSelects(data) {
   const hastaEl = document.getElementById('netos-hasta');
   if (!desdeEl) return;
   desdeEl.innerHTML = hastaEl.innerHTML = '';
-  let defDesde = 0, defHasta = data.length - 1;
   data.forEach((row, i) => {
     const f = (row[EVOL_COL.fecha] || '').toString().trim();
     if (!f) return;
     const label = formatEvolLabel(f);
     desdeEl.appendChild(new Option(label, i));
     hastaEl.appendChild(new Option(label, i));
-    const d = parseEvolDate(f);
-    if (d && d.getMonth() === 11) defHasta = i;
   });
-  desdeEl.value = defDesde;
-  hastaEl.value = defHasta;
+  desdeEl.value = 0;
+  hastaEl.value = defaultEvolHastaIdx(data);
 }
 
 export function renderEvolChart() {

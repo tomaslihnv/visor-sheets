@@ -55,7 +55,9 @@ export function initSalidasChartSelects(salData) {
   });
   if (months.length) {
     desdeEl.value = months[0];
-    hastaEl.value = months[months.length - 1];
+    const now = new Date();
+    const cur = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    hastaEl.value = months.filter(mk => mk <= cur).pop() || months[months.length - 1];
   }
 
   // Pre-asignar colores a todos los motivos para que sean consistentes entre gráficos
@@ -248,7 +250,9 @@ export function initDesgloseSalidasSelects(salData) {
   });
   if (months.length) {
     desdeEl.value = months[0];
-    hastaEl.value = months[months.length - 1];
+    const now = new Date();
+    const cur = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    hastaEl.value = months.filter(mk => mk <= cur).pop() || months[months.length - 1];
   }
 }
 
@@ -415,7 +419,9 @@ export function initMotivoChartSelects(salData) {
 
   desdeEl.innerHTML = sorted.map(mk => { const [y,m]=mk.split('-'); return `<option value="${mk}">${_MESES[+m-1]}-${y.slice(-2)}</option>`; }).join('');
   hastaEl.innerHTML = desdeEl.innerHTML;
-  hastaEl.value = sorted[sorted.length - 1];
+  const now2 = new Date();
+  const cur2 = `${now2.getFullYear()}-${String(now2.getMonth()+1).padStart(2,'0')}`;
+  hastaEl.value = sorted.filter(mk => mk <= cur2).pop() || sorted[sorted.length - 1];
 
   if (tipEl) {
     const tips = new Set();

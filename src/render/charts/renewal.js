@@ -42,7 +42,9 @@ export function initRenewalChartSelects(vencData) {
   });
   if (months.length) {
     desdeEl.value = months[0];
-    hastaEl.value = months[months.length - 1];
+    const now = new Date();
+    const cur = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    hastaEl.value = months.filter(mk => mk <= cur).pop() || months[months.length - 1];
   }
 }
 

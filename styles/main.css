@@ -197,6 +197,8 @@ tr:hover td { background: #f8fafc; }
   text-align: center; padding: 12px 0 6px;
   border-top: 2px dashed #d1dae3; margin-top: 6px;
 }
+.floor-row.moto-group { margin-top: 6px; }
+.floor-label.moto-label { color: #6366f1; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; }
 .estac-bod-div {
   width: 2px; background: #d1dae3; align-self: stretch;
   margin: 0 8px; border-radius: 1px; flex-shrink: 0;

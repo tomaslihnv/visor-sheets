@@ -295,19 +295,14 @@
     <div class="evol-card">
       <div class="evol-card-header">
         <div class="evol-card-title-row">
-          <span class="evol-card-title">Vencimientos Mensuales</span>
+          <span class="evol-card-title">Vencimientos</span>
           <button class="btn-copy-chart" onclick="copyChartCard(this)" title="Copiar como imagen"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
         </div>
         <div class="evol-card-controls">
           <label class="evol-check-label"><input type="checkbox" id="venc-chart-labels" onchange="renderVencChart()" checked> Etiquetas</label>
-          <label class="evol-check-label"><input type="checkbox" id="venc-chart-avg" onchange="renderVencChart()" checked> Promedio</label>
           <div class="evol-range">
             <label>Tipología</label>
             <select id="venc-chart-tipo" onchange="renderVencChart()"><option value="">Todas</option></select>
-          </div>
-          <div class="evol-range">
-            <label>Evento Final</label>
-            <select id="venc-chart-evento" onchange="renderVencChart()"><option value="">Todas</option></select>
           </div>
           <div class="evol-range">
             <label>Desde</label>
@@ -372,21 +367,21 @@
     <div class="evol-card">
       <div class="evol-card-header">
         <div class="evol-card-title-row">
-          <span class="evol-card-title">Eventos de Término</span>
+          <span class="evol-card-title">Contratos, Salidas y Netos</span>
           <button class="btn-copy-chart" onclick="copyChartCard(this)" title="Copiar como imagen"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
         </div>
         <div class="evol-card-controls">
-          <label class="evol-check-label"><input type="checkbox" id="termino-chart-labels" onchange="renderTerminoChart()" checked> Etiquetas</label>
+          <label class="evol-check-label"><input type="checkbox" id="flujo-chart-labels" onchange="renderFlujoChart()" checked> Etiquetas</label>
           <div class="evol-range">
             <label>Desde</label>
-            <select id="termino-chart-desde" onchange="renderTerminoChart()"></select>
+            <select id="flujo-chart-desde" onchange="renderFlujoChart()"></select>
             <label>Hasta</label>
-            <select id="termino-chart-hasta" onchange="renderTerminoChart()"></select>
+            <select id="flujo-chart-hasta" onchange="renderFlujoChart()"></select>
           </div>
         </div>
       </div>
       <div class="evol-chart-wrap evol-h-300">
-        <canvas id="termino-chart-canvas"></canvas>
+        <canvas id="flujo-chart-canvas"></canvas>
       </div>
     </div>
 

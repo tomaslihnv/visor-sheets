@@ -1,6 +1,10 @@
 import { state, BD, CHARTS, destroyChart } from '../../state.js';
 import { nfdKey, parseDate, _MESES } from '../../utils.js';
-import { avgLineDataset } from '../../categories.js';
+
+function curMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+}
 
 export function initVencChartSelects(vencData) {
   const desdeEl = document.getElementById('venc-chart-desde');
@@ -17,20 +21,6 @@ export function initVencChartSelects(vencData) {
     });
     tipoEl.innerHTML = '<option value="">Todas</option>';
     [...tipos].sort().forEach(t => tipoEl.appendChild(new Option(t, t)));
-  }
-
-  const eventoEl = document.getElementById('venc-chart-evento');
-  if (eventoEl) {
-    const eventoCol = Object.keys(vencData[0] || {}).find(k => nfdKey(k).includes('EVENTO') && nfdKey(k).includes('TERMINO'));
-    const ORDER = ['R', 'R(CU)', 'NR', '-'];
-    const valSet = new Set();
-    vencData.forEach(r => {
-      const v = eventoCol ? (r[eventoCol] || '').toString().trim() : '';
-      valSet.add(v === '' ? '-' : v);
-    });
-    const sorted = [...ORDER.filter(o => valSet.has(o)), ...[...valSet].filter(v => !ORDER.includes(v)).sort()];
-    eventoEl.innerHTML = '<option value="">Todas</option>';
-    sorted.forEach(v => eventoEl.appendChild(new Option(v, v)));
   }
 
   const monthsSet = new Set();
@@ -51,7 +41,8 @@ export function initVencChartSelects(vencData) {
   });
   if (months.length) {
     desdeEl.value = months[0];
-    hastaEl.value = months[months.length - 1];
+    const cur = curMonthKey();
+    hastaEl.value = months.filter(mk => mk <= cur).pop() || months[months.length - 1];
   }
 }
 
@@ -62,16 +53,15 @@ export function renderVencChart() {
   const tipoEl   = document.getElementById('venc-chart-tipo');
   if (!desdeEl || !vencData.length) return;
 
-  const desde      = desdeEl.value;
-  const hasta      = hastaEl.value;
-  const tipoFilt   = tipoEl ? tipoEl.value : '';
-  const eventoFilt = (document.getElementById('venc-chart-evento')?.value) || '';
+  const desde    = desdeEl.value;
+  const hasta    = hastaEl.value;
+  const tipoFilt = tipoEl ? tipoEl.value : '';
   if (!desde || !hasta || desde > hasta) return;
 
-  const sample     = vencData[0] || {};
-  const tipoCol    = Object.keys(sample).find(k => nfdKey(k).includes('TIPOLOG')) || 'Tipología';
-  const fechaCol   = Object.keys(sample).find(k => nfdKey(k) === 'FECHA') || Object.keys(sample)[0];
-  const eventoCol  = Object.keys(sample).find(k => nfdKey(k).includes('EVENTO') && nfdKey(k).includes('TERMINO'));
+  const sample    = vencData[0] || {};
+  const tipoCol   = Object.keys(sample).find(k => nfdKey(k).includes('TIPOLOG')) || 'Tipología';
+  const fechaCol  = Object.keys(sample).find(k => nfdKey(k) === 'FECHA') || Object.keys(sample)[0];
+  const eventoCol = Object.keys(sample).find(k => nfdKey(k).includes('EVENTO') && nfdKey(k).includes('TERMINO'));
 
   const [dy, dm] = desde.split('-').map(Number);
   const [hy, hm] = hasta.split('-').map(Number);
@@ -82,88 +72,102 @@ export function renderVencChart() {
     cm++; if (cm > 12) { cm = 1; cy++; }
   }
 
-  const counts = {};
-  allMonths.forEach(mk => counts[mk] = 0);
+  const nr = {}, ren = {};
+  allMonths.forEach(mk => { nr[mk] = 0; ren[mk] = 0; });
+
   vencData.forEach(r => {
     const p = parseDate((r[fechaCol] || '').toString().trim());
     if (!p) return;
     const mk = `${p.year}-${String(p.month).padStart(2,'0')}`;
-    if (!(mk in counts)) return;
+    if (!(mk in nr)) return;
     if (tipoFilt && (r[tipoCol] || '').toString().trim() !== tipoFilt) return;
-    if (eventoFilt) {
-      const ev = eventoCol ? (r[eventoCol] || '').toString().trim() : '';
-      const evNorm = ev === '' ? '-' : ev;
-      if (evNorm !== eventoFilt) return;
-    }
-    counts[mk]++;
+    const ev = eventoCol ? (r[eventoCol] || '').toString().trim() : '';
+    if (!ev || ev === '-') return;
+    if (ev === 'NR') nr[mk]++;
+    else if (ev === 'R' || ev === 'R(CU)' || ev.toUpperCase().startsWith('R (')) ren[mk]++;
   });
 
-  const cutoff = new Date(); cutoff.setDate(1); cutoff.setHours(0,0,0,0);
-  const isPastMk = mk => { const [y,m] = mk.split('-').map(Number); return new Date(y, m-1, 1) < cutoff; };
+  const labels     = allMonths.map(mk => { const [y,m] = mk.split('-'); return _MESES[parseInt(m)-1]+'-'+String(y).slice(-2); });
+  const dataNR     = allMonths.map(mk => nr[mk]);
+  const dataRen    = allMonths.map(mk => ren[mk]);
+  const totals     = allMonths.map(mk => nr[mk] + ren[mk]);
+  const showLabels = !!document.getElementById('venc-chart-labels')?.checked;
 
-  const labels      = allMonths.map(mk => { const [y,m] = mk.split('-'); return _MESES[parseInt(m)-1]+'-'+String(y).slice(-2); });
-  const data        = allMonths.map(mk => counts[mk]);
-  const colors      = allMonths.map(mk => isPastMk(mk) ? '#44546A' : '#cbd5e1');
-  const labelColors = allMonths.map(mk => isPastMk(mk) ? '#44546A' : '#64748b');
+  const totalLine = {
+    type: 'line', label: '_total', data: totals,
+    borderColor: 'transparent', backgroundColor: 'transparent',
+    pointRadius: 0, pointHoverRadius: 0, borderWidth: 0,
+    datalabels: {
+      display: ctx => totals[ctx.dataIndex] > 0,
+      anchor: 'end', align: 'top', offset: 4,
+      color: '#1a2332', font: { size: 10, weight: '700' },
+      formatter: v => v
+    }
+  };
 
-  const legendReal  = { type:'bar', label:'Vencimientos reales',      data: allMonths.map(()=>null), backgroundColor:'#44546A',  datalabels:{display:false} };
-  const legendFcast = { type:'bar', label:'Vencimientos proyectados', data: allMonths.map(()=>null), backgroundColor:'#cbd5e1', datalabels:{display:false} };
-  const showAvg  = !!document.getElementById('venc-chart-avg')?.checked;
-  const avgDS    = avgLineDataset(allMonths, data);
   const datasets = [
-    { type:'bar', label:'Vencimientos', data,
-      backgroundColor: colors, borderRadius: 3,
+    {
+      type: 'bar', label: 'No Renovación',
+      data: dataNR, backgroundColor: '#fb923c',
+      stack: 'venc', borderWidth: 0, borderRadius: 0, borderSkipped: false,
       datalabels: {
-        display: ctx => {
-          const v = data[ctx.dataIndex];
-          return !!document.getElementById('venc-chart-labels')?.checked && v != null && v !== 0;
-        },
-        anchor: 'end', align: 'top', offset: 2,
-        color: ctx => labelColors[ctx.dataIndex],
-        font: { size: 8, weight: '600' },
+        display: ctx => showLabels && dataNR[ctx.dataIndex] > 0,
+        anchor: 'center', align: 'center',
+        color: '#fff', font: { size: 9, weight: '700' },
         formatter: v => v
       }
     },
-    legendReal, legendFcast,
-    ...(showAvg && avgDS ? [avgDS] : [])
+    {
+      type: 'bar', label: 'Renovación',
+      data: dataRen, backgroundColor: '#34d399',
+      stack: 'venc', borderWidth: 0,
+      borderRadius: { topLeft: 3, topRight: 3 }, borderSkipped: false,
+      datalabels: {
+        display: ctx => showLabels && dataRen[ctx.dataIndex] > 0,
+        anchor: 'center', align: 'center',
+        color: '#fff', font: { size: 9, weight: '700' },
+        formatter: v => v
+      }
+    },
+    totalLine
   ];
 
   const canvas = document.getElementById('venc-chart-canvas');
   destroyChart('venc');
 
   CHARTS.venc = new Chart(canvas, {
+    type: 'bar',
     data: { labels, datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
-      interaction: { mode:'index', intersect:false },
+      interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: {
           position: 'top',
-          labels: { font:{ size:11 }, boxWidth:14, padding:16,
-            filter: item => item.label === 'Vencimientos reales' || item.label === 'Vencimientos proyectados' || item.label === 'Promedio'
+          labels: { font: { size: 11 }, boxWidth: 14, padding: 16,
+            filter: item => item.text !== '_total'
           }
         },
         datalabels: {},
         tooltip: {
+          filter: item => item.dataset.label !== '_total',
           callbacks: {
-            label: ctx => {
-              if (ctx.dataset.label === 'Promedio') return avgDS ? ` Promedio: ${avgDS._avgValue.toFixed(1)} un.` : null;
-              if (ctx.datasetIndex !== 0) return null;
-              const v = ctx.parsed.y; if (v == null) return null;
-              const past = isPastMk(allMonths[ctx.dataIndex]);
-              return ` Vencimientos ${past ? 'reales' : 'proyectados'}: ${v} un.`;
+            label: ctx => ctx.parsed.y ? ` ${ctx.dataset.label}: ${ctx.parsed.y} un.` : null,
+            footer: items => {
+              const t = items.filter(i => i.dataset.label !== '_total').reduce((s, i) => s + i.parsed.y, 0);
+              return t ? `Total: ${t} un.` : '';
             }
           }
         }
       },
       clip: false,
       scales: {
-        x: { grid:{ display:false }, ticks:{ font:{ size:10 } } },
+        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } },
         y: {
-          type:'linear', position:'left', grace:'20%',
-          grid:{ color:'#f0f3f6' },
-          ticks:{ font:{ size:10 }, stepSize:1, precision:0 },
-          title:{ display:true, text:'Unidades', font:{ size:10 }, color:'#8a9bb0' }
+          stacked: true, grace: '8%', min: 0,
+          grid: { color: '#f0f3f6' },
+          ticks: { font: { size: 10 }, stepSize: 1, precision: 0 },
+          title: { display: true, text: 'Unidades', font: { size: 10 }, color: '#8a9bb0' }
         }
       }
     }
