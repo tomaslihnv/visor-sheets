@@ -111,7 +111,8 @@ export function renderSubterraneoStacking(estacData, bodData) {
 
   const MAX_PER_ROW = 20;
 
-  function renderEstacGroup(units, bodUnits, firstLabel, isMotoGroup = false) {
+  // groupStyle: '' | 'moto' | 'inhab'
+  function renderEstacGroup(units, bodUnits, firstLabel, groupStyle = '') {
     if (!units.length && !bodUnits.length) return;
     const perRow  = units.length ? Math.min(MAX_PER_ROW, units.length) : 0;
     const numRows = perRow ? Math.ceil(units.length / perRow) : 1;
@@ -122,10 +123,10 @@ export function renderSubterraneoStacking(estacData, bodData) {
       const bodChunk = bodRW   ? bodUnits.slice(i * bodRW, (i + 1) * bodRW) : [];
 
       const rowEl = document.createElement('div');
-      rowEl.className = 'floor-row' + (i === 0 && isMotoGroup ? ' moto-group' : '');
+      rowEl.className = 'floor-row' + (i === 0 && groupStyle ? ` ${groupStyle}-group` : '');
 
       const lbl = document.createElement('div');
-      lbl.className = 'floor-label' + (i === 0 && isMotoGroup ? ' moto-label' : '');
+      lbl.className = 'floor-label' + (i === 0 && groupStyle ? ` ${groupStyle}-label` : '');
       lbl.textContent = i === 0 ? firstLabel : '';
       rowEl.appendChild(lbl);
 
@@ -151,19 +152,23 @@ export function renderSubterraneoStacking(estacData, bodData) {
   }
 
   negPisos.forEach(piso => {
-    const all    = (estacByPiso[piso] || []).slice().sort((a, b) => parseInt(a[pcol.n]) - parseInt(b[pcol.n]));
-    const bodNeg = (bodByPiso[piso]   || []).slice().sort((a, b) => parseInt(a[bcol.n]) - parseInt(b[bcol.n]));
-    if (!all.length && !bodNeg.length) return;
+    const sortByN = (a, b) => parseInt(a[pcol.n]) - parseInt(b[pcol.n]);
+    const allRaw = (estacByPiso[piso] || []).slice();
+    const bodNeg = (bodByPiso[piso]   || []).slice().sort(sortByN);
+    if (!allRaw.length && !bodNeg.length) return;
 
-    const isMoto = u => (u[pcol.destino] || '').toString().trim().toUpperCase().includes('MOTO');
-    const autos  = all.filter(u => !isMoto(u));
-    const motos  = all.filter(u => isMoto(u));
+    const isInhab = u => getParkingCategory(u) === 'inhabilitado';
+    const isMoto  = u => !isInhab(u) && (u[pcol.destino] || '').toString().trim().toUpperCase().includes('MOTO');
+
+    const autos  = allRaw.filter(u => !isMoto(u) && !isInhab(u)).sort(sortByN);
+    const motos  = allRaw.filter(u => isMoto(u)).sort(sortByN);
+    const inhabs = allRaw.filter(u => isInhab(u)).sort(sortByN);
+
+    const hasOthers = autos.length + motos.length > 0;
 
     if (autos.length || bodNeg.length) renderEstacGroup(autos, bodNeg, String(piso));
-
-    if (motos.length) {
-      renderEstacGroup(motos, [], autos.length ? 'Moto' : String(piso), autos.length > 0);
-    }
+    if (motos.length)  renderEstacGroup(motos,  [], autos.length > 0 ? 'Moto'   : String(piso), autos.length > 0   ? 'moto'  : '');
+    if (inhabs.length) renderEstacGroup(inhabs, [], hasOthers        ? 'Inhab.' : String(piso), hasOthers          ? 'inhab' : '');
   });
 
   requestAnimationFrame(alignSubterraneoColumns);

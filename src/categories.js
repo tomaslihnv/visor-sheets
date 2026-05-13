@@ -13,7 +13,6 @@ export function getCategory(u) {
 }
 
 export function getParkingCategory(row) {
-  // Busca el número normalizando las claves para no depender de mayúsculas/símbolos
   const nKey = Object.keys(row).find(k => {
     const nk = nfdKey(k);
     return nk === 'N°' || nk === 'N' || nk === '#';
@@ -24,12 +23,9 @@ export function getParkingCategory(row) {
   if (estatus === '2') return 'inhabilitado';
   const titular = (row[pcol.titular] || '').trim().toLowerCase();
   if (titular === 'visita') return 'visita';
-  const dest   = (row[pcol.destino] || '').trim().replace('−','-');
-  const destUp = dest.toUpperCase();
-  if (destUp === 'RC')   return 'rc';
-  if (destUp === 'FORD') return 'rc';
-  if (dest !== '' && dest !== '-' && dest !== '—') return 'piloto';
-  if (estatus === '1')   return 'contrato';
+  if (estatus === '1') return 'contrato';
+  const destUp = (row[pcol.destino] || '').trim().replace('−','-').toUpperCase();
+  if (destUp === 'RC' || destUp === 'FORD') return 'contrato';
   return 'vacante';
 }
 

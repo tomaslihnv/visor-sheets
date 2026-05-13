@@ -85,7 +85,7 @@ export const CAT_STYLE = {
   vacante:     { bg:'#fee2e2', border:'#fca5a5', color:'#991b1b' },
   piloto:      { bg:'#ffedd5', border:'#fdba74', color:'#9a3412' },
   visita:      { bg:'#e0f2fe', border:'#7dd3fc', color:'#0369a1' },
-  inhabilitado:{ bg:'#3a3a3c', border:'#52525b', color:'#a1a1aa' },
+  inhabilitado:{ bg:'#e2e8f0', border:'#94a3b8', color:'#334155' },
   local:        { bg:'#fef9c3', border:'#fde047', color:'#854d0e' },
   default:     { bg:'#f0f4f8', border:'#d1dae3', color:'#3a4f63' },
 };

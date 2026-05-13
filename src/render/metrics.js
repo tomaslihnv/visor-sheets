@@ -9,13 +9,20 @@ export function updateMetrics(deptoData, estacData, bodData) {
   const umap   = BD[state.AB].umap;
 
   let dContr = 0, dRC = 0, dVac = 0, dPilot = 0;
+  const tipMap = {};
   layout.forEach(floor => floor.cells.forEach(cell => {
-    const u = umap[cell.n];
+    const u   = umap[cell.n];
     const cat = getCategory(u);
     if      (cat === 'contrato') dContr++;
     else if (cat === 'rc')       dRC++;
     else if (cat === 'vacante')  dVac++;
     else if (cat === 'piloto')   dPilot++;
+    if (u && cat !== 'piloto' && cat !== 'default') {
+      const tipo = (u['Tipo'] || '').trim() || '—';
+      if (!tipMap[tipo]) tipMap[tipo] = { total: 0, rented: 0 };
+      tipMap[tipo].total++;
+      if (cat === 'contrato' || cat === 'rc') tipMap[tipo].rented++;
+    }
   }));
   const dTotal   = dContr + dRC + dVac + dPilot;
   const dEnRenta = dContr + dRC;
@@ -28,6 +35,19 @@ export function updateMetrics(deptoData, estacData, bodData) {
     dBase > 0 ? Math.round(dEnRenta / dBase * 100) + '%' : '—';
   document.getElementById('occ-depto-un').textContent =
     dBase > 0 ? `(${dEnRenta} un.)` : '';
+
+  const tipEl = document.getElementById('tipologia-breakdown');
+  if (tipEl) {
+    const rows = Object.entries(tipMap).sort((a, b) => b[1].total - a[1].total);
+    tipEl.innerHTML = rows.map(([tipo, { total, rented }]) => {
+      const pct = total > 0 ? Math.round(rented / total * 100) : 0;
+      return `<div class="tipo-row">
+        <span class="tipo-name">${tipo}</span>
+        <span class="tipo-count">${rented}/${total}</span>
+        <span class="tipo-pct">${pct}%</span>
+      </div>`;
+    }).join('');
+  }
 
   let eContr = 0, eRC = 0, eVac = 0, eInhab = 0, eVisita = 0, eLocal = 0;
   estacData.forEach(row => {

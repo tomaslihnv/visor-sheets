@@ -197,8 +197,15 @@ tr:hover td { background: #f8fafc; }
   text-align: center; padding: 12px 0 6px;
   border-top: 2px dashed #d1dae3; margin-top: 6px;
 }
-.floor-row.moto-group { margin-top: 6px; }
-.floor-label.moto-label { color: #6366f1; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; }
+.floor-row.moto-group   { margin-top: 6px; }
+.floor-row.inhab-group  { margin-top: 6px; }
+.floor-label.moto-label  { color: #6366f1; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; }
+.floor-label.inhab-label { color: #94a3b8; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; }
+/* Tipología breakdown en leyenda */
+.tipo-row { display: flex; align-items: center; gap: 4px; padding: 2px 0; }
+.tipo-name  { flex: 1; font-size: 10px; font-weight: 500; color: #3a4f63; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px; }
+.tipo-count { font-size: 10px; color: #8a9bb0; min-width: 34px; text-align: right; }
+.tipo-pct   { font-size: 10px; font-weight: 700; color: #065f46; min-width: 32px; text-align: right; }
 .estac-bod-div {
   width: 2px; background: #d1dae3; align-self: stretch;
   margin: 0 8px; border-radius: 1px; flex-shrink: 0;
