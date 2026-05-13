@@ -60,9 +60,9 @@ export function updateMetrics(deptoData, estacData, bodData) {
     else                             eVac++;
   });
   const eEnRenta = eContr + eRC;
-  // Total operativo: excluye inhabilitados, visita (no son arrendables residenciales)
-  const eDisp    = eContr + eRC + eVac + eLocal;
-  const eTotal   = eDisp + eInhab + eVisita;
+  // Total operativo: solo excluye visita (no arrendable). Inhabilitados y locales = normales.
+  const eDisp    = eContr + eRC + eVac + eLocal + eInhab;
+  const eTotal   = eDisp + eVisita;
   const eOccPct  = eDisp > 0 ? Math.round(eEnRenta / eDisp * 100) + '%' : '—';
   document.getElementById('occ-estac').textContent = eOccPct;
   // Panel Estacionamientos
@@ -75,6 +75,7 @@ export function updateMetrics(deptoData, estacData, bodData) {
   set('occ-estac-pct',  eOccPct);
   set('occ-estac-un',   eDisp > 0 ? `(${eEnRenta}/${eDisp})` : '');
   set('occ-estac-total',eTotal);
+  set('occ-estac-noarr',eVisita);
 
   let bContr = 0, bVac = 0;
   bodData.forEach(row => {

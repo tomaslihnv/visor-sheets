@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VISOR INSITU</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='16' fill='%23000'/><text x='16' y='21' font-family='Segoe UI,system-ui,sans-serif' font-size='13' font-weight='700' fill='%23fff' text-anchor='middle' letter-spacing='0.5'>VI</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles/main.css">
 <style>
 /* Estilos en styles/main.css */
@@ -14,19 +17,50 @@
 
 <!-- ── LOGIN OVERLAY ── -->
 <div id="auth-overlay">
-  <div class="auth-card">
-    <div class="auth-logo">
-      <svg width="36" height="36" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#0a0a0a"/><text x="16" y="21" font-family="Segoe UI,system-ui,sans-serif" font-size="13" font-weight="700" fill="#fff" text-anchor="middle" letter-spacing="0.5">VI</text></svg>
+  <div class="auth-bg">
+
+    <!-- Panel izquierdo — visual arquitectónico -->
+    <div class="auth-visual">
+      <div class="auth-visual-glow"></div>
+      <div class="auth-building-grid" id="auth-building-grid"></div>
+      <div class="auth-brand-watermark">VISOR</div>
     </div>
-    <h1 class="auth-title">VISOR INSITU</h1>
-    <p class="auth-sub">Ingresa con tu cuenta <strong>@situ.cl</strong> para continuar</p>
-    <button class="auth-btn-google" id="btn-google-login">
-      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 20-8 20-20 0-1.3-.1-2.7-.4-4z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 18.9 12 24 12c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 10-1.9 13.6-5l-6.3-5.1C29.5 35.6 26.9 36 24 36c-5.2 0-9.5-2.9-11.3-7.1l-6.5 5C9.6 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.5-2.6 4.6-4.7 6l6.3 5.1C40.7 35.4 44 30.1 44 24c0-1.3-.1-2.7-.4-4z"/></svg>
-      Ingresar con Google
-    </button>
-    <p class="auth-error" id="auth-error"></p>
+
+    <!-- Panel derecho — formulario -->
+    <div class="auth-panel">
+      <div class="auth-panel-inner">
+        <div class="auth-eyebrow">Gestión de activos</div>
+        <h1 class="auth-heading">VISOR<br><em>INSITU</em></h1>
+        <div class="auth-gold-line"></div>
+        <p class="auth-sub">Ingresa con tu cuenta <strong>@situ.cl</strong> para acceder al visor de propiedades.</p>
+        <button class="auth-btn-google" id="btn-google-login">
+          <svg width="17" height="17" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 20-8 20-20 0-1.3-.1-2.7-.4-4z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 18.9 12 24 12c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 10-1.9 13.6-5l-6.3-5.1C29.5 35.6 26.9 36 24 36c-5.2 0-9.5-2.9-11.3-7.1l-6.5 5C9.6 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.5-2.6 4.6-4.7 6l6.3 5.1C40.7 35.4 44 30.1 44 24c0-1.3-.1-2.7-.4-4z"/></svg>
+          Continuar con Google
+        </button>
+        <p class="auth-error" id="auth-error"></p>
+        <div class="auth-footer">Acceso restringido · INSITU</div>
+      </div>
+    </div>
+
   </div>
 </div>
+<script>
+(function() {
+  var grid = document.getElementById('auth-building-grid');
+  if (!grid) return;
+  var cols = 11, rows = 16;
+  var durations = [3.8, 4.6, 5.2, 6.1, 4.1, 5.7];
+  for (var i = 0; i < cols * rows; i++) {
+    var cell = document.createElement('div');
+    cell.className = 'auth-cell';
+    var delay = (Math.random() * 6).toFixed(2);
+    var dur = durations[Math.floor(Math.random() * durations.length)];
+    cell.style.setProperty('--d', dur + 's');
+    cell.style.setProperty('--delay', delay + 's');
+    grid.appendChild(cell);
+  }
+})();
+</script>
 
 <!-- ── APP ── -->
 <div id="app-root" style="display:none">
@@ -74,27 +108,36 @@
 
         <!-- Panel Unidades -->
         <div class="legend-panel active" id="legend-panel-unidades">
-          <div class="legend-item"><div class="legend-dot" style="background:#d1fae5;border-color:#6ee7b7"></div>Contratos <span class="legend-count" id="lc-contr">—</span></div>
-          <div class="legend-item"><div class="legend-dot" style="background:#ede9fe;border-color:#c4b5fd"></div>Renta corta <span class="legend-count" id="lc-rc">—</span></div>
-          <div class="legend-item"><div class="legend-dot" style="background:#fee2e2;border-color:#fca5a5"></div>Vacantes <span class="legend-count" id="lc-vac">—</span></div>
-          <div class="legend-item"><div class="legend-dot" style="background:#ffedd5;border-color:#fdba74"></div>Pilotos <span class="legend-count" id="lc-pilot">—</span></div>
-          <div class="legend-sep"></div>
-          <div id="tipologia-breakdown"></div>
-          <div class="legend-sep"></div>
-          <div class="legend-metric">
-            <span class="metric-label">Depto.</span>
-            <span class="metric-val" id="occ-depto">—</span>
-            <span id="occ-depto-un" style="font-size:10px;color:#8a9bb0;margin-left:3px;">—</span>
+
+          <!-- Página 1: Estado + Métricas core -->
+          <div class="legend-page" id="legend-page-1">
+            <div class="legend-item"><div class="legend-dot" style="background:#d1fae5;border-color:#6ee7b7"></div>Contratos <span class="legend-count" id="lc-contr">—</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#ede9fe;border-color:#c4b5fd"></div>Renta corta <span class="legend-count" id="lc-rc">—</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#fee2e2;border-color:#fca5a5"></div>Vacantes <span class="legend-count" id="lc-vac">—</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#ffedd5;border-color:#fdba74"></div>Pilotos <span class="legend-count" id="lc-pilot">—</span></div>
+            <div class="legend-sep"></div>
+            <div class="legend-metric">
+              <span class="metric-label">Depto.</span>
+              <span class="metric-val" id="occ-depto">—</span>
+              <span id="occ-depto-un" style="font-size:10px;color:#8a9bb0;margin-left:3px;">—</span>
+            </div>
+            <div class="legend-metric"><span class="metric-label">Estac.</span><span class="metric-val" id="occ-estac">—</span></div>
+            <div class="legend-metric"><span class="metric-label">Bodega</span><span class="metric-val" id="occ-bod">—</span></div>
           </div>
-          <div class="legend-metric"><span class="metric-label">Estac.</span><span class="metric-val" id="occ-estac">—</span></div>
-          <div class="legend-metric"><span class="metric-label">Bodega</span><span class="metric-val" id="occ-bod">—</span></div>
-          <div class="legend-sep"></div>
-          <div class="legend-metric">
-            <span class="metric-label">Depto. Proy.</span>
-            <span class="metric-val" id="occ-proy-pct">—</span>
-            <span id="occ-proy-un" style="font-size:10px;color:#8a9bb0;margin-left:3px;">—</span>
+
+          <!-- Página 2: Tipología + Proyecciones -->
+          <div class="legend-page" id="legend-page-2">
+            <div class="legend-page-title">Tipología</div>
+            <div id="tipologia-breakdown"></div>
+            <div class="legend-sep"></div>
+            <div class="legend-metric">
+              <span class="metric-label">Depto. Proy.</span>
+              <span class="metric-val" id="occ-proy-pct">—</span>
+              <span id="occ-proy-un" style="font-size:10px;color:#8a9bb0;margin-left:3px;">—</span>
+            </div>
+            <div class="legend-metric"><span class="metric-label">Netos Proy.</span><span class="metric-val" id="occ-netos-un">—</span></div>
           </div>
-          <div class="legend-metric"><span class="metric-label">Netos Proy.</span><span class="metric-val" id="occ-netos-un">—</span></div>
+
         </div>
 
         <!-- Panel Bodegas -->
@@ -126,7 +169,18 @@
             <span class="metric-label">Total</span>
             <span class="metric-val" id="occ-estac-total">—</span>
           </div>
+          <div class="legend-metric">
+            <span class="metric-label">Visita</span>
+            <span class="metric-val" id="occ-estac-noarr">—</span>
+          </div>
         </div>
+
+        <!-- Dots paginación unidades (solo mobile, fuera del scroll) -->
+        <div class="legend-dots" id="legend-dots">
+          <button class="legend-dot-btn active" onclick="goLegendPage(0)" aria-label="Página 1"></button>
+          <button class="legend-dot-btn" onclick="goLegendPage(1)" aria-label="Página 2"></button>
+        </div>
+
       </div>
       <div class="stacking-wrap">
         <div class="stacking-zoom-inner" id="stacking-zoom-inner">
@@ -531,5 +585,40 @@ document.getElementById('btn-google-login').addEventListener('click', async () =
 });
 
 document.getElementById('btn-signout').addEventListener('click', () => signOut(auth));
+</script>
+
+<script>
+// ── LEGEND PAGINATION (mobile) ──
+(function() {
+  var panel, dots, isMobile;
+
+  function isMobileView() { return window.innerWidth <= 640; }
+
+  function initLegendPagination() {
+    panel = document.getElementById('legend-panel-unidades');
+    var dotsEl = document.getElementById('legend-dots');
+    if (!panel || !dotsEl) return;
+
+    panel.addEventListener('scroll', function() {
+      if (!isMobileView()) return;
+      var page = Math.round(panel.scrollLeft / panel.offsetWidth);
+      dotsEl.querySelectorAll('.legend-dot-btn').forEach(function(d, i) {
+        d.classList.toggle('active', i === page);
+      });
+    }, { passive: true });
+  }
+
+  window.goLegendPage = function(idx) {
+    var p = document.getElementById('legend-panel-unidades');
+    if (!p || !isMobileView()) return;
+    p.scrollTo({ left: idx * p.offsetWidth, behavior: 'smooth' });
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLegendPagination);
+  } else {
+    initLegendPagination();
+  }
+})();
 </script>
 </body>
