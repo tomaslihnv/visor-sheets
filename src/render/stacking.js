@@ -123,7 +123,7 @@ export function renderSubterraneoStacking(estacData, bodData) {
       const bodChunk = bodRW   ? bodUnits.slice(i * bodRW, (i + 1) * bodRW) : [];
 
       const rowEl = document.createElement('div');
-      rowEl.className = 'floor-row' + (i === 0 && groupStyle ? ` ${groupStyle}-group` : '');
+      rowEl.className = 'floor-row' + (i === 0 && groupStyle ? ` ${groupStyle}-group` : '') + (groupStyle === 'inhab' ? ' inhab-row' : '');
 
       const lbl = document.createElement('div');
       lbl.className = 'floor-label' + (i === 0 && groupStyle ? ` ${groupStyle}-label` : '');

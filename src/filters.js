@@ -163,11 +163,18 @@ export function applyFilters() {
       else if (fu === 'en-renta')      show = cat === 'contrato' || cat === 'rc';
       else if (fu === 'vacantes')      show = cat === 'vacante';
       else if (fu === 'inhabilitadas') show = cat === 'inhabilitado';
+      else if (cat === 'inhabilitado') show = false; // ocultos por defecto
     }
     el.style.background  = s.bg;
     el.style.borderColor = s.border;
     el.style.color       = s.color;
     el.classList.toggle('dimmed', !show);
+  });
+
+  // Mostrar/ocultar filas del grupo inhabilitados según filtro
+  const showInhab = fu === 'inhabilitadas';
+  document.querySelectorAll('.inhab-row').forEach(row => {
+    row.style.display = showInhab ? '' : 'none';
   });
 
   bmapData.forEach(unit => {
