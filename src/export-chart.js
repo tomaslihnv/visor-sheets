@@ -1,6 +1,6 @@
 import { CHARTS } from './state.js';
 
-const ASPECT_RATIOS  = { auto: null, '4:1': 4 / 1, '3:1': 3 / 1, '16:9': 16 / 9, '4:3': 4 / 3, '1:1': 1 };
+const ASPECT_RATIOS  = { auto: null, '6:1': 6 / 1, '4:1': 4 / 1, '3:1': 3 / 1, '16:9': 16 / 9, '4:3': 4 / 3, '1:1': 1 };
 const EXPORT_WIDTH   = 2560;
 const PREVIEW_WIDTH  = 1280;
 
@@ -120,6 +120,7 @@ function buildPanel(chartKey, title) {
     <div class="ep-label">Proporción de salida</div>
     <div class="ep-pills ep-pills-wrap" id="ep-ratio">
       <button class="ep-pill active" data-r="auto">Auto</button>
+      <button class="ep-pill" data-r="6:1" title="Ultra panorámica">6:1</button>
       <button class="ep-pill" data-r="4:1" title="Súper panorámica">4:1</button>
       <button class="ep-pill" data-r="3:1">3:1</button>
       <button class="ep-pill" data-r="16:9">16:9</button>
@@ -225,7 +226,8 @@ function openPreviewModal(chartKey, title, initRatio, initBg) {
         <div class="ep-modal-controls">
           <div class="ep-pills ep-pills-sm" id="mep-ratio">
             <button class="ep-pill active" data-r="auto">Auto</button>
-            <button class="ep-pill" data-r="4:1" title="Súper panorámica">4:1</button>
+            <button class="ep-pill" data-r="6:1" title="Ultra panorámica">6:1</button>
+      <button class="ep-pill" data-r="4:1" title="Súper panorámica">4:1</button>
             <button class="ep-pill" data-r="3:1">3:1</button>
             <button class="ep-pill" data-r="16:9">16:9</button>
             <button class="ep-pill" data-r="4:3">4:3</button>
