@@ -134,7 +134,6 @@ function buildPanel(chartKey, title) {
       <button class="ep-pill" data-bg="transparent">Transparente</button>
     </div>
 
-    <div class="ep-hint">Ajusta <strong>Leyenda y ejes</strong> y <strong>Etiquetas</strong> sobre el gráfico para previsualizar.</div>
 
     <div class="ep-actions">
       <button class="ep-btn-prev">${ICON_EYE} Vista previa</button>
