@@ -400,7 +400,7 @@ async function renderCapture(chartKey, targetWidth, ratioKey, bgColor) {
   chart.resize();
 
   // Copy to export canvas with padding
-  const PAD = Math.round(origCanvas.width * 0.025); // 2.5% del ancho
+  const PAD = Math.round(origCanvas.width * 0.0125); // 1.25% del ancho
   const exportCanvas    = document.createElement('canvas');
   exportCanvas.width    = origCanvas.width  + PAD * 2;
   exportCanvas.height   = origCanvas.height + PAD * 2;
