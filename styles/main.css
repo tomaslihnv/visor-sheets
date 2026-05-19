@@ -384,6 +384,8 @@ tr:hover td { background: #ede8df; }
 .evol-range { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #9a9080; font-weight: 600; }
 .evol-range select { background: #f4f0e8; border: 1px solid #ddd5c4; border-radius: 6px; padding: 5px 8px; color: #1a1810; font-size: 11px; outline: none; cursor: pointer; font-family: 'IBM Plex Sans', sans-serif; }
 .evol-range select:focus { border-color: #b8935a; }
+.evol-range-font input[type="range"] { width: 72px; accent-color: #8a6830; cursor: pointer; }
+.evol-font-val { min-width: 26px; font-size: 10px; color: #6b6455; font-variant-numeric: tabular-nums; }
 .evol-check-label { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #9a9080; font-weight: 600; cursor: pointer; user-select: none; }
 .evol-check-label input { cursor: pointer; accent-color: #2563eb; }
 .evol-chart-wrap { position: relative; }

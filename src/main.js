@@ -13,6 +13,25 @@ import { initRenewalChartSelects, renderRenewalChart } from './render/charts/ren
 import { initSalidasChartSelects, renderSalidasChart, initMotivoChartSelects, renderMotivoChart, initDesgloseSalidasSelects, renderDesgloseSalidasChart } from './render/charts/salidas.js';
 import { initEntradaChartSelects, renderEntradaChart, initFlujoChartSelects, renderFlujoChart } from './render/charts/entrada.js';
 
+function setChartFontSize(chartKey, size) {
+  const chart = CHARTS[chartKey];
+  if (!chart) return;
+  if (chart.options.plugins?.legend?.labels)
+    chart.options.plugins.legend.labels.font = { ...(chart.options.plugins.legend.labels.font || {}), size };
+  if (chart.options.scales)
+    Object.values(chart.options.scales).forEach(s => {
+      if (s.ticks) s.ticks.font = { ...(s.ticks.font || {}), size };
+      if (s.title?.display) s.title.font = { ...(s.title.font || {}), size };
+    });
+  if (chart.options.plugins?.datalabels)
+    chart.options.plugins.datalabels.font = { ...(chart.options.plugins.datalabels.font || {}), size };
+  chart.data.datasets.forEach(ds => {
+    if (ds.datalabels && typeof ds.datalabels === 'object')
+      ds.datalabels.font = { ...(ds.datalabels.font || {}), size };
+  });
+  chart.update('none');
+}
+
 function renderBothEvolCharts() {
   renderEvolChart();
   renderNetosChart();
@@ -272,6 +291,7 @@ window.renderFlujoChart = renderFlujoChart;
 window.renderSalidasChart        = renderSalidasChart;
 window.renderMotivoChart         = renderMotivoChart;
 window.renderDesgloseSalidasChart = renderDesgloseSalidasChart;
+window.setChartFontSize           = setChartFontSize;
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────
 
