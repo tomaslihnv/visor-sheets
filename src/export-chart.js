@@ -399,16 +399,17 @@ async function renderCapture(chartKey, targetWidth, ratioKey, bgColor) {
   container.style.height = exportH + 'px';
   chart.resize();
 
-  // Copy to export canvas
+  // Copy to export canvas with padding
+  const PAD = Math.round(origCanvas.width * 0.025); // 2.5% del ancho
   const exportCanvas    = document.createElement('canvas');
-  exportCanvas.width    = origCanvas.width;
-  exportCanvas.height   = origCanvas.height;
+  exportCanvas.width    = origCanvas.width  + PAD * 2;
+  exportCanvas.height   = origCanvas.height + PAD * 2;
   const ctx = exportCanvas.getContext('2d');
   if (bgColor !== 'transparent') {
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
   }
-  ctx.drawImage(origCanvas, 0, 0);
+  ctx.drawImage(origCanvas, PAD, PAD);
 
   // Restore
   container.style.width  = origStyleW;
