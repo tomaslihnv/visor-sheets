@@ -187,11 +187,26 @@ export function renderNetosChart() {
     return null;
   });
 
-  const colors      = rows.map(r => isPast(r) ? '#44546A' : '#cbd5e1');
-  const labelColors = rows.map(r => isPast(r) ? '#44546A' : '#64748b');
+  // Colores: signo × real/proyectado
+  const C_POS_REAL  = '#44546A';
+  const C_NEG_REAL  = '#c0674d';
+  const C_POS_FCAST = '#a8b8c8';
+  const C_NEG_FCAST = '#e8a898';
 
-  const legendReal  = { type:'bar', label:'Netos reales',      data: rows.map(() => null), backgroundColor:'#44546A',  datalabels:{display:false} };
-  const legendFcast = { type:'bar', label:'Netos proyectados', data: rows.map(() => null), backgroundColor:'#cbd5e1', datalabels:{display:false} };
+  const barColors  = rows.map((r, i) => {
+    const past = isPast(r);
+    const pos  = (allNetos[i] ?? 0) >= 0;
+    return past ? (pos ? C_POS_REAL : C_NEG_REAL) : (pos ? C_POS_FCAST : C_NEG_FCAST);
+  });
+
+  const labelColors = rows.map((r, i) => {
+    const past = isPast(r);
+    const pos  = (allNetos[i] ?? 0) >= 0;
+    return past ? (pos ? C_POS_REAL : C_NEG_REAL) : (pos ? '#64748b' : '#b07060');
+  });
+
+  // Leyenda proxy
+  const mkLegend = (label, bg) => ({ type:'bar', label, data: rows.map(() => null), backgroundColor: bg, datalabels:{display:false} });
 
   const canvas = document.getElementById('netos-chart');
   destroyChart('netos');
@@ -202,23 +217,26 @@ export function renderNetosChart() {
       datasets: [
         { type: 'bar', label: 'Arriendos netos',
           data: allNetos,
-          backgroundColor: colors,
-          borderRadius: 3,
+          backgroundColor: barColors,
+          borderRadius: 4,
+          borderSkipped: false,
           datalabels: {
             display: ctx => {
               const v = allNetos[ctx.dataIndex];
               return !!document.getElementById('netos-labels')?.checked && v != null && v !== 0;
             },
-            anchor: ctx => (allNetos[ctx.dataIndex] || 0) >= 0 ? 'end' : 'start',
-            align:  ctx => (allNetos[ctx.dataIndex] || 0) >= 0 ? 'top'  : 'bottom',
-            offset: 2,
+            anchor: ctx => (allNetos[ctx.dataIndex] ?? 0) >= 0 ? 'end'   : 'start',
+            align:  ctx => (allNetos[ctx.dataIndex] ?? 0) >= 0 ? 'top'   : 'bottom',
+            offset: 3,
             color: ctx => labelColors[ctx.dataIndex],
-            font: { size: 8, weight: '600' },
-            formatter: v => v > 0 ? '+' + v : v
+            font: { size: 8, weight: '700' },
+            formatter: v => v > 0 ? '+' + v : String(v)
           }
         },
-        legendReal,
-        legendFcast
+        mkLegend('Positivo real',      C_POS_REAL),
+        mkLegend('Negativo real',      C_NEG_REAL),
+        mkLegend('Positivo proyectado', C_POS_FCAST),
+        mkLegend('Negativo proyectado', C_NEG_FCAST),
       ]
     },
     options: {
@@ -227,8 +245,7 @@ export function renderNetosChart() {
       plugins: {
         legend: {
           position: 'top',
-          labels: {
-            font: { size: 11 }, boxWidth: 14, padding: 16,
+          labels: { font: { size: 11 }, boxWidth: 12, boxHeight: 12, padding: 16,
             filter: item => item.datasetIndex !== 0
           }
         },
@@ -250,8 +267,11 @@ export function renderNetosChart() {
         x: { grid: { display: false }, ticks: { font: { size: 10 } } },
         y: {
           type: 'linear', position: 'left',
-          grace: '20%',
-          grid: { color: '#f0f3f6' },
+          grace: '15%',
+          grid: {
+            color: ctx => ctx.tick.value === 0 ? '#1a1810' : '#f0f3f6',
+            lineWidth: ctx => ctx.tick.value === 0 ? 1.5 : 1,
+          },
           ticks: { font: { size: 10 } },
           title: { display: true, text: 'Unidades', font: { size: 10 }, color: '#8a9bb0' }
         }
