@@ -1,6 +1,6 @@
 import { CHARTS } from './state.js';
 
-const ASPECT_RATIOS  = { auto: null, '16:9': 16 / 9, '4:3': 4 / 3, '1:1': 1 };
+const ASPECT_RATIOS  = { auto: null, '4:1': 4 / 1, '3:1': 3 / 1, '16:9': 16 / 9, '4:3': 4 / 3, '1:1': 1 };
 const EXPORT_WIDTH   = 2560;
 const PREVIEW_WIDTH  = 1280;
 
@@ -10,8 +10,7 @@ const ICON_EXPORT   = `<svg width="12" height="12" viewBox="0 0 24 24" fill="non
 const ICON_EYE      = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 
 // ── Font state per chart ───────────────────────────────────────────────────────
-const _legendSizes    = {};
-const _datalabelSizes = {};
+const _fontSizes = {}; // un solo tamaño controla todo
 
 export function initChartFontSliders() {
   document.querySelectorAll('[data-chart-key]').forEach(card => {
@@ -19,11 +18,8 @@ export function initChartFontSliders() {
     const controls = card.querySelector('.evol-card-controls');
     if (!controls || controls.querySelector('.chart-font-wrap')) return;
 
-    controls.appendChild(_makeSlider('Leyenda y ejes', 8, 52, 11,
-      size => updateChartLegendSize(key, size)
-    ));
-    controls.appendChild(_makeSlider('Etiquetas', 6, 52, 11,
-      size => updateChartDatalabelSize(key, size)
+    controls.appendChild(_makeSlider('Texto', 6, 52, 11,
+      size => updateChartFontSize(key, size)
     ));
   });
 }
@@ -46,46 +42,38 @@ function _makeSlider(label, min, max, def, onChange) {
   return wrap;
 }
 
-export function updateChartLegendSize(chartKey, size) {
-  _legendSizes[chartKey] = size;
-  _applyLegendFont(chartKey, size);
-}
-
-export function updateChartDatalabelSize(chartKey, size) {
-  _datalabelSizes[chartKey] = size;
-  _applyDatalabelFont(chartKey, size);
+export function updateChartFontSize(chartKey, size) {
+  _fontSizes[chartKey] = size;
+  _applyAllFonts(chartKey, size);
 }
 
 export function reapplyFontSize(chartKey) {
-  if (_legendSizes[chartKey])    _applyLegendFont(chartKey,    _legendSizes[chartKey]);
-  if (_datalabelSizes[chartKey]) _applyDatalabelFont(chartKey, _datalabelSizes[chartKey]);
+  if (_fontSizes[chartKey]) _applyAllFonts(chartKey, _fontSizes[chartKey]);
 }
 
-function _applyLegendFont(chartKey, size) {
+function _applyAllFonts(chartKey, size) {
   const chart = CHARTS[chartKey];
   if (!chart) return;
   const font   = { size, family: "'IBM Plex Sans', sans-serif" };
   const fontSm = { size: Math.max(7, Math.round(size * 0.9)), family: "'IBM Plex Sans', sans-serif" };
+
   if (chart.options.plugins?.legend?.labels)
     chart.options.plugins.legend.labels.font = font;
+
+  if (chart.options.plugins?.datalabels)
+    chart.options.plugins.datalabels.font = font;
+
+  chart.data.datasets.forEach(ds => {
+    if (ds.datalabels)
+      ds.datalabels.font = { ...(ds.datalabels.font || {}), ...font };
+  });
+
   if (chart.options.scales)
     Object.values(chart.options.scales).forEach(s => {
       if (s.ticks)          s.ticks.font = fontSm;
       if (s.title?.display) s.title.font = font;
     });
-  chart.update('none');
-  _notifyPreview(chartKey);
-}
 
-function _applyDatalabelFont(chartKey, size) {
-  const chart = CHARTS[chartKey];
-  if (!chart) return;
-  if (chart.options.plugins?.datalabels)
-    chart.options.plugins.datalabels.font = { size, family: "'IBM Plex Sans', sans-serif" };
-  chart.data.datasets.forEach(ds => {
-    if (ds.datalabels)
-      ds.datalabels.font = { ...(ds.datalabels.font || {}), size, family: "'IBM Plex Sans', sans-serif" };
-  });
   chart.update('none');
   _notifyPreview(chartKey);
 }
@@ -130,8 +118,10 @@ function buildPanel(chartKey, title) {
     <div class="ep-title">${ICON_EXPORT} Exportar gráfico</div>
 
     <div class="ep-label">Proporción de salida</div>
-    <div class="ep-pills" id="ep-ratio">
+    <div class="ep-pills ep-pills-wrap" id="ep-ratio">
       <button class="ep-pill active" data-r="auto">Auto</button>
+      <button class="ep-pill" data-r="4:1" title="Súper panorámica">4:1</button>
+      <button class="ep-pill" data-r="3:1">3:1</button>
       <button class="ep-pill" data-r="16:9">16:9</button>
       <button class="ep-pill" data-r="4:3">4:3</button>
       <button class="ep-pill" data-r="1:1">1:1</button>
@@ -235,6 +225,8 @@ function openPreviewModal(chartKey, title, initRatio, initBg) {
         <div class="ep-modal-controls">
           <div class="ep-pills ep-pills-sm" id="mep-ratio">
             <button class="ep-pill active" data-r="auto">Auto</button>
+            <button class="ep-pill" data-r="4:1" title="Súper panorámica">4:1</button>
+            <button class="ep-pill" data-r="3:1">3:1</button>
             <button class="ep-pill" data-r="16:9">16:9</button>
             <button class="ep-pill" data-r="4:3">4:3</button>
             <button class="ep-pill" data-r="1:1">1:1</button>

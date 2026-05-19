@@ -12,7 +12,7 @@ import { initVencChartSelects, renderVencChart } from './render/charts/vencimien
 import { initRenewalChartSelects, renderRenewalChart } from './render/charts/renewal.js';
 import { initSalidasChartSelects, renderSalidasChart, initMotivoChartSelects, renderMotivoChart, initDesgloseSalidasSelects, renderDesgloseSalidasChart } from './render/charts/salidas.js';
 import { initEntradaChartSelects, renderEntradaChart, initFlujoChartSelects, renderFlujoChart } from './render/charts/entrada.js';
-import { openExportPanel, initChartFontSliders, reapplyFontSize, updateChartLegendSize, updateChartDatalabelSize } from './export-chart.js';
+import { openExportPanel, initChartFontSliders, reapplyFontSize } from './export-chart.js';
 
 function renderBothEvolCharts() {
   renderEvolChart();

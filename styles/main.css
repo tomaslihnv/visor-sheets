@@ -434,6 +434,7 @@ tr:hover td { background: #ede8df; }
 .ep-pills {
   display: flex; gap: 4px; margin-bottom: 14px;
 }
+.ep-pills-wrap { flex-wrap: wrap; }
 .ep-pill {
   flex: 1; padding: 5px 4px; border-radius: 5px;
   border: 1px solid #2a261e; background: #151310;
