@@ -12,6 +12,7 @@ import { initVencChartSelects, renderVencChart } from './render/charts/vencimien
 import { initRenewalChartSelects, renderRenewalChart } from './render/charts/renewal.js';
 import { initSalidasChartSelects, renderSalidasChart, initMotivoChartSelects, renderMotivoChart, initDesgloseSalidasSelects, renderDesgloseSalidasChart } from './render/charts/salidas.js';
 import { initEntradaChartSelects, renderEntradaChart, initFlujoChartSelects, renderFlujoChart } from './render/charts/entrada.js';
+import { openExportPanel, initChartFontSliders, reapplyFontSize, updateChartLegendSize, updateChartDatalabelSize } from './export-chart.js';
 
 function renderBothEvolCharts() {
   renderEvolChart();
@@ -262,16 +263,22 @@ window.applyFilters       = applyFilters;
 window.resetFilters       = resetFilters;
 window.onVencSlider       = onVencSlider;
 window.onUFRange          = onUFRange;
-window.renderEvolChart    = renderEvolChart;
-window.renderBothEvolCharts = renderBothEvolCharts;
-window.renderNetosChart   = renderNetosChart;
-window.renderVencChart    = renderVencChart;
-window.renderRenewalChart = renderRenewalChart;
-window.renderEntradaChart = renderEntradaChart;
-window.renderFlujoChart = renderFlujoChart;
-window.renderSalidasChart        = renderSalidasChart;
-window.renderMotivoChart         = renderMotivoChart;
-window.renderDesgloseSalidasChart = renderDesgloseSalidasChart;
+// Wraps de render: reaplican tamaño de fuente tras cada re-render
+function _wrap(fn, key)  { return (...a) => { fn(...a); reapplyFontSize(key); }; }
+window.renderEvolChart       = _wrap(renderEvolChart,       'evol');
+window.renderBothEvolCharts  = () => { renderEvolChart(); reapplyFontSize('evol'); renderNetosChart(); reapplyFontSize('netos'); };
+window.renderNetosChart      = _wrap(renderNetosChart,      'netos');
+window.renderVencChart       = _wrap(renderVencChart,       'venc');
+window.renderRenewalChart    = _wrap(renderRenewalChart,    'renewal');
+window.renderEntradaChart    = _wrap(renderEntradaChart,    'entrada');
+window.renderFlujoChart      = _wrap(renderFlujoChart,      'termino');
+window.renderSalidasChart    = _wrap(renderSalidasChart,    'salidas');
+window.renderMotivoChart     = _wrap(renderMotivoChart,     'motivo');
+window.renderDesgloseSalidasChart = _wrap(renderDesgloseSalidasChart, 'desglose');
+window.openExportPanel       = openExportPanel;
+
+// Inicializar sliders de fuente en cards de evolución
+document.addEventListener('DOMContentLoaded', initChartFontSliders);
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────
 
