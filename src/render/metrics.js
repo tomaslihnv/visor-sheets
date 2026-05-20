@@ -60,9 +60,9 @@ export function updateMetrics(deptoData, estacData, bodData) {
     else                             eVac++;
   });
   const eEnRenta = eContr + eRC;
-  // Total operativo: solo excluye visita (no arrendable). Inhabilitados y locales = normales.
-  const eDisp    = eContr + eRC + eVac + eLocal + eInhab;
-  const eTotal   = eDisp + eVisita;
+  // Total operativo: solo contrato + RC + vacante (excluye inhabilitados, visita y locales)
+  const eDisp    = eContr + eRC + eVac;
+  const eTotal   = eDisp + eInhab + eVisita + eLocal;
   const eOccPct  = eDisp > 0 ? Math.round(eEnRenta / eDisp * 100) + '%' : '—';
   document.getElementById('occ-estac').textContent = eOccPct;
   // Panel Estacionamientos
