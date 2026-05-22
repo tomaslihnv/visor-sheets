@@ -15,20 +15,38 @@ function defaultEvolHastaIdx(data) {
   return idx;
 }
 
+function getEvolCutoffDate() {
+  const el = document.getElementById('evol-corte');
+  if (el && el.value !== '') {
+    const evolData = BD[state.AB]?.evol;
+    const row = evolData?.[parseInt(el.value)];
+    if (row) {
+      const d = parseEvolDate((row[EVOL_COL.fecha] || '').toString());
+      if (d) return d;
+    }
+  }
+  const now = new Date(); now.setDate(1); now.setHours(0,0,0,0);
+  return now;
+}
+
 export function initEvolSelects(data) {
   const desdeEl = document.getElementById('evol-desde');
   const hastaEl = document.getElementById('evol-hasta');
+  const corteEl = document.getElementById('evol-corte');
   if (!desdeEl) return;
   desdeEl.innerHTML = hastaEl.innerHTML = '';
+  if (corteEl) corteEl.innerHTML = '';
   data.forEach((row, i) => {
     const f = (row[EVOL_COL.fecha] || '').toString().trim();
     if (!f) return;
     const label = formatEvolLabel(f);
     desdeEl.appendChild(new Option(label, i));
     hastaEl.appendChild(new Option(label, i));
+    if (corteEl) corteEl.appendChild(new Option(label, i));
   });
   desdeEl.value = 0;
   hastaEl.value = defaultEvolHastaIdx(data);
+  if (corteEl) corteEl.value = defaultEvolHastaIdx(data);
 }
 
 export function initNetosSelects(data) {
@@ -58,7 +76,7 @@ export function renderEvolChart() {
 
   const rows = evolData.slice(desde, hasta + 1);
 
-  const cutoff = new Date(); cutoff.setDate(1); cutoff.setHours(0,0,0,0);
+  const cutoff = getEvolCutoffDate();
   const isPast = r => { const d = parseEvolDate((r[EVOL_COL.fecha] || '').toString()); return d && d < cutoff; };
 
   const labels = rows.map(r => formatEvolLabel((r[EVOL_COL.fecha] || '').toString().trim()));
@@ -169,7 +187,7 @@ export function renderNetosChart() {
 
   const rows = evolData.slice(desde, hasta + 1);
 
-  const cutoff = new Date(); cutoff.setDate(1); cutoff.setHours(0,0,0,0);
+  const cutoff = getEvolCutoffDate();
   const isPast = r => { const d = parseEvolDate((r[EVOL_COL.fecha] || '').toString()); return d && d < cutoff; };
 
   const labels = rows.map(r => formatEvolLabel((r[EVOL_COL.fecha] || '').toString().trim()));
