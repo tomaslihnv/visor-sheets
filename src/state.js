@@ -57,8 +57,8 @@ export const MOTIVO_PALETTE = [
   '#fb923c', // 7  No renueva                 — orange-400 (= CHART_COLORS.noRenovacion)
   '#a3e635', // 8  Problemas con la propiedad — lime-400
   '#a855f7', // 9  Término anticipado         — purple-500 (= CHART_COLORS.salidaAnticipada)
-  '#e879f9', // 10 Desconformidad financiera  — fuchsia-400
-  '#f472b6', // 11 Desconformidad por servicio — pink-400
+  '#be123c', // 10 Desconformidad financiera  — rose-700 (rojo cardenal)
+  '#9f1239', // 11 Desconformidad por servicio — rose-800 (rojo cardenal oscuro)
   '#fb7185', // 12 Abandono                   — rose-400
   '#b45309', // 13 Asuntos personales         — amber-700 (café)
   '#7c3aed', // 14 Comportamiento             — violet-600

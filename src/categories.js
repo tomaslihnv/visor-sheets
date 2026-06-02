@@ -1,6 +1,7 @@
 import { pcol, bcol } from './columns.js';
 import { parseCLP, nfdKey } from './utils.js';
 import { MOTIVO_COLOR_MAP, MOTIVO_PALETTE } from './state.js';
+import { MOTIVOS } from './config.js';
 
 export function getCategory(u) {
   if (!u) return 'default';
@@ -36,7 +37,10 @@ export function getBodegaCategory(row) {
 
 export function getMotivoColor(motivo) {
   if (!MOTIVO_COLOR_MAP[motivo]) {
-    const idx = Object.keys(MOTIVO_COLOR_MAP).length % MOTIVO_PALETTE.length;
+    const configIdx = MOTIVOS.indexOf(motivo);
+    const idx = configIdx >= 0
+      ? configIdx % MOTIVO_PALETTE.length
+      : Object.keys(MOTIVO_COLOR_MAP).length % MOTIVO_PALETTE.length;
     MOTIVO_COLOR_MAP[motivo] = MOTIVO_PALETTE[idx];
   }
   return MOTIVO_COLOR_MAP[motivo];
