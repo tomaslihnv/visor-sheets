@@ -80,6 +80,9 @@ export const MOTIVOS = [
   'Abandono',
   'Asuntos personales',
   'Comportamiento',
+  'Disconformidad',
+  'Déficit financiero',
+  'Mora',
 ];
 
 export const CAT_STYLE = {

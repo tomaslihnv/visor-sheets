@@ -39,7 +39,7 @@ export function destroyChart(key) {
   if (CHARTS[key]) { CHARTS[key].destroy(); CHARTS[key] = null; }
 }
 
-// 15 entradas alineadas con el orden de MOTIVOS en config.js:
+// 18 entradas alineadas con el orden de MOTIVOS en config.js:
 // 0-Cambio de domicilio, 1-Compra de vivienda, 2-Conflicto con vecino, 3-Fin de contrato,
 // 4-Motivos económicos, 5-Motivos familiares, 6-Motivos laborales,
 // 7-No renueva (= CHART_COLORS.noRenovacion para alinear con "No Renovación"),
@@ -62,6 +62,9 @@ export const MOTIVO_PALETTE = [
   '#fb7185', // 12 Abandono                   — rose-400
   '#b45309', // 13 Asuntos personales         — amber-700 (café)
   '#7c3aed', // 14 Comportamiento             — violet-600
+  '#dc2626', // 15 Disconformidad             — red-600 (rojo cardenal)
+  '#0891b2', // 16 Déficit financiero         — cyan-600
+  '#6b7280', // 17 Mora                       — gray-500
 ];
 
 export const MOTIVO_COLOR_MAP = {};
