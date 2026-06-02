@@ -77,6 +77,8 @@ export const MOTIVOS = [
   'Término anticipado',
   'Desconformidad financiera',
   'Desconformidad por servicio',
+  'Abandono',
+  'Asuntos personales',
 ];
 
 export const CAT_STYLE = {

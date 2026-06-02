@@ -1,4 +1,4 @@
-import { state, BD, CHARTS, destroyChart } from '../../state.js';
+import { state, BD, CHARTS, destroyChart, CHART_COLORS } from '../../state.js';
 import { nfdKey, parseDate, _MESES } from '../../utils.js';
 
 function curMonthKey() {
@@ -108,7 +108,7 @@ export function renderVencChart() {
   const datasets = [
     {
       type: 'bar', label: 'No Renovación',
-      data: dataNR, backgroundColor: '#fb923c',
+      data: dataNR, backgroundColor: CHART_COLORS.noRenovacion,
       stack: 'venc', borderWidth: 0, borderRadius: 0, borderSkipped: false,
       datalabels: {
         display: ctx => showLabels && dataNR[ctx.dataIndex] > 0,
@@ -119,7 +119,7 @@ export function renderVencChart() {
     },
     {
       type: 'bar', label: 'Renovación',
-      data: dataRen, backgroundColor: '#34d399',
+      data: dataRen, backgroundColor: CHART_COLORS.renovacion,
       stack: 'venc', borderWidth: 0,
       borderRadius: { topLeft: 3, topRight: 3 }, borderSkipped: false,
       datalabels: {

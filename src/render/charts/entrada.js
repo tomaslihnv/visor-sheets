@@ -1,4 +1,4 @@
-import { state, BD, CHARTS, destroyChart, ENTRADA_COLOR_MAP, ENTRADA_PALETTE } from '../../state.js';
+import { state, BD, CHARTS, destroyChart, ENTRADA_COLOR_MAP, ENTRADA_PALETTE, CHART_COLORS } from '../../state.js';
 import { parseDate, _MESES } from '../../utils.js';
 
 function getEntradaColor(tipo) {
@@ -305,38 +305,38 @@ export function renderFlujoChart() {
         {
           label: 'Nuevos Contratos',
           data: dataEntradas,
-          borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.08)',
+          borderColor: CHART_COLORS.nuevosContratos, backgroundColor: CHART_COLORS.nuevosContratos + '14',
           borderWidth: 2, tension: 0.3, pointRadius: 2, pointHoverRadius: 4,
-          pointBackgroundColor: '#3b82f6', fill: false, spanGaps: true,
+          pointBackgroundColor: CHART_COLORS.nuevosContratos, fill: false, spanGaps: true,
           datalabels: {
             display: ctx => showLabels && dataEntradas[ctx.dataIndex] > 0,
             anchor: 'top', align: 'top', offset: 4,
-            color: '#3b82f6', font: { size: 8, weight: '700' }, formatter: v => v
+            color: CHART_COLORS.nuevosContratos, font: { size: 8, weight: '700' }, formatter: v => v
           }
         },
         {
           label: 'Salidas',
           data: dataSalidas,
-          borderColor: '#f43f5e', backgroundColor: 'rgba(244,63,94,0.08)',
+          borderColor: CHART_COLORS.salidas, backgroundColor: CHART_COLORS.salidas + '14',
           borderWidth: 2, tension: 0.3, pointRadius: 2, pointHoverRadius: 4,
-          pointBackgroundColor: '#f43f5e', fill: false, spanGaps: true,
+          pointBackgroundColor: CHART_COLORS.salidas, fill: false, spanGaps: true,
           datalabels: {
             display: ctx => showLabels && dataSalidas[ctx.dataIndex] > 0,
             anchor: 'top', align: 'top', offset: 4,
-            color: '#f43f5e', font: { size: 8, weight: '700' }, formatter: v => v
+            color: CHART_COLORS.salidas, font: { size: 8, weight: '700' }, formatter: v => v
           }
         },
         {
           label: 'Netos',
           data: dataNetos,
-          borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.08)',
+          borderColor: CHART_COLORS.netos, backgroundColor: CHART_COLORS.netos + '14',
           borderWidth: 2, tension: 0.3, pointRadius: 2, pointHoverRadius: 4,
-          pointBackgroundColor: '#10b981', fill: false, spanGaps: true,
+          pointBackgroundColor: CHART_COLORS.netos, fill: false, spanGaps: true,
           datalabels: {
             display: ctx => showLabels && dataNetos[ctx.dataIndex] !== 0,
             anchor: ctx => dataNetos[ctx.dataIndex] >= 0 ? 'top' : 'bottom',
             align:  ctx => dataNetos[ctx.dataIndex] >= 0 ? 'top' : 'bottom',
-            offset: 4, color: '#10b981', font: { size: 8, weight: '700' },
+            offset: 4, color: CHART_COLORS.netos, font: { size: 8, weight: '700' },
             formatter: v => v > 0 ? '+' + v : v
           }
         }

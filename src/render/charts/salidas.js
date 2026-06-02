@@ -1,4 +1,4 @@
-import { state, BD, CHARTS, destroyChart, MOTIVO_PALETTE } from '../../state.js';
+import { state, BD, CHARTS, destroyChart, CHART_COLORS } from '../../state.js';
 import { nfdKey, parseDate, _MESES } from '../../utils.js';
 import { getMotivoColor } from '../../categories.js';
 import { MOTIVOS as MOTIVOS_CONFIG } from '../../config.js';
@@ -127,39 +127,65 @@ export function renderSalidasChart() {
   const showLabels = !!document.getElementById('salidas-chart-labels')?.checked;
   const showPct    = !!document.getElementById('salidas-chart-pct')?.checked;
 
-  const datasets = allMotivos.map((motivo, mIdx) => {
-    const isLast = mIdx === allMotivos.filter(m => allMonths.some(mk => (counts[m]?.[mk] || 0) > 0)).length - 1;
-    return {
-      type: 'bar',
-      label: motivo,
-      data: allMonths.map(mk => counts[motivo]?.[mk] || 0),
-      backgroundColor: getMotivoColor(motivo),
-      stack: 'salidas',
-      borderWidth: 0,
-      borderRadius: isLast ? { topLeft: 4, topRight: 4 } : 0,
-      borderSkipped: false,
-      datalabels: {
-        display: ctx => showLabels && (counts[motivo]?.[allMonths[ctx.dataIndex]] || 0) > 0,
-        anchor: 'center', align: 'center',
-        color: '#fff',
-        font: { size: 8, weight: '700' },
-        formatter: (v, ctx) => {
-          if (!v) return '';
-          if (showPct) {
-            const total = totalesMes[allMonths[ctx.dataIndex]] || 1;
-            return Math.round(v / total * 100) + '%';
+  const totals = allMonths.map(mk => totalesMes[mk] || 0);
+
+  const totalLine = {
+    type: 'line', label: '_total', data: totals,
+    borderColor: 'transparent', backgroundColor: 'transparent',
+    pointRadius: 0, pointHoverRadius: 0, borderWidth: 0,
+    datalabels: {
+      display: ctx => totals[ctx.dataIndex] > 0,
+      anchor: 'end', align: 'top', offset: 4,
+      color: '#1a2332', font: { size: 10, weight: '700' },
+      formatter: v => v
+    }
+  };
+
+  const datasets = [
+    ...allMotivos.map((motivo, mIdx) => {
+      const isLast = mIdx === allMotivos.filter(m => allMonths.some(mk => (counts[m]?.[mk] || 0) > 0)).length - 1;
+      return {
+        type: 'bar',
+        label: motivo,
+        data: allMonths.map(mk => counts[motivo]?.[mk] || 0),
+        backgroundColor: getMotivoColor(motivo),
+        stack: 'salidas',
+        borderWidth: 0,
+        borderRadius: isLast ? { topLeft: 4, topRight: 4 } : 0,
+        borderSkipped: false,
+        datalabels: {
+          display: ctx => showLabels && (counts[motivo]?.[allMonths[ctx.dataIndex]] || 0) > 0,
+          anchor: 'center', align: 'center',
+          color: '#fff',
+          font: ctx => {
+            const bar = ctx.chart.getDatasetMeta(ctx.datasetIndex).data[ctx.dataIndex];
+            const w = bar?.width  || 20;
+            const h = Math.abs((bar?.base || 0) - (bar?.y || 0)) || 10;
+            const size = Math.max(7, Math.min(13, Math.floor(Math.min(w * 0.38, h * 0.45))));
+            return { size, weight: '700' };
+          },
+          formatter: (v, ctx) => {
+            if (!v) return '';
+            if (showPct) {
+              const total = totalesMes[allMonths[ctx.dataIndex]] || 1;
+              return Math.round(v / total * 100) + '%';
+            }
+            return v;
           }
-          return v;
         }
-      }
-    };
-  });
+      };
+    }),
+    totalLine,
+  ];
 
   const canvas = document.getElementById('salidas-chart-canvas');
   destroyChart('salidas');
 
+  const pluginRedrawSalidas = { id:'redrawSalidas', afterRender(chart){ if(!chart._lbReady){chart._lbReady=true;chart.update('none');} } };
+
   CHARTS.salidas = new Chart(canvas, {
     data: { labels, datasets },
+    plugins: [pluginRedrawSalidas],
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
@@ -169,7 +195,7 @@ export function renderSalidasChart() {
           labels: {
             font: { size: 11 }, boxWidth: 12, padding: 10,
             filter: item => {
-              // Ocultar de la leyenda motivos que no tienen ningún dato en el rango
+              if (item.text === '_total') return false;
               const ds = datasets.find(d => d.label === item.text);
               return ds && ds.data.some(v => v > 0);
             }
@@ -177,6 +203,7 @@ export function renderSalidasChart() {
         },
         datalabels: {},
         tooltip: {
+          filter: item => item.dataset.label !== '_total',
           callbacks: {
             label: ctx => {
               const v = ctx.parsed.y;
@@ -300,7 +327,7 @@ export function renderDesgloseSalidasChart() {
   const labels = allMonths.map(mk => { const [y,m] = mk.split('-'); return _MESES[+m-1]+'-'+String(y).slice(-2); });
   const showLbls = !!document.getElementById('desglose-labels')?.checked;
 
-  const COLORES = { 'No Renovación': '#fb923c', 'Salida Anticipada': '#60a5fa' };
+  const COLORES = { 'No Renovación': CHART_COLORS.noRenovacion, 'Salida Anticipada': CHART_COLORS.salidaAnticipada };
 
   // Barras apiladas — labels interiores blancos en ambas
   const barDatasets = TIPOS.map((tipo, i) => {
@@ -318,7 +345,13 @@ export function renderDesgloseSalidasChart() {
         display: ctx => showLbls && tipData[ctx.dataIndex] > 0,
         anchor: 'center', align: 'center',
         color: '#fff',
-        font: { size: 9, weight: '700' },
+        font: ctx => {
+          const bar = ctx.chart.getDatasetMeta(ctx.datasetIndex).data[ctx.dataIndex];
+          const w = bar?.width || 20;
+          const h = Math.abs((bar?.base || 0) - (bar?.y || 0)) || 10;
+          const size = Math.max(7, Math.min(13, Math.floor(Math.min(w * 0.38, h * 0.45))));
+          return { size, weight: '700' };
+        },
         formatter: v => v
       }
     };
@@ -349,9 +382,12 @@ export function renderDesgloseSalidasChart() {
   const canvas = document.getElementById('desglose-chart-canvas');
   destroyChart('desglose');
 
+  const pluginRedrawDesglose = { id:'redrawDesglose', afterRender(chart){ if(!chart._lbReady){chart._lbReady=true;chart.update('none');} } };
+
   CHARTS.desglose = new Chart(canvas, {
     type: 'bar',
     data: { labels, datasets },
+    plugins: [pluginRedrawDesglose],
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },

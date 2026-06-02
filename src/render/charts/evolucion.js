@@ -224,7 +224,7 @@ export function renderNetosChart() {
   });
 
   // Leyenda proxy
-  const mkLegend = (label, bg) => ({ type:'bar', label, data: rows.map(() => null), backgroundColor: bg, datalabels:{display:false} });
+  const mkLegend = (label, bg) => ({ type:'bar', label, data: rows.map(() => null), backgroundColor: bg, stack: 'netos', datalabels:{display:false} });
 
   const canvas = document.getElementById('netos-chart');
   destroyChart('netos');
@@ -236,8 +236,12 @@ export function renderNetosChart() {
         { type: 'bar', label: 'Arriendos netos',
           data: allNetos,
           backgroundColor: barColors,
-          borderRadius: 4,
+          borderWidth: 0,
+          borderRadius: 3,
           borderSkipped: false,
+          stack: 'netos',
+          barPercentage: 0.9,
+          categoryPercentage: 0.9,
           datalabels: {
             display: ctx => {
               const v = allNetos[ctx.dataIndex];
@@ -282,10 +286,10 @@ export function renderNetosChart() {
       },
       clip: false,
       scales: {
-        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } },
         y: {
           type: 'linear', position: 'left',
-          grace: '15%',
+          grace: '25%',
           grid: {
             color: ctx => ctx.tick.value === 0 ? '#1a1810' : '#f0f3f6',
             lineWidth: ctx => ctx.tick.value === 0 ? 1.5 : 1,
