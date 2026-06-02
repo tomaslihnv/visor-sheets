@@ -37,7 +37,12 @@ export function getBodegaCategory(row) {
 
 export function getMotivoColor(motivo) {
   if (!MOTIVO_COLOR_MAP[motivo]) {
-    const configIdx = MOTIVOS.indexOf(motivo);
+    let configIdx = MOTIVOS.indexOf(motivo);
+    if (configIdx < 0) {
+      // fallback: comparación sin mayúsculas, acentos ni variantes Des-/Dis-
+      const norm = s => s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/^dis/, 'des');
+      configIdx = MOTIVOS.findIndex(m => norm(m) === norm(motivo));
+    }
     const idx = configIdx >= 0
       ? configIdx % MOTIVO_PALETTE.length
       : Object.keys(MOTIVO_COLOR_MAP).length % MOTIVO_PALETTE.length;
