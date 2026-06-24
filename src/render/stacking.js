@@ -4,15 +4,6 @@ import { getCategory, getParkingCategory, getBodegaCategory } from '../categorie
 import { showTooltip, hideTooltip, moveTooltip, showParkingTooltip, showBodegaTooltip, addTapToShow } from '../tooltip.js';
 import { pcol, bcol, resolveParkingColumns, resolveBodegaColumns } from '../columns.js';
 
-// Colores fijos por orientación — usados en el dot de cada celda y en la leyenda
-export const ORIENT_COLORS = { N: '#3b82f6', S: '#f59e0b', O: '#10b981', P: '#ef4444' };
-
-function orientDot(u) {
-  const o = (u?.['Orientación'] || '').trim().toUpperCase();
-  const color = ORIENT_COLORS[o];
-  return color ? `<span class="unit-orient" style="background:${color}" title="Orientación: ${o}"></span>` : '';
-}
-
 // Determina, para cada columna, la primera orientación no vacía encontrada
 // recorriendo los pisos en el orden del layout (de arriba hacia abajo).
 // Devuelve el set de columnas donde empieza un nuevo tramo de orientación,
@@ -60,7 +51,7 @@ export function renderStacking() {
         const n = colMap[c];
         el.className = 'unit';
         el.id = 'u-' + n;
-        el.innerHTML = `<span class="unit-num">${n}</span><span class="unit-tipo"></span>${orientDot(umap[n])}`;
+        el.innerHTML = `<span class="unit-num">${n}</span><span class="unit-tipo"></span>`;
         el.addEventListener('mouseenter', e => showTooltip(e, n));
         el.addEventListener('mouseleave', hideTooltip);
         el.addEventListener('mousemove',  moveTooltip);

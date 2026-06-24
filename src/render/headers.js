@@ -2,11 +2,23 @@ import { state, BD } from '../state.js';
 import { LAYOUT_IRR, LAYOUT_ECH, MAX_COL_IRR, MAX_COL_ECH } from '../config.js';
 import { getCategory } from '../categories.js';
 import { nfdKey } from '../utils.js';
-import { ORIENT_COLORS } from './stacking.js';
+// Devuelve el set de columnas donde empieza un nuevo tramo de orientación,
+// usado tanto para el header combinado como para las líneas divisorias del resto de filas.
+function getOrientBoundaries(maxCol, colInfo) {
+  const boundaries = new Set();
+  let prev;
+  for (let c = 1; c <= maxCol; c++) {
+    const cur = colInfo[c]?.orient || null;
+    if (c > 1 && cur !== prev) boundaries.add(c);
+    prev = cur;
+  }
+  return boundaries;
+}
 
-// Renderiza el header de Orientación como celdas combinadas: una franja de color
-// sólido por cada tramo de columnas consecutivas con la misma orientación.
-function renderOrientHeaderRow(rowEl, maxCol, colInfo) {
+// Renderiza el header de Orientación como celdas combinadas: un mismo color
+// sobrio para todas las orientaciones, diferenciadas por la etiqueta y por
+// líneas divisorias verticales en cada tramo de columnas.
+function renderOrientHeaderRow(rowEl, maxCol, colInfo, boundaries) {
   rowEl.innerHTML = '';
   const lbl = document.createElement('div');
   lbl.className = 'col-hdr-lbl';
@@ -31,7 +43,7 @@ function renderOrientHeaderRow(rowEl, maxCol, colInfo) {
     const seg = document.createElement('div');
     seg.className = 'col-hdr-orient-seg';
     seg.style.width = (span * 32 + (span - 1) * 2) + 'px';
-    if (orient) seg.style.background = ORIENT_COLORS[orient] || '#94a3b8';
+    if (boundaries.has(c)) seg.classList.add('col-orient-boundary');
     seg.textContent = orient || '—';
     seg.title = orient || '—';
     cells.appendChild(seg);
@@ -75,8 +87,10 @@ export function renderColumnHeaders() {
     info.pct    = base > 0 ? Math.round(enRenta / base * 100) + '%' : '—';
   });
 
+  const boundaries = getOrientBoundaries(maxCol, colInfo);
+
   const orientRowEl = document.getElementById('col-hdr-orient');
-  if (orientRowEl) renderOrientHeaderRow(orientRowEl, maxCol, colInfo);
+  if (orientRowEl) renderOrientHeaderRow(orientRowEl, maxCol, colInfo, boundaries);
 
   const rows = [
     { id: 'col-hdr-col',  label: 'Columna',        val: c => colInfo[c] ? String(colInfo[c].colNum) : '' },
@@ -99,6 +113,7 @@ export function renderColumnHeaders() {
       const el = document.createElement('div');
       el.className = colInfo[c] ? 'col-hdr-cell' : 'col-hdr-gap';
       if (colInfo[c]) el.textContent = val(c);
+      if (boundaries.has(c)) el.classList.add('col-orient-boundary');
       cells.appendChild(el);
     }
     rowEl.appendChild(cells);

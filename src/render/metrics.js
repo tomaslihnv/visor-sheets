@@ -3,7 +3,6 @@ import { LAYOUT_IRR, LAYOUT_ECH } from '../config.js';
 import { getCategory, getParkingCategory, getBodegaCategory } from '../categories.js';
 import { EVOL_COL } from '../columns.js';
 import { parseEvolDate } from '../utils.js';
-import { ORIENT_COLORS } from './stacking.js';
 
 const ORIENT_LABELS = { N: 'Norte', S: 'Sur', O: 'Oriente', P: 'Poniente' };
 
@@ -60,9 +59,8 @@ export function updateMetrics(deptoData, estacData, bodData) {
   if (orientEl) {
     const rows = Object.entries(orientMap).sort((a, b) => b[1] - a[1]);
     orientEl.innerHTML = rows.map(([o, count]) => {
-      const color = ORIENT_COLORS[o] || '#94a3b8';
       const label = ORIENT_LABELS[o] || o;
-      return `<div class="legend-item"><div class="legend-dot" style="background:${color};border-color:${color}"></div>${label} <span class="legend-count">${count}</span></div>`;
+      return `<div class="legend-item"><div class="legend-dot" style="background:#ccc5b5;border-color:#ccc5b5"></div>${label} <span class="legend-count">${count}</span></div>`;
     }).join('');
   }
 
