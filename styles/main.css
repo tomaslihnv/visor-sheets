@@ -236,7 +236,18 @@ body { font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif; background: #f2ede5
 .unit.dimmed { opacity: 0.08; }
 .unit-num  { font-size: 6.5px; font-weight: 700; line-height: 1; }
 .unit-tipo { font-size: 5.5px; font-weight: 500; line-height: 1; opacity: 0.75; }
-.col-orient-boundary { border-left: 2px solid #6b5f4f; }
+/* Línea divisoria como pseudo-elemento: evita que filters.js la pise al
+   sobreescribir el border-color inline de las celdas según categoría. */
+.col-orient-boundary { position: relative; }
+.col-orient-boundary::before {
+  content: '';
+  position: absolute;
+  left: -1px; top: 0; bottom: 0;
+  width: 2px;
+  background: #6b5f4f;
+  pointer-events: none;
+  z-index: 1;
+}
 
 /* ── COLUMN HEADERS ── */
 .col-hdr-wrap { border-bottom: 2px solid #e3dbd0; margin-bottom: 6px; padding-bottom: 4px; }
