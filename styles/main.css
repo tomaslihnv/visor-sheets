@@ -236,6 +236,7 @@ body { font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif; background: #f2ede5
 .unit.dimmed { opacity: 0.08; }
 .unit-num  { font-size: 6.5px; font-weight: 700; line-height: 1; }
 .unit-tipo { font-size: 5.5px; font-weight: 500; line-height: 1; opacity: 0.75; }
+.unit-orient { position: absolute; top: 2px; right: 2px; width: 5px; height: 5px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.6); }
 
 /* ── COLUMN HEADERS ── */
 .col-hdr-wrap { border-bottom: 2px solid #e3dbd0; margin-bottom: 6px; padding-bottom: 4px; }

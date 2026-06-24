@@ -3,6 +3,9 @@ import { LAYOUT_IRR, LAYOUT_ECH } from '../config.js';
 import { getCategory, getParkingCategory, getBodegaCategory } from '../categories.js';
 import { EVOL_COL } from '../columns.js';
 import { parseEvolDate } from '../utils.js';
+import { ORIENT_COLORS } from './stacking.js';
+
+const ORIENT_LABELS = { N: 'Norte', S: 'Sur', O: 'Oriente', P: 'Poniente' };
 
 export function updateMetrics(deptoData, estacData, bodData) {
   const layout = state.AB === 'irr' ? LAYOUT_IRR : LAYOUT_ECH;
@@ -10,6 +13,7 @@ export function updateMetrics(deptoData, estacData, bodData) {
 
   let dContr = 0, dRC = 0, dVac = 0, dPilot = 0;
   const tipMap = {};
+  const orientMap = {};
   layout.forEach(floor => floor.cells.forEach(cell => {
     const u   = umap[cell.n];
     const cat = getCategory(u);
@@ -22,6 +26,9 @@ export function updateMetrics(deptoData, estacData, bodData) {
       if (!tipMap[tipo]) tipMap[tipo] = { total: 0, rented: 0 };
       tipMap[tipo].total++;
       if (cat === 'contrato' || cat === 'rc') tipMap[tipo].rented++;
+
+      const orient = (u['Orientación'] || '').trim().toUpperCase();
+      if (orient) orientMap[orient] = (orientMap[orient] || 0) + 1;
     }
   }));
   const dTotal   = dContr + dRC + dVac + dPilot;
@@ -46,6 +53,16 @@ export function updateMetrics(deptoData, estacData, bodData) {
         <span class="tipo-count">${rented}/${total}</span>
         <span class="tipo-pct">${pct}%</span>
       </div>`;
+    }).join('');
+  }
+
+  const orientEl = document.getElementById('orientacion-breakdown');
+  if (orientEl) {
+    const rows = Object.entries(orientMap).sort((a, b) => b[1] - a[1]);
+    orientEl.innerHTML = rows.map(([o, count]) => {
+      const color = ORIENT_COLORS[o] || '#94a3b8';
+      const label = ORIENT_LABELS[o] || o;
+      return `<div class="legend-item"><div class="legend-dot" style="background:${color};border-color:${color}"></div>${label} <span class="legend-count">${count}</span></div>`;
     }).join('');
   }
 

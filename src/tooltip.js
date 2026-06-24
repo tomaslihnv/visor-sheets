@@ -13,6 +13,7 @@ export function showTooltip(e, n) {
   const rows = [
     ['Titular',      (u && col.titular ? (u[col.titular] || '').trim() : '') || '—'],
     ['Tipología',    (u?.['Tipo'] || '').trim() || '—'],
+    ['Orientación',  (u?.['Orientación'] || '').trim() || '—'],
     ['Canon CLP',    u?.__canonCLP  != null ? '$' + Math.round(u.__canonCLP).toLocaleString('es-CL') : '—'],
     ['GGCC',         u?.__ggccCLP   != null ? '$' + Math.round(u.__ggccCLP).toLocaleString('es-CL')  : '—'],
     ['Canon UF/m²',  u?.__canonUFm2 != null ? u.__canonUFm2.toFixed(2) + ' UF/m²' : '—'],
