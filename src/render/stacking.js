@@ -13,12 +13,34 @@ function orientDot(u) {
   return color ? `<span class="unit-orient" style="background:${color}" title="Orientación: ${o}"></span>` : '';
 }
 
+// Determina, para cada columna, la primera orientación no vacía encontrada
+// recorriendo los pisos en el orden del layout (de arriba hacia abajo).
+// Devuelve el set de columnas donde empieza un nuevo tramo de orientación,
+// para dibujar una línea divisoria vertical que baje por todos los pisos.
+function computeOrientBoundaries(layout, maxCol, umap) {
+  const colOrient = {};
+  layout.forEach(floor => floor.cells.forEach(cell => {
+    if (colOrient[cell.c] !== undefined) return;
+    const o = (umap[cell.n]?.['Orientación'] || '').trim().toUpperCase();
+    colOrient[cell.c] = o || null;
+  }));
+  const boundaries = new Set();
+  let prev;
+  for (let c = 1; c <= maxCol; c++) {
+    const cur = colOrient[c] ?? null;
+    if (c > 1 && cur !== prev) boundaries.add(c);
+    prev = cur;
+  }
+  return boundaries;
+}
+
 export function renderStacking() {
   const bldg = document.getElementById('building');
   bldg.innerHTML = '';
   const layout = state.AB === 'irr' ? LAYOUT_IRR : LAYOUT_ECH;
   const maxCol  = state.AB === 'irr' ? MAX_COL_IRR : MAX_COL_ECH;
   const umap    = BD[state.AB].umap;
+  const orientBoundaries = computeOrientBoundaries(layout, maxCol, umap);
 
   layout.forEach(floor => {
     const colMap = {};
@@ -46,6 +68,7 @@ export function renderStacking() {
       } else {
         el.className = 'cell-gap';
       }
+      if (orientBoundaries.has(c)) el.classList.add('col-orient-boundary');
       cells.appendChild(el);
     }
     rowEl.appendChild(cells);
