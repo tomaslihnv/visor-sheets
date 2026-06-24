@@ -1,6 +1,6 @@
 import { pcol, bcol } from './columns.js';
 import { parseCLP, nfdKey } from './utils.js';
-import { MOTIVO_COLOR_MAP, MOTIVO_PALETTE } from './state.js';
+import { MOTIVO_COLOR_MAP, MOTIVO_PALETTE, TIPOLOGIA_COLOR_MAP, TIPOLOGIA_PALETTE } from './state.js';
 import { MOTIVOS } from './config.js';
 
 export function getCategory(u) {
@@ -49,6 +49,14 @@ export function getMotivoColor(motivo) {
     MOTIVO_COLOR_MAP[motivo] = MOTIVO_PALETTE[idx];
   }
   return MOTIVO_COLOR_MAP[motivo];
+}
+
+export function getTipologiaColor(tipo) {
+  if (!TIPOLOGIA_COLOR_MAP[tipo]) {
+    const idx = Object.keys(TIPOLOGIA_COLOR_MAP).length % TIPOLOGIA_PALETTE.length;
+    TIPOLOGIA_COLOR_MAP[tipo] = TIPOLOGIA_PALETTE[idx];
+  }
+  return TIPOLOGIA_COLOR_MAP[tipo];
 }
 
 export function avgLineDataset(allMonths, data) {

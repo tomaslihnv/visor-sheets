@@ -68,3 +68,20 @@ export const MOTIVO_PALETTE = [
 ];
 
 export const MOTIVO_COLOR_MAP = {};
+
+// Paleta para el header de Tipología del stacking plan (celdas combinadas por columna).
+// Asignación dinámica por orden de aparición — ver getTipologiaColor() en categories.js.
+export const TIPOLOGIA_PALETTE = [
+  '#1d4ed8', // blue-700
+  '#047857', // emerald-700
+  '#b45309', // amber-700
+  '#b91c1c', // red-700
+  '#6d28d9', // violet-700
+  '#0e7490', // cyan-700
+  '#be185d', // pink-700
+  '#4d7c0f', // lime-700
+  '#475569', // slate-600
+  '#92400e', // orange-800
+];
+
+export const TIPOLOGIA_COLOR_MAP = {};
