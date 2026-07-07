@@ -5,7 +5,7 @@ export const BD = {
   ech: { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], contratos:[], fields:[], refKey:'', refUF:0 }
 };
 
-export const CHARTS = { evol: null, netos: null, venc: null, renewal: null, entrada: null, termino: null, salidas: null, motivo: null, desglose: null };
+export const CHARTS = { evol: null, netos: null, venc: null, renewal: null, entrada: null, termino: null, salidas: null, motivo: null, desglose: null, permanencia: null };
 
 // Colores semánticos fijos — usar siempre estas referencias, nunca hardcodear hex.
 // Cualquier label que aparezca en más de un gráfico DEBE usar el mismo color de aquí.
