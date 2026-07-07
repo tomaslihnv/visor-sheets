@@ -12,6 +12,7 @@ import { initVencChartSelects, renderVencChart } from './render/charts/vencimien
 import { initRenewalChartSelects, renderRenewalChart } from './render/charts/renewal.js';
 import { initSalidasChartSelects, renderSalidasChart, initMotivoChartSelects, renderMotivoChart, initDesgloseSalidasSelects, renderDesgloseSalidasChart } from './render/charts/salidas.js';
 import { initEntradaChartSelects, renderEntradaChart, initFlujoChartSelects, renderFlujoChart } from './render/charts/entrada.js';
+import { renderPermanenciaChart } from './render/charts/permanencia.js';
 import { openExportPanel, initChartFontSliders, reapplyFontSize } from './export-chart.js';
 
 function renderBothEvolCharts() {
@@ -24,6 +25,7 @@ function renderBothEvolCharts() {
   renderSalidasChart();
   renderMotivoChart();
   renderDesgloseSalidasChart();
+  renderPermanenciaChart();
 }
 
 function switchBuilding(id) {
@@ -275,6 +277,7 @@ window.renderFlujoChart      = _wrap(renderFlujoChart,      'termino');
 window.renderSalidasChart    = _wrap(renderSalidasChart,    'salidas');
 window.renderMotivoChart     = _wrap(renderMotivoChart,     'motivo');
 window.renderDesgloseSalidasChart = _wrap(renderDesgloseSalidasChart, 'desglose');
+window.renderPermanenciaChart     = _wrap(renderPermanenciaChart,     'permanencia');
 window.openExportPanel       = openExportPanel;
 
 // Inicializar sliders de fuente en cards de evolución
