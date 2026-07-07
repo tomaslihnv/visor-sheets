@@ -12,7 +12,7 @@ import { initVencChartSelects, renderVencChart } from './render/charts/vencimien
 import { initRenewalChartSelects, renderRenewalChart } from './render/charts/renewal.js';
 import { initSalidasChartSelects, renderSalidasChart, initMotivoChartSelects, renderMotivoChart, initDesgloseSalidasSelects, renderDesgloseSalidasChart } from './render/charts/salidas.js';
 import { initEntradaChartSelects, renderEntradaChart, initFlujoChartSelects, renderFlujoChart } from './render/charts/entrada.js';
-import { renderPermanenciaChart } from './render/charts/permanencia.js';
+import { renderPermanenciaChart, initPermanenciaSelects } from './render/charts/permanencia.js';
 import { openExportPanel, initChartFontSliders, reapplyFontSize } from './export-chart.js';
 
 function renderBothEvolCharts() {
@@ -59,6 +59,7 @@ function switchBuilding(id) {
   initSalidasChartSelects(BD[state.AB].sal);
   initMotivoChartSelects(BD[state.AB].sal);
   initDesgloseSalidasSelects(BD[state.AB].sal);
+  initPermanenciaSelects(BD[state.AB].data);
   renderBothEvolCharts();
   populateDropdowns(BD[state.AB].data);
   initVencFilter(BD[state.AB].data);
@@ -356,6 +357,7 @@ Promise.all(URLS.irr.slice(1).map(u => fetch(u).then(r => r.text())))
       initSalidasChartSelects(BD.irr.sal);
       initMotivoChartSelects(BD.irr.sal);
       initDesgloseSalidasSelects(BD.irr.sal);
+      initPermanenciaSelects(BD.irr.data);
       initVencFilter(BD.irr.data);
       initUFFilter(BD.irr.data);
       applyFilters();
@@ -404,6 +406,7 @@ Promise.all(URLS.ech.slice(1).map(u => fetch(u).then(r => r.text())))
       initSalidasChartSelects(BD.ech.sal);
       initMotivoChartSelects(BD.ech.sal);
       initDesgloseSalidasSelects(BD.ech.sal);
+      initPermanenciaSelects(BD.ech.data);
       initVencFilter(BD.ech.data);
       initUFFilter(BD.ech.data);
       applyFilters();

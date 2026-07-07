@@ -8,11 +8,24 @@ const BUCKETS = [
   { label: '> 12 meses',   color: '#34d399' }, // emerald-400
 ];
 
+export function initPermanenciaSelects(data) {
+  const tipoEl = document.getElementById('permanencia-chart-tipo');
+  if (!tipoEl) return;
+  const tipos = new Set();
+  data.forEach(row => {
+    const t = (row['Tipo'] || '').trim();
+    if (t) tipos.add(t);
+  });
+  tipoEl.innerHTML = '<option value="">Todas</option>';
+  [...tipos].sort().forEach(t => tipoEl.appendChild(new Option(t, t)));
+}
+
 export function renderPermanenciaChart() {
   const data   = BD[state.AB].data;
   const canvas = document.getElementById('permanencia-chart-canvas');
   if (!canvas || !data.length) return;
 
+  const tipoFilt = document.getElementById('permanencia-chart-tipo')?.value || '';
   const today    = new Date(); today.setHours(0, 0, 0, 0);
   const firmaCol = col.firma || 'Firma';
   const counts   = [0, 0, 0];
@@ -21,6 +34,7 @@ export function renderPermanenciaChart() {
   data.forEach(row => {
     const dest = (row['Destino'] || '').trim().replace('−', '-');
     if ((row['Estatus'] || '').trim() !== '1' || dest !== '-') return;
+    if (tipoFilt && (row['Tipo'] || '').trim() !== tipoFilt) return;
     const p = parseDate((row[firmaCol] || '').toString().trim());
     if (!p) return;
     const dias = Math.round((today - new Date(p.year, p.month - 1, p.day)) / 86400000);

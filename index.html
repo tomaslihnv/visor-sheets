@@ -531,6 +531,10 @@
         </div>
         <div class="evol-card-controls">
           <label class="evol-check-label"><input type="checkbox" id="permanencia-chart-labels" onchange="renderPermanenciaChart()" checked> Etiquetas</label>
+          <div class="evol-range">
+            <label>Tipología</label>
+            <select id="permanencia-chart-tipo" onchange="renderPermanenciaChart()"><option value="">Todas</option></select>
+          </div>
           <span id="permanencia-stat-anual" class="evol-perm-stat"></span>
           <span id="permanencia-stat-semestral" class="evol-perm-stat"></span>
         </div>
