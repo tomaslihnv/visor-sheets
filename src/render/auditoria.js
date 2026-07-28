@@ -57,19 +57,20 @@ function findContratosUnitCol(keys) {
 }
 
 function findEndDateCol(keys) {
+  // F. Termino tiene prioridad sobre F. Venc.
   return findCol(keys,
-    k => k === 'FVENC',
     k => k === 'FTERMINO',
+    k => k.includes('TERMINO'),
+    k => k === 'FVENC',
     k => k.includes('VENCIMIENTOSNETOS') || k.includes('VENCIMIENTO'),
     k => k === 'SALIDAS' || k === 'SALIDA',
     k => k.includes('VENC'),
-    k => k.includes('TERMINO'),
   );
 }
 
 function findTitularCol(keys) {
   return findCol(keys,
-    k => k === 'TITULAR',
+    k => k === 'TITULAR' || k.includes('TITULAR'),
     k => k.includes('ARREN'),
     k => k.includes('NOMBRE'),
     k => k.includes('CLIENTE'),
@@ -78,8 +79,7 @@ function findTitularCol(keys) {
 
 function findRentaCol(keys) {
   return findCol(keys,
-    k => k === 'RENTA',
-    k => k.includes('RENTA'),
+    k => k === 'RENTA' || k.includes('RENTA'),
     k => k.includes('ARRIENDO'),
     k => k.includes('VALOR'),
     k => k.startsWith('UF') || k.endsWith('UF'),
@@ -326,6 +326,8 @@ export function renderAuditoriaTable() {
   const dateCol    = findEndDateCol(keys);
   const titularCol = findTitularCol(keys);
   const rentaCol   = findRentaCol(keys);
+  console.log('[Auditoría] columnas contratos:', keys);
+  console.log('[Auditoría] dateCol:', dateCol, '| titularCol:', titularCol, '| rentaCol:', rentaCol);
   if (!dateCol) return;
 
   const cmap = buildContratosMap(contratos);
