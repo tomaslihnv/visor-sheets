@@ -89,6 +89,7 @@
   <button class="tab-btn" onclick="showTab('bodegas',this)">Bodegas</button>
   <button class="tab-btn" onclick="showTab('venc',this)">Vencimientos</button>
   <button class="tab-btn" onclick="showTab('sal',this)">Salidas</button>
+  <button class="tab-btn" onclick="showTab('auditoria',this)">Reparaciones</button>
 </div>
 
 <div id="panel-stacking" class="panel active">
@@ -305,6 +306,66 @@
 
 <div id="panel-sal" class="panel">
   <div class="table-wrap" id="table6"><p style="padding:40px;text-align:center;color:#8a9bb0">Cargando…</p></div>
+</div>
+
+<div id="panel-auditoria" class="panel">
+  <div class="aud-layout">
+
+    <!-- ── Leyenda ─────────────────────────────────────────────── -->
+    <div class="aud-legend-bar">
+      <span class="aud-legend-item"><span class="aud-dot" style="background:#fca5a5;border-color:#f87171"></span>Dañado</span>
+      <span class="aud-legend-item"><span class="aud-dot" style="background:#e2e8f0;border-color:#94a3b8"></span>Por revisar</span>
+      <span class="aud-legend-item"><span class="aud-dot" style="background:#fef9c3;border-color:#fde047"></span>En proceso</span>
+      <span class="aud-legend-item"><span class="aud-dot" style="background:#d1fae5;border-color:#6ee7b7"></span>Reparado</span>
+      <span class="aud-legend-item"><span class="aud-dot" style="background:#f0f4f8;border-color:#d1dae3"></span>Sin datos</span>
+    </div>
+
+    <!-- ── Sin datos ────────────────────────────────────────────── -->
+    <div id="auditoria-no-data" class="aud-no-data" style="display:none">
+      Sin datos de reparaciones para este edificio
+    </div>
+
+    <!-- ── Stacking plan coloreado ──────────────────────────────── -->
+    <div class="aud-section-title">Estado de Reparaciones por Unidad</div>
+    <div id="auditoria-stacking" class="aud-stacking-wrap">
+      <p style="padding:24px;text-align:center;color:#8a9bb0">Cargando datos de reparación…</p>
+    </div>
+
+    <!-- ── Gráfico de barras + tabla ────────────────────────────── -->
+    <div class="aud-bottom-grid">
+      <div class="aud-chart-card">
+        <div class="aud-section-title">
+          Vencimientos con Reparaciones Pendientes
+          <span id="auditoria-month-label" class="aud-month-chip"></span>
+        </div>
+        <p class="aud-hint">Haz clic en una barra para filtrar el stacking plan y ver el detalle</p>
+        <div class="aud-bar-wrap">
+          <canvas id="auditoria-bar-canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="aud-table-card">
+        <div class="aud-section-title">Detalle de unidades</div>
+        <div class="aud-table-wrap">
+          <table class="aud-table">
+            <thead>
+              <tr>
+                <th>Depto</th>
+                <th>Titular</th>
+                <th>Renta</th>
+                <th>F. Término</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="auditoria-table-body">
+              <tr><td colspan="5" class="aud-table-empty">Selecciona un mes en el gráfico para ver el detalle</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <div id="panel-evolucion" class="panel">

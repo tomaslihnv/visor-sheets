@@ -13,6 +13,8 @@ import { initRenewalChartSelects, renderRenewalChart } from './render/charts/ren
 import { initSalidasChartSelects, renderSalidasChart, initMotivoChartSelects, renderMotivoChart, initDesgloseSalidasSelects, renderDesgloseSalidasChart } from './render/charts/salidas.js';
 import { initEntradaChartSelects, renderEntradaChart, initFlujoChartSelects, renderFlujoChart } from './render/charts/entrada.js';
 import { renderPermanenciaChart, initPermanenciaSelects } from './render/charts/permanencia.js';
+import { renderAuditoria, resetAuditoria } from './render/auditoria.js';
+import { URLS_REPARACION } from './config.js';
 import { openExportPanel, initChartFontSliders, reapplyFontSize } from './export-chart.js';
 
 function renderBothEvolCharts() {
@@ -60,7 +62,9 @@ function switchBuilding(id) {
   initMotivoChartSelects(BD[state.AB].sal);
   initDesgloseSalidasSelects(BD[state.AB].sal);
   initPermanenciaSelects(BD[state.AB].data);
+  resetAuditoria();
   renderBothEvolCharts();
+  renderAuditoria();
   populateDropdowns(BD[state.AB].data);
   initVencFilter(BD[state.AB].data);
   initUFFilter(BD[state.AB].data);
@@ -80,6 +84,7 @@ function showTab(id, btn) {
   document.getElementById('panel-' + id).classList.add('active');
   btn.classList.add('active');
   if (id === 'evolucion') renderBothEvolCharts();
+  if (id === 'auditoria') renderAuditoria();
 }
 
 async function exportStackingPDF() {
@@ -425,6 +430,22 @@ function parseContratosCSV(csv) {
   return rows.slice(headerIdx + 1)
     .filter(row => row.some(c => c && c.toString().trim()))
     .map(row => Object.fromEntries(headers.map((h, i) => [h, row[i] ?? ''])));
+}
+
+// ── Hoja Reparación IRR ────────────────────────────────────────────────────
+if (URLS_REPARACION.irr) {
+  fetch(URLS_REPARACION.irr).then(r => r.text()).then(csv => {
+    BD.irr.rep = Papa.parse(csv.trim(), { header: true, skipEmptyLines: true }).data;
+    if (state.AB === 'irr') renderAuditoria();
+  }).catch(err => console.error('Error cargando Reparación IRR:', err));
+}
+
+// ── Hoja Reparación ECH ────────────────────────────────────────────────────
+if (URLS_REPARACION.ech) {
+  fetch(URLS_REPARACION.ech).then(r => r.text()).then(csv => {
+    BD.ech.rep = Papa.parse(csv.trim(), { header: true, skipEmptyLines: true }).data;
+    if (state.AB === 'ech') renderAuditoria();
+  }).catch(err => console.error('Error cargando Reparación ECH:', err));
 }
 
 // ── Hoja I. Contratos IRR ──────────────────────────────────────────────────

@@ -884,3 +884,85 @@ tr:hover td { background: #ede8df; }
   .evol-range select { font-size: 10px; padding: 4px 6px; }
   .evol-check-label { font-size: 10px; }
 }
+
+/* ── AUDITORÍA ─────────────────────────────────────────────────────────────── */
+.aud-layout { display: flex; flex-direction: column; gap: 20px; padding: 20px; }
+
+.aud-legend-bar {
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+  padding: 10px 14px; background: #fff; border-radius: 8px;
+  border: 1px solid #e5e7eb; font-size: 11px; font-weight: 600; color: #374151;
+}
+.aud-legend-item { display: flex; align-items: center; gap: 6px; }
+.aud-dot { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1.5px solid; }
+
+.aud-section-title {
+  font-size: 12px; font-weight: 700; color: #374151;
+  margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+}
+.aud-month-chip {
+  font-size: 11px; font-weight: 600; color: #2563eb;
+  background: #eff6ff; border-radius: 4px; padding: 2px 8px;
+}
+.aud-hint { font-size: 11px; color: #9ca3af; margin-bottom: 8px; }
+.aud-no-data { align-items: center; justify-content: center; padding: 40px; font-size: 13px; color: #9ca3af; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; }
+
+/* Stacking plan */
+.aud-stacking-wrap {
+  overflow-x: auto; background: #fff; border: 1px solid #e5e7eb;
+  border-radius: 8px; padding: 12px;
+}
+.aud-floor-row { display: flex; align-items: center; margin-bottom: 2px; }
+.aud-floor-label {
+  width: 32px; min-width: 32px; font-size: 10px; font-weight: 700;
+  color: #9ca3af; text-align: right; padding-right: 6px;
+}
+.aud-floor-cells { display: flex; gap: 2px; }
+.aud-unit {
+  width: 34px; height: 28px; border-radius: 4px; border: 1.5px solid;
+  display: flex; align-items: center; justify-content: center;
+  cursor: default; transition: opacity 0.15s;
+}
+.aud-unit:hover { opacity: 0.8; }
+.aud-unit-num { font-size: 9px; font-weight: 700; }
+.aud-cell-gap { width: 34px; height: 28px; }
+
+/* Bottom grid: chart + table side by side */
+.aud-bottom-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+.aud-chart-card, .aud-table-card {
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;
+}
+.aud-bar-wrap { position: relative; height: 260px; }
+
+/* Table */
+.aud-table-wrap { overflow-x: auto; max-height: 300px; overflow-y: auto; }
+.aud-table {
+  width: 100%; border-collapse: collapse; font-size: 12px;
+}
+.aud-table th {
+  position: sticky; top: 0; background: #f9fafb;
+  padding: 7px 10px; text-align: left; font-weight: 700;
+  color: #6b7280; border-bottom: 1.5px solid #e5e7eb; font-size: 11px;
+}
+.aud-table td {
+  padding: 7px 10px; border-bottom: 1px solid #f3f4f6; color: #374151;
+}
+.aud-table tr:last-child td { border-bottom: none; }
+.aud-table-empty { text-align: center; color: #9ca3af; padding: 24px !important; }
+
+/* Status badges */
+.aud-badge {
+  display: inline-block; font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 4px;
+}
+.aud-badge-danado   { background: #fee2e2; color: #991b1b; }
+.aud-badge-revisar  { background: #e2e8f0; color: #334155; }
+.aud-badge-proceso  { background: #fef9c3; color: #854d0e; }
+.aud-badge-reparado { background: #d1fae5; color: #065f46; }
+
+@media (max-width: 900px) {
+  .aud-bottom-grid { grid-template-columns: 1fr; }
+}
+}
