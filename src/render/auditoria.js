@@ -70,18 +70,20 @@ function findEndDateCol(keys) {
 
 function findTitularCol(keys) {
   return findCol(keys,
+    k => k === 'NOMBRE',
+    k => k.includes('NOMBRE'),
     k => k === 'TITULAR' || k.includes('TITULAR'),
     k => k.includes('ARREN'),
-    k => k.includes('NOMBRE'),
     k => k.includes('CLIENTE'),
   );
 }
 
 function findRentaCol(keys) {
   return findCol(keys,
+    k => k.includes('CANON') && k.includes('DPTO'),
+    k => k.includes('CANON'),
     k => k === 'RENTA' || k.includes('RENTA'),
     k => k.includes('ARRIENDO'),
-    k => k.includes('VALOR'),
     k => k.startsWith('UF') || k.endsWith('UF'),
   );
 }
