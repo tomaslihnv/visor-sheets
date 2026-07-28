@@ -243,7 +243,7 @@ export function renderAuditoriaBarChart() {
     if (!status || status === 'proceso') return;
     const pd = getEndDate(row, terminoCol, vencCol);
     if (!pd) return;
-    const idx = months.indexOf(mk);
+    const idx = months.indexOf(toMonthKey(pd));
     if (idx === -1) return;
     if (status === 'danado')   countsDanado[idx]++;
     if (status === 'revisar')  countsRevisar[idx]++;
@@ -396,6 +396,23 @@ export function resetAuditoria() {
 
 // ── Entry point ──────────────────────────────────────────────────────────────
 export function renderAuditoria() {
+  const ab  = state.AB;
+  const rep = BD[ab].rep || [];
+
+  const stacking = document.getElementById('auditoria-stacking');
+  const canvas   = document.getElementById('auditoria-bar-canvas');
+  const noData   = document.getElementById('auditoria-no-data');
+
+  if (!rep.length) {
+    destroyChart('auditoria');
+    if (stacking) stacking.innerHTML = '';
+    if (canvas)   canvas.style.display = 'none';
+    if (noData)   noData.style.display = 'flex';
+    return;
+  }
+
+  if (canvas)  canvas.style.display = '';
+  if (noData)  noData.style.display = 'none';
   renderAuditoriaBarChart();
   renderAuditoriaStacking();
 }
