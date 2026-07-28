@@ -1,6 +1,6 @@
 import { state, BD, CHARTS, destroyChart } from '../state.js';
 import { LAYOUT_IRR, LAYOUT_ECH, MAX_COL_IRR, MAX_COL_ECH } from '../config.js';
-import { parseDate, _MESES } from '../utils.js';
+import { parseDate, parseEvolDate, _MESES } from '../utils.js';
 
 // ── Colores por estado de reparación ────────────────────────────────────────
 const REP_STATUS = {
@@ -70,10 +70,17 @@ function findVencCol(keys) {
 }
 
 // Por fila: usa F. Termino si tiene valor, si no usa F. Venc.
+// Soporta DD/MM/YYYY, YYYY-MM-DD y otros formatos via parseEvolDate.
 function getEndDate(row, terminoCol, vencCol) {
-  const t = terminoCol ? (row[terminoCol] || '').toString().trim() : '';
-  const v = vencCol    ? (row[vencCol]    || '').toString().trim() : '';
-  return parseDate(t || v);
+  const t   = terminoCol ? (row[terminoCol] || '').toString().trim() : '';
+  const v   = vencCol    ? (row[vencCol]    || '').toString().trim() : '';
+  const raw = t || v;
+  if (!raw) return null;
+  const pd = parseDate(raw);
+  if (pd) return pd;
+  const d = parseEvolDate(raw);
+  if (!d || isNaN(d)) return null;
+  return { day: d.getDate(), month: d.getMonth() + 1, year: d.getFullYear() };
 }
 
 function findTitularCol(keys) {
