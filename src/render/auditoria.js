@@ -225,20 +225,29 @@ export function renderAuditoriaBarChart() {
   const keys       = Object.keys(contratos[0]);
   const terminoCol = findTerminoCol(keys);
   const vencCol    = findVencCol(keys);
+  console.log('[Aud] terminoCol:', terminoCol, '| vencCol:', vencCol);
+  console.log('[Aud] repMap keys:', Object.keys(repMap));
   if (!terminoCol && !vencCol) { destroyChart('auditoria'); return; }
 
   const cmap   = buildContratosMap(contratos);
+  console.log('[Aud] cmap keys (primeras 10):', Object.keys(cmap).slice(0, 10));
+
   const months = nextMonths(12);
+  console.log('[Aud] months:', months);
   const countsDanado   = Array(12).fill(0);
   const countsRevisar  = Array(12).fill(0);
   const countsReparado = Array(12).fill(0);
 
   Object.entries(cmap).forEach(([unit, row]) => {
     const status = classify(repMap[unit]);
+    const pd     = getEndDate(row, terminoCol, vencCol);
+    const mk     = pd ? toMonthKey(pd) : null;
+    const rawT   = terminoCol ? (row[terminoCol] || '') : '';
+    const rawV   = vencCol    ? (row[vencCol]    || '') : '';
+    console.log(`[Aud] unit=${unit} status=${status} rawT="${rawT}" rawV="${rawV}" pd=${JSON.stringify(pd)} mk=${mk}`);
     if (!status || status === 'proceso') return;
-    const pd = getEndDate(row, terminoCol, vencCol);
     if (!pd) return;
-    const idx = months.indexOf(toMonthKey(pd));
+    const idx = months.indexOf(mk);
     if (idx === -1) return;
     if (status === 'danado')   countsDanado[idx]++;
     if (status === 'revisar')  countsRevisar[idx]++;
