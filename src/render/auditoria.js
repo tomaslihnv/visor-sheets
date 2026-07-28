@@ -239,12 +239,12 @@ export function renderAuditoriaBarChart() {
         {
           label: 'Dañadas',
           data: countsDanado,
-          backgroundColor: '#fca5a5',
-          borderColor: '#f87171',
+          backgroundColor: REP_STATUS.danado.bg,
+          borderColor: REP_STATUS.danado.border,
           borderWidth: 1,
           datalabels: {
             display: ctx => countsDanado[ctx.dataIndex] > 0,
-            color: '#991b1b',
+            color: REP_STATUS.danado.color,
             font: { size: 10, weight: '700' },
             anchor: 'center',
             align: 'center',
@@ -253,12 +253,12 @@ export function renderAuditoriaBarChart() {
         {
           label: 'Por revisar',
           data: countsRevisar,
-          backgroundColor: '#cbd5e1',
-          borderColor: '#94a3b8',
+          backgroundColor: REP_STATUS.revisar.bg,
+          borderColor: REP_STATUS.revisar.border,
           borderWidth: 1,
           datalabels: {
             display: ctx => countsRevisar[ctx.dataIndex] > 0,
-            color: '#334155',
+            color: REP_STATUS.revisar.color,
             font: { size: 10, weight: '700' },
             anchor: 'center',
             align: 'center',
@@ -267,12 +267,12 @@ export function renderAuditoriaBarChart() {
         {
           label: 'Reparados',
           data: countsReparado,
-          backgroundColor: '#6ee7b7',
-          borderColor: '#34d399',
+          backgroundColor: REP_STATUS.reparado.bg,
+          borderColor: REP_STATUS.reparado.border,
           borderWidth: 1,
           datalabels: {
             display: ctx => countsReparado[ctx.dataIndex] > 0,
-            color: '#065f46',
+            color: REP_STATUS.reparado.color,
             font: { size: 10, weight: '700' },
             anchor: 'center',
             align: 'center',
