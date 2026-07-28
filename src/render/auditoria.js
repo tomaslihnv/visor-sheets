@@ -56,16 +56,24 @@ function findContratosUnitCol(keys) {
   );
 }
 
-function findEndDateCol(keys) {
-  // F. Termino tiene prioridad sobre F. Venc.
+function findTerminoCol(keys) {
+  return findCol(keys, k => k === 'FTERMINO', k => k.includes('TERMINO'));
+}
+
+function findVencCol(keys) {
   return findCol(keys,
-    k => k === 'FTERMINO',
-    k => k.includes('TERMINO'),
     k => k === 'FVENC',
     k => k.includes('VENCIMIENTOSNETOS') || k.includes('VENCIMIENTO'),
     k => k === 'SALIDAS' || k === 'SALIDA',
     k => k.includes('VENC'),
   );
+}
+
+// Por fila: usa F. Termino si tiene valor, si no usa F. Venc.
+function getEndDate(row, terminoCol, vencCol) {
+  const t = terminoCol ? (row[terminoCol] || '').toString().trim() : '';
+  const v = vencCol    ? (row[vencCol]    || '').toString().trim() : '';
+  return parseDate(t || v);
 }
 
 function findTitularCol(keys) {
@@ -137,14 +145,13 @@ export function renderAuditoriaStacking() {
   let expiringSet = null;
   if (_selectedMonth && BD[ab].contratos.length) {
     expiringSet = new Set();
-    const keys    = Object.keys(BD[ab].contratos[0]);
-    const dateCol = findEndDateCol(keys);
-    if (dateCol) {
-      Object.entries(cmap).forEach(([unit, row]) => {
-        const pd = parseDate((row[dateCol] || '').toString().trim());
-        if (pd && toMonthKey(pd) === _selectedMonth) expiringSet.add(unit);
-      });
-    }
+    const keys       = Object.keys(BD[ab].contratos[0]);
+    const terminoCol = findTerminoCol(keys);
+    const vencCol    = findVencCol(keys);
+    Object.entries(cmap).forEach(([unit, row]) => {
+      const pd = getEndDate(row, terminoCol, vencCol);
+      if (pd && toMonthKey(pd) === _selectedMonth) expiringSet.add(unit);
+    });
   }
 
   container.innerHTML = '';
@@ -207,10 +214,11 @@ export function renderAuditoriaBarChart() {
     return;
   }
 
-  const repMap  = buildRepMap(rep);
-  const keys    = Object.keys(contratos[0]);
-  const dateCol = findEndDateCol(keys);
-  if (!dateCol) { destroyChart('auditoria'); return; }
+  const repMap     = buildRepMap(rep);
+  const keys       = Object.keys(contratos[0]);
+  const terminoCol = findTerminoCol(keys);
+  const vencCol    = findVencCol(keys);
+  if (!terminoCol && !vencCol) { destroyChart('auditoria'); return; }
 
   const cmap   = buildContratosMap(contratos);
   const months = nextMonths(12);
@@ -221,7 +229,7 @@ export function renderAuditoriaBarChart() {
   Object.entries(cmap).forEach(([unit, row]) => {
     const status = classify(repMap[unit]);
     if (!status || status === 'proceso') return;
-    const pd  = parseDate((row[dateCol] || '').toString().trim());
+    const pd = getEndDate(row, terminoCol, vencCol);
     if (!pd) return;
     const idx = months.indexOf(toMonthKey(pd));
     if (idx === -1) return;
@@ -323,14 +331,13 @@ export function renderAuditoriaTable() {
   const contratos = BD[ab].contratos || [];
   if (!rep.length || !contratos.length) return;
 
-  const repMap = buildRepMap(rep);
-  const keys   = Object.keys(contratos[0]);
-  const dateCol    = findEndDateCol(keys);
+  const repMap     = buildRepMap(rep);
+  const keys       = Object.keys(contratos[0]);
+  const terminoCol = findTerminoCol(keys);
+  const vencCol    = findVencCol(keys);
   const titularCol = findTitularCol(keys);
   const rentaCol   = findRentaCol(keys);
-  console.log('[Auditoría] columnas contratos:', keys);
-  console.log('[Auditoría] dateCol:', dateCol, '| titularCol:', titularCol, '| rentaCol:', rentaCol);
-  if (!dateCol) return;
+  if (!terminoCol && !vencCol) return;
 
   const cmap = buildContratosMap(contratos);
   const rows = [];
@@ -338,7 +345,7 @@ export function renderAuditoriaTable() {
   Object.entries(cmap).forEach(([unit, row]) => {
     const status = classify(repMap[unit]);
     if (!status || status === 'proceso') return;
-    const pd = parseDate((row[dateCol] || '').toString().trim());
+    const pd = getEndDate(row, terminoCol, vencCol);
     if (!pd || toMonthKey(pd) !== _selectedMonth) return;
     rows.push({ unit, row, status, pd });
   });
