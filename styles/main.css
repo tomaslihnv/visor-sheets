@@ -228,14 +228,15 @@ body { font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif; background: #f2ede5
 .stacking-wrap { flex: 1; min-height: 0; overflow: auto; background: #f9f5ee; border: 1px solid #ddd5c4; border-radius: 8px; padding: 16px; }
 .building { display: flex; flex-direction: column; gap: 2px; }
 .floor-row { display: flex; align-items: center; gap: 2px; }
-.floor-label { width: 90px; text-align: left; padding-right: 8px; font-size: 10px; font-weight: 600; color: #9a9080; flex-shrink: 0; }
+.floor-label { width: 32px; min-width: 32px; text-align: right; padding-right: 6px; font-size: 9px; font-weight: 700; color: #9a9080; flex-shrink: 0; }
 .floor-cells { display: flex; gap: 2px; overflow: visible; }
-.cell-gap { width: 32px; height: 36px; flex-shrink: 0; }
-.unit { width: 32px; height: 36px; background: #ede8de; border: 1px solid #ccc5b5; border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; flex-shrink: 0; cursor: pointer; color: #3a3020; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; position: relative; transition: opacity 0.18s, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease, filter 0.18s ease; }
+.cell-gap { width: 34px; height: 28px; flex-shrink: 0; }
+.unit { width: 34px; height: 28px; background: #ede8de; border: 1.5px solid #ccc5b5; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; flex-shrink: 0; cursor: pointer; color: #3a3020; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; position: relative; transition: opacity 0.18s, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease, filter 0.18s ease; }
 .unit:hover:not(.dimmed) { transform: scale(1.22) translateY(-1px); z-index: 10; box-shadow: 0 6px 16px rgba(0,0,0,0.22), 0 2px 4px rgba(0,0,0,0.12); filter: brightness(1.06); }
 .unit.dimmed { opacity: 0.08; }
-.unit-num  { font-size: 6.5px; font-weight: 700; line-height: 1; }
+.unit-num  { font-size: 9px; font-weight: 700; line-height: 1; }
 .unit-tipo { font-size: 5.5px; font-weight: 500; line-height: 1; opacity: 0.75; }
+.hide-tipo .unit-tipo { display: none; }
 /* Línea divisoria como pseudo-elemento: evita que filters.js la pise al
    sobreescribir el border-color inline de las celdas según categoría. */
 .col-orient-boundary { position: relative; }
@@ -356,6 +357,17 @@ tr:hover td { background: #ede8df; }
   width: 2px; background: #ccc5b5; align-self: stretch;
   margin: 0 8px; border-radius: 1px; flex-shrink: 0;
 }
+
+/* ── TOGGLE TIPOLOGÍA BUTTON ── */
+.btn-toggle-tipo {
+  flex-shrink: 0; display: flex; align-items: center; gap: 5px;
+  padding: 5px 11px; border-radius: 6px; border: 1px solid #ddd5c4;
+  background: #f9f5ee; color: #4a4030; font-size: 11px; font-weight: 600;
+  letter-spacing: 0.04em; cursor: pointer; transition: all 0.15s;
+  text-transform: uppercase; white-space: nowrap;
+}
+.btn-toggle-tipo:hover  { background: #ede8de; }
+.btn-toggle-tipo.active { background: #1a1810; color: #f0ebe2; border-color: #1a1810; }
 
 /* ── EXPORT PDF BUTTON ── */
 .btn-export-pdf {
