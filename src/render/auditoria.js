@@ -69,16 +69,21 @@ function findVencCol(keys) {
   );
 }
 
-// Por fila: usa F. Termino si tiene valor, si no usa F. Venc.
-// Soporta DD/MM/YYYY, YYYY-MM-DD y otros formatos via parseEvolDate.
+const EMPTY_VAL = /^[-–—]+$/; // guiones = vacío
+
+// Por fila: usa F. Termino si tiene un valor real, si no usa F. Venc.
 function getEndDate(row, terminoCol, vencCol) {
-  const t   = terminoCol ? (row[terminoCol] || '').toString().trim() : '';
-  const v   = vencCol    ? (row[vencCol]    || '').toString().trim() : '';
-  const raw = t || v;
-  if (!raw) return null;
-  const pd = parseDate(raw);
+  const raw = (str) => {
+    const s = str ? str.toString().trim() : '';
+    return EMPTY_VAL.test(s) ? '' : s;
+  };
+  const t = terminoCol ? raw(row[terminoCol]) : '';
+  const v = vencCol    ? raw(row[vencCol])    : '';
+  const src = t || v;
+  if (!src) return null;
+  const pd = parseDate(src);
   if (pd) return pd;
-  const d = parseEvolDate(raw);
+  const d = parseEvolDate(src);
   if (!d || isNaN(d)) return null;
   return { day: d.getDate(), month: d.getMonth() + 1, year: d.getFullYear() };
 }
@@ -225,27 +230,18 @@ export function renderAuditoriaBarChart() {
   const keys       = Object.keys(contratos[0]);
   const terminoCol = findTerminoCol(keys);
   const vencCol    = findVencCol(keys);
-  console.log('[Aud] terminoCol:', terminoCol, '| vencCol:', vencCol);
-  console.log('[Aud] repMap keys:', Object.keys(repMap));
   if (!terminoCol && !vencCol) { destroyChart('auditoria'); return; }
 
   const cmap   = buildContratosMap(contratos);
-  console.log('[Aud] cmap keys (primeras 10):', Object.keys(cmap).slice(0, 10));
-
   const months = nextMonths(12);
-  console.log('[Aud] months:', months);
   const countsDanado   = Array(12).fill(0);
   const countsRevisar  = Array(12).fill(0);
   const countsReparado = Array(12).fill(0);
 
   Object.entries(cmap).forEach(([unit, row]) => {
     const status = classify(repMap[unit]);
-    const pd     = getEndDate(row, terminoCol, vencCol);
-    const mk     = pd ? toMonthKey(pd) : null;
-    const rawT   = terminoCol ? (row[terminoCol] || '') : '';
-    const rawV   = vencCol    ? (row[vencCol]    || '') : '';
-    console.log(`[Aud] unit=${unit} status=${status} rawT="${rawT}" rawV="${rawV}" pd=${JSON.stringify(pd)} mk=${mk}`);
     if (!status || status === 'proceso') return;
+    const pd = getEndDate(row, terminoCol, vencCol);
     if (!pd) return;
     const idx = months.indexOf(mk);
     if (idx === -1) return;
