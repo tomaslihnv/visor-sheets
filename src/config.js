@@ -62,6 +62,12 @@ export const LAYOUT_ECH = [
 ];
 export const MAX_COL_ECH = 23;
 
+// URLs de la hoja "Reparación" por edificio.
+export const URLS_REPARACION = {
+  irr: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_SrPMC9v_h6szyyZUjhqywYeyrwp8AwiguskyC7PzNt8CCE_W6HA_wUTrKA1PWew77AAC1qhVR88i/pub?gid=1828849230&single=true&output=csv',
+  ech: null,
+};
+
 // Lista maestra de motivos de salida (todos los disponibles en el dropdown del Google Sheets).
 // Agregar o quitar motivos acá para que aparezcan en los gráficos aunque no tengan datos aún.
 export const MOTIVOS = [
