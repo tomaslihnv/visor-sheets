@@ -212,18 +212,20 @@ export function renderAuditoriaBarChart() {
 
   const cmap   = buildContratosMap(contratos);
   const months = nextMonths(12);
-  const countsDanado  = Array(12).fill(0);
-  const countsRevisar = Array(12).fill(0);
+  const countsDanado   = Array(12).fill(0);
+  const countsRevisar  = Array(12).fill(0);
+  const countsReparado = Array(12).fill(0);
 
   Object.entries(cmap).forEach(([unit, row]) => {
     const status = classify(repMap[unit]);
-    if (!status || status === 'reparado' || status === 'proceso') return;
+    if (!status || status === 'proceso') return;
     const pd  = parseDate((row[dateCol] || '').toString().trim());
     if (!pd) return;
     const idx = months.indexOf(toMonthKey(pd));
     if (idx === -1) return;
-    if (status === 'danado')  countsDanado[idx]++;
-    if (status === 'revisar') countsRevisar[idx]++;
+    if (status === 'danado')   countsDanado[idx]++;
+    if (status === 'revisar')  countsRevisar[idx]++;
+    if (status === 'reparado') countsReparado[idx]++;
   });
 
   destroyChart('auditoria');
@@ -257,6 +259,20 @@ export function renderAuditoriaBarChart() {
           datalabels: {
             display: ctx => countsRevisar[ctx.dataIndex] > 0,
             color: '#334155',
+            font: { size: 10, weight: '700' },
+            anchor: 'center',
+            align: 'center',
+          },
+        },
+        {
+          label: 'Reparados',
+          data: countsReparado,
+          backgroundColor: '#6ee7b7',
+          borderColor: '#34d399',
+          borderWidth: 1,
+          datalabels: {
+            display: ctx => countsReparado[ctx.dataIndex] > 0,
+            color: '#065f46',
             font: { size: 10, weight: '700' },
             anchor: 'center',
             align: 'center',
@@ -317,7 +333,7 @@ export function renderAuditoriaTable() {
 
   Object.entries(cmap).forEach(([unit, row]) => {
     const status = classify(repMap[unit]);
-    if (!status || status === 'reparado' || status === 'proceso') return;
+    if (!status || status === 'proceso') return;
     const pd = parseDate((row[dateCol] || '').toString().trim());
     if (!pd || toMonthKey(pd) !== _selectedMonth) return;
     rows.push({ unit, row, status, pd });
