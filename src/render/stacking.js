@@ -155,7 +155,7 @@ export function renderSubterraneoStacking(estacData, bodData) {
 
       const cells = document.createElement('div');
       cells.className = 'floor-cells';
-      cells.style.minWidth = (perRow * 34 - 2) + 'px'; // 32px cell + 2px gap, keeps separator aligned on partial rows
+      cells.style.minWidth = (perRow * 36 - 2) + 'px'; // 34px cell + 2px gap, keeps separator aligned on partial rows
       chunk.forEach(u => cells.appendChild(makeParkingCell(u)));
       rowEl.appendChild(cells);
 

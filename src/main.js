@@ -262,7 +262,23 @@ document.addEventListener('touchstart', e => {
 Chart.register(ChartDataLabels);
 
 // Exponer funciones al scope global para los handlers inline del HTML
+function toggleTipologia(btn) {
+  const building = document.getElementById('building');
+  if (!building) return;
+  const show = building.classList.toggle('show-tipo');
+  btn.classList.toggle('active', show);
+}
+
+function toggleHeader(btn) {
+  const hdr = document.getElementById('col-hdr-wrap');
+  if (!hdr) return;
+  const hide = hdr.classList.toggle('hdr-hidden');
+  btn.classList.toggle('active', !hide);
+}
+window.toggleHeader = toggleHeader;
+
 window.switchBuilding    = switchBuilding;
+window.toggleTipologia   = toggleTipologia;
 window.switchLegendTab   = switchLegendTab;
 window.copyChartCard   = copyChartCard;
 window.showTab            = showTab;
