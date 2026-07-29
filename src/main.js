@@ -265,9 +265,17 @@ Chart.register(ChartDataLabels);
 function toggleTipologia(btn) {
   const building = document.getElementById('building');
   if (!building) return;
-  const hide = building.classList.toggle('hide-tipo');
-  btn.classList.toggle('active', hide);
+  const show = building.classList.toggle('show-tipo');
+  btn.classList.toggle('active', show);
 }
+
+function toggleHeader(btn) {
+  const hdr = document.getElementById('col-hdr-wrap');
+  if (!hdr) return;
+  const hide = hdr.classList.toggle('hdr-hidden');
+  btn.classList.toggle('active', !hide);
+}
+window.toggleHeader = toggleHeader;
 
 window.switchBuilding    = switchBuilding;
 window.toggleTipologia   = toggleTipologia;

@@ -42,7 +42,7 @@ function renderOrientHeaderRow(rowEl, maxCol, colInfo, boundaries) {
 
     const seg = document.createElement('div');
     seg.className = 'col-hdr-orient-seg';
-    seg.style.width = (span * 32 + (span - 1) * 2) + 'px';
+    seg.style.width = (span * 34 + (span - 1) * 2) + 'px';
     if (boundaries.has(c)) seg.classList.add('col-orient-boundary');
     seg.textContent = orient || '—';
     seg.title = orient || '—';
