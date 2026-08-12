@@ -95,49 +95,101 @@ async function exportStackingPDF() {
   btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Generando…`;
 
   try {
-    const ab      = state.AB;
-    const layout  = ab === 'irr' ? LAYOUT_IRR  : LAYOUT_ECH;
-    const maxCol  = ab === 'irr' ? MAX_COL_IRR : MAX_COL_ECH;
-    const umap    = BD[ab].umap;
+    const ab       = state.AB;
+    const layout   = ab === 'irr' ? LAYOUT_IRR  : LAYOUT_ECH;
+    const maxCol   = ab === 'irr' ? MAX_COL_IRR : MAX_COL_ECH;
+    const umap     = BD[ab].umap;
     const driveMap = ab === 'ech' ? DRIVE_FOLDERS_ECH : {};
 
+    // ── Calcular métricas ────────────────────────────────────────────────────
+    let dContr = 0, dRC = 0, dVac = 0, dPilot = 0;
+    const tipMap = {}, orientMap = {}, colOrient = {};
+    layout.forEach(floor => floor.cells.forEach(cell => {
+      const u   = umap[cell.n];
+      const cat = getCategory(u);
+      if      (cat === 'contrato') dContr++;
+      else if (cat === 'rc')       dRC++;
+      else if (cat === 'vacante')  dVac++;
+      else if (cat === 'piloto')   dPilot++;
+      if (u && cat !== 'piloto' && cat !== 'default') {
+        const tipo = (u['Tipo'] || '').trim() || '—';
+        if (!tipMap[tipo]) tipMap[tipo] = { total: 0, rented: 0 };
+        tipMap[tipo].total++;
+        if (cat === 'contrato' || cat === 'rc') tipMap[tipo].rented++;
+        const o = (u['Orientación'] || '').trim().toUpperCase();
+        if (o) orientMap[o] = (orientMap[o] || 0) + 1;
+      }
+      // orientación por columna (primera aparición por col, para header)
+      if (colOrient[cell.c] === undefined) {
+        const o = (u?.['Orientación'] || '').trim().toUpperCase();
+        colOrient[cell.c] = o || null;
+      }
+    }));
+    const dBase    = dContr + dRC + dVac;
+    const dEnRenta = dContr + dRC;
+    const dOccPct  = dBase > 0 ? Math.round(dEnRenta / dBase * 100) + '%' : '—';
+
+    const eOccPctEl = document.getElementById('occ-estac');
+    const bOccPctEl = document.getElementById('occ-bod');
+    const eOccPct   = eOccPctEl?.textContent || '—';
+    const bOccPct   = bOccPctEl?.textContent || '—';
+
+    const tipRows    = Object.entries(tipMap).sort((a, b) => b[1].total - a[1].total);
+    const orientRows = Object.entries(orientMap).sort((a, b) => b[1] - a[1]);
+    const ORIENT_LABEL = { N:'Norte', S:'Sur', O:'Oriente', P:'Poniente', NP:'Norte-Pon.', SP:'Sur-Pon.' };
+
+    // ── Orientación por columna (para header) ────────────────────────────────
+    // Segmentos consecutivos de igual orientación
+    const orientSegs = []; // [{label, fromCol, span}]
+    let segStart = 1, segOrient = colOrient[1] || '';
+    for (let c = 2; c <= maxCol; c++) {
+      const cur = colOrient[c] || '';
+      if (cur !== segOrient) {
+        orientSegs.push({ label: ORIENT_LABEL[segOrient] || segOrient, fromCol: segStart, span: c - segStart });
+        segStart = c; segOrient = cur;
+      }
+    }
+    orientSegs.push({ label: ORIENT_LABEL[segOrient] || segOrient, fromCol: segStart, span: maxCol - segStart + 1 });
+
+    // ── jsPDF setup ──────────────────────────────────────────────────────────
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
 
-    const pageW   = doc.internal.pageSize.getWidth();   // 420mm
-    const pageH   = doc.internal.pageSize.getHeight();  // 297mm
-    const margin  = 10;
-    const headerH = 25;
-    const legendH = 18;
-    const lblW    = 11; // floor label column
-    const gap     = 0.5;
+    const pageW    = doc.internal.pageSize.getWidth();   // 420mm
+    const pageH    = doc.internal.pageSize.getHeight();  // 297mm
+    const margin   = 10;
+    const headerH  = 25;
+    const legendH  = 14;
+    const metricsW = 46;
+    const metGap   = 5;
+    const lblW     = 11;
+    const gap      = 0.5;
+    const orientH  = 6;
 
-    const availW = pageW - margin * 2 - lblW - gap;
-    const availH = pageH - margin - headerH - legendH - margin;
-    const nFloors = layout.length;
+    const stackX   = margin + metricsW + metGap;          // x donde empieza el bloque stacking
+    const availW   = pageW - stackX - margin - lblW - gap; // ancho disponible para celdas
+    const availH   = pageH - margin - headerH - orientH - legendH - margin;
+    const nFloors  = layout.length;
 
-    // Cell size respetando proporción 34:28 del visor, restringido por ancho Y alto
     const cellWbyW = (availW - (maxCol - 1) * gap) / maxCol;
     const cellHbyH = (availH - (nFloors - 1) * gap) / nFloors;
-    const cellW = Math.min(cellWbyW, cellHbyH * (34 / 28));
-    const cellH = cellW * (28 / 34);
+    const cellW    = Math.min(cellWbyW, cellHbyH * (34 / 28));
+    const cellH    = cellW * (28 / 34);
 
-    // Centrar grid en la página
-    const gridW  = maxCol * cellW + (maxCol - 1) * gap;
-    const gridH  = nFloors * cellH + (nFloors - 1) * gap;
-    const startX = margin + lblW + gap + (availW - gridW) / 2;
-    const startY = headerH + (availH - gridH) / 2;
+    const gridW    = maxCol * cellW + (maxCol - 1) * gap;
+    const gridH    = nFloors * cellH + (nFloors - 1) * gap;
+    const cellsX   = stackX + lblW + gap + (availW - gridW) / 2;
+    const cellsY   = headerH + orientH + (availH - gridH) / 2;
 
-    // Helper hex → [r,g,b]
     const rgb = hex => {
       const h = hex.replace('#', '');
       return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
     };
 
     // ── Header ───────────────────────────────────────────────────────────────
-    const bldgName   = ab === 'irr' ? 'INSITU IRARRÁZAVAL' : 'INSITU ECHAURREN';
-    const accentRgb  = ab === 'irr' ? [0,209,102] : [52,193,214];
-    const dateStr    = new Date().toLocaleDateString('es-CL', { day:'2-digit', month:'long', year:'numeric' });
+    const bldgName  = ab === 'irr' ? 'INSITU IRARRÁZAVAL' : 'INSITU ECHAURREN';
+    const accentRgb = ab === 'irr' ? [0,209,102] : [52,193,214];
+    const dateStr   = new Date().toLocaleDateString('es-CL', { day:'2-digit', month:'long', year:'numeric' });
 
     doc.setDrawColor(...accentRgb);
     doc.setLineWidth(0.8);
@@ -151,27 +203,117 @@ async function exportStackingPDF() {
     doc.setTextColor(138, 155, 176);
     doc.text(dateStr, margin, 21);
 
+    // ── Panel métricas (izquierda) ───────────────────────────────────────────
+    const mx  = margin;
+    let   my  = headerH + 2;
+    const mW  = metricsW;
+
+    // Fondo panel
+    doc.setFillColor(249, 245, 238);
+    doc.setDrawColor(227, 219, 208);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(mx, my - 1, mW, pageH - my - margin - legendH + 1, 2, 2, 'FD');
+
+    const mRow = (label, value, bold = false) => {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.setTextColor(120, 110, 95);
+      doc.text(label, mx + 3, my);
+      doc.setFont('helvetica', bold ? 'bold' : 'normal');
+      doc.setFontSize(bold ? 9 : 7.5);
+      doc.setTextColor(26, 35, 50);
+      doc.text(String(value), mx + mW - 3, my, { align: 'right' });
+      my += 6;
+    };
+    const mSep = () => {
+      doc.setDrawColor(220, 212, 200);
+      doc.setLineWidth(0.2);
+      doc.line(mx + 3, my - 1, mx + mW - 3, my - 1);
+      my += 2;
+    };
+    const mTitle = (label) => {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(5.5);
+      doc.setTextColor(180, 165, 140);
+      doc.text(label.toUpperCase(), mx + 3, my);
+      my += 4.5;
+    };
+
+    my += 2;
+    mTitle('Departamentos');
+    mRow('Contratos',  dContr,  true);
+    mRow('Renta corta', dRC);
+    mRow('Vacantes',   dVac);
+    mRow('Pilotos',    dPilot);
+    mSep();
+    mTitle('Ocupación');
+    mRow('Depto.',     dOccPct, true);
+    mRow(`(${dEnRenta} un.)`, '');
+    mRow('Estac.',     eOccPct);
+    mRow('Bodega',     bOccPct);
+    mSep();
+    mTitle('Tipología');
+    tipRows.forEach(([tipo, { total, rented }]) => {
+      const pct = total > 0 ? Math.round(rented / total * 100) + '%' : '—';
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.setTextColor(120, 110, 95);
+      doc.text(tipo, mx + 3, my);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(6.5);
+      doc.setTextColor(26, 35, 50);
+      doc.text(`${rented}/${total}`, mx + mW - 3, my, { align: 'right' });
+      my += 5;
+    });
+    mSep();
+    mTitle('Orientación');
+    orientRows.forEach(([o, count]) => {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.setTextColor(120, 110, 95);
+      doc.text(ORIENT_LABEL[o] || o, mx + 3, my);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(6.5);
+      doc.setTextColor(26, 35, 50);
+      doc.text(String(count), mx + mW - 3, my, { align: 'right' });
+      my += 5;
+    });
+
+    // ── Header orientación (encima del stacking) ──────────────────────────────
+    const orientY = headerH + 1;
+    const orientBg = rgb('#ccc5b5');
+    orientSegs.forEach(({ label, fromCol, span }) => {
+      const segX = cellsX + (fromCol - 1) * (cellW + gap);
+      const segW = span * cellW + (span - 1) * gap;
+      doc.setFillColor(...orientBg);
+      doc.setDrawColor(...orientBg);
+      doc.setLineWidth(0);
+      doc.roundedRect(segX, orientY, segW, orientH - 1.5, 0.8, 0.8, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(Math.min(5.5, segW * 0.12));
+      doc.setTextColor(74, 64, 48);
+      doc.text(label || '—', segX + segW / 2, orientY + (orientH - 1.5) / 2 + 1, { align: 'center' });
+    });
+
     // ── Pisos ─────────────────────────────────────────────────────────────────
     const lblFontSize = Math.max(4, Math.min(6.5, cellH * 0.52));
-    const numFontSize = Math.max(3.5, Math.min(6, cellW * 0.3));
+    const numFontSize = Math.max(3.5, Math.min(6,   cellW * 0.30));
 
     layout.forEach((floor, fi) => {
       const colMap = {};
       floor.cells.forEach(c => { colMap[c.c] = c.n; });
-      const y = startY + fi * (cellH + gap);
+      const y = cellsY + fi * (cellH + gap);
 
-      // Etiqueta de piso
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(lblFontSize);
       doc.setTextColor(154, 144, 128);
-      doc.text(`P${floor.p}`, margin + lblW - 1, y + cellH / 2 + lblFontSize * 0.18, { align: 'right' });
+      doc.text(`P${floor.p}`, stackX + lblW - 1, y + cellH / 2 + lblFontSize * 0.18, { align: 'right' });
 
       for (let c = 1; c <= maxCol; c++) {
         const n = colMap[c];
         if (!n) continue;
-        const x = startX + (c - 1) * (cellW + gap);
-        const u = umap[n];
-        const style = CAT_STYLE[getCategory(u)] || CAT_STYLE.default;
+        const x = cellsX + (c - 1) * (cellW + gap);
+        const style = CAT_STYLE[getCategory(umap[n])] || CAT_STYLE.default;
 
         doc.setFillColor(...rgb(style.bg));
         doc.setDrawColor(...rgb(style.border));
@@ -183,15 +325,13 @@ async function exportStackingPDF() {
         doc.setTextColor(...rgb(style.color));
         doc.text(String(n), x + cellW / 2, y + cellH / 2 + numFontSize * 0.18, { align: 'center' });
 
-        if (driveMap[n]) {
-          doc.link(x, y, cellW, cellH, { url: driveUrl(driveMap[n]) });
-        }
+        if (driveMap[n]) doc.link(x, y, cellW, cellH, { url: driveUrl(driveMap[n]) });
       }
     });
 
     // ── Leyenda ───────────────────────────────────────────────────────────────
-    const legendY   = pageH - margin - 4;
-    const swatchSz  = 3.5;
+    const legendY  = pageH - margin - 4;
+    const swatchSz = 3.5;
     const legendCats = [
       { key:'contrato',    label:'Arrendado'    },
       { key:'rc',          label:'RC'           },
@@ -213,11 +353,10 @@ async function exportStackingPDF() {
       doc.text(label, lx + swatchSz + 1.2, legendY - 0.3);
       lx += swatchSz + doc.getTextWidth(label) + 5;
     });
-
     if (Object.keys(driveMap).length) {
       doc.setFontSize(5.5);
       doc.setTextColor(138, 155, 176);
-      doc.text('· Las celdas son clickeables — abren la carpeta de contratos en Google Drive', margin, legendY + 5);
+      doc.text('· Celdas clickeables — abren carpeta de contratos en Google Drive', lx + 6, legendY - 0.3);
     }
 
     doc.save(`stacking_${ab}_${new Date().toISOString().slice(0,10)}.pdf`);
