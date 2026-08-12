@@ -3,7 +3,7 @@ import { LAYOUT_IRR, LAYOUT_ECH, MAX_COL_IRR, MAX_COL_ECH, CAT_STYLE } from '../
 import { getCategory, getParkingCategory, getBodegaCategory } from '../categories.js';
 import { showTooltip, hideTooltip, moveTooltip, showParkingTooltip, showBodegaTooltip, addTapToShow } from '../tooltip.js';
 import { pcol, bcol, resolveParkingColumns, resolveBodegaColumns } from '../columns.js';
-import { DRIVE_FOLDERS_ECH, driveUrl } from '../drive.js';
+import { DRIVE_FOLDERS_ECH, DRIVE_FOLDERS_ECH_ESTAC, DRIVE_FOLDERS_ECH_BOD, DRIVE_FOLDERS_IRR, DRIVE_FOLDERS_IRR_ESTAC, DRIVE_FOLDERS_IRR_BOD, driveUrl } from '../drive.js';
 
 // Determina, para cada columna, la primera orientación no vacía encontrada
 // recorriendo los pisos en el orden del layout (de arriba hacia abajo).
@@ -57,8 +57,9 @@ export function renderStacking() {
         el.addEventListener('mouseleave', hideTooltip);
         el.addEventListener('mousemove',  moveTooltip);
         addTapToShow(el, e => showTooltip(e, n));
-        if (state.AB === 'ech' && DRIVE_FOLDERS_ECH[n]) {
-          el.addEventListener('click', () => window.open(driveUrl(DRIVE_FOLDERS_ECH[n]), '_blank'));
+        const deMap = state.AB === 'ech' ? DRIVE_FOLDERS_ECH : DRIVE_FOLDERS_IRR;
+        if (deMap[n]) {
+          el.addEventListener('click', () => window.open(driveUrl(deMap[n]), '_blank'));
           el.title = 'Ver contratos en Drive';
         }
       } else {
@@ -88,6 +89,11 @@ export function makeParkingCell(unit) {
   el.addEventListener('mouseleave', hideTooltip);
   el.addEventListener('mousemove',  moveTooltip);
   addTapToShow(el, e => showParkingTooltip(e, unit));
+  const estacMap = state.AB === 'ech' ? DRIVE_FOLDERS_ECH_ESTAC : DRIVE_FOLDERS_IRR_ESTAC;
+  if (estacMap[parseInt(n)]) {
+    el.addEventListener('click', () => window.open(driveUrl(estacMap[parseInt(n)]), '_blank'));
+    el.title = 'Ver contratos en Drive';
+  }
   return el;
 }
 
@@ -106,12 +112,22 @@ export function makeBodegaCell(unit) {
   el.addEventListener('mouseleave', hideTooltip);
   el.addEventListener('mousemove',  moveTooltip);
   addTapToShow(el, e => showBodegaTooltip(e, unit));
+  const bodMap = state.AB === 'ech' ? DRIVE_FOLDERS_ECH_BOD : DRIVE_FOLDERS_IRR_BOD;
+  if (bodMap[parseInt(n)]) {
+    el.addEventListener('click', () => window.open(driveUrl(bodMap[parseInt(n)]), '_blank'));
+    el.title = 'Ver contratos en Drive';
+  }
   return el;
 }
 
 export function renderSubterraneoStacking(estacData, bodData) {
   if (!estacData.length && !bodData.length) return;
   const bldg = document.getElementById('building');
+  const existingSep = bldg.querySelector('.parking-sep');
+  if (existingSep) {
+    while (existingSep.nextSibling) bldg.removeChild(existingSep.nextSibling);
+    bldg.removeChild(existingSep);
+  }
 
   if (estacData.length) resolveParkingColumns(Object.keys(estacData[0]));
   if (bodData.length)   resolveBodegaColumns(Object.keys(bodData[0]));
