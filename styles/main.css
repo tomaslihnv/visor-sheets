@@ -383,6 +383,64 @@ tr:hover td { background: #ede8df; }
 .btn-export-pdf:hover:not(:disabled) { background: #1a1810; color: #f0ebe2; border-color: #1a1810; }
 .btn-export-pdf:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* ── MODAL EXPORTAR PDF ── */
+.pdf-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999; backdrop-filter: blur(2px);
+}
+.pdf-modal {
+  background: #faf7f2; border-radius: 12px; width: 380px; max-width: calc(100vw - 32px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden;
+}
+.pdf-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px 14px; border-bottom: 1px solid #e8e0d0;
+}
+.pdf-modal-title { font-size: 13px; font-weight: 700; color: #1a1810; letter-spacing: 0.03em; text-transform: uppercase; }
+.pdf-modal-close {
+  background: none; border: none; cursor: pointer; color: #9a9080;
+  font-size: 14px; line-height: 1; padding: 2px 4px; border-radius: 4px;
+}
+.pdf-modal-close:hover { color: #1a1810; }
+.pdf-modal-body { padding: 20px; }
+.pdf-modal-option {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; cursor: pointer;
+}
+.pdf-modal-option-text { display: flex; flex-direction: column; gap: 4px; }
+.pdf-modal-option-label { font-size: 12px; font-weight: 600; color: #2a2218; }
+.pdf-modal-option-desc { font-size: 11px; color: #8a7a68; line-height: 1.5; max-width: 260px; }
+.pdf-modal-toggle-wrap { position: relative; flex-shrink: 0; margin-top: 2px; }
+.pdf-modal-checkbox { position: absolute; opacity: 0; width: 0; height: 0; }
+.pdf-modal-toggle {
+  display: block; width: 36px; height: 20px; border-radius: 10px;
+  background: #d0c8b8; transition: background 0.2s; cursor: pointer;
+}
+.pdf-modal-toggle::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 14px; height: 14px; border-radius: 50%; background: #fff;
+  transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.pdf-modal-checkbox:checked + .pdf-modal-toggle { background: #4a4030; }
+.pdf-modal-checkbox:checked + .pdf-modal-toggle::after { transform: translateX(16px); }
+.pdf-modal-footer {
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding: 14px 20px; border-top: 1px solid #e8e0d0;
+}
+.pdf-modal-btn-cancel {
+  padding: 7px 16px; border-radius: 6px; border: 1px solid #d0c8b8;
+  background: transparent; color: #6a5a48; font-size: 11px; font-weight: 600;
+  cursor: pointer; letter-spacing: 0.03em;
+}
+.pdf-modal-btn-cancel:hover { background: #f0ebe2; }
+.pdf-modal-btn-ok {
+  padding: 7px 18px; border-radius: 6px; border: 1px solid #1a1810;
+  background: #1a1810; color: #f0ebe2; font-size: 11px; font-weight: 600;
+  cursor: pointer; letter-spacing: 0.03em;
+}
+.pdf-modal-btn-ok:hover { background: #2a2818; }
+
 /* ── LEGEND COUNTS ── */
 .legend-count { font-size: 11px; font-weight: 700; color: #1a1810;
   background: #ede8de; border-radius: 10px; padding: 1px 7px; margin-left: 4px; }

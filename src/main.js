@@ -95,11 +95,14 @@ async function exportStackingPDF() {
   btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Generando…`;
 
   try {
+    const opts = await showPdfModal();
+    if (!opts) { btn.disabled = false; btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar PDF`; return; }
+    const includeLinks = opts.includeLinks;
     const ab       = state.AB;
     const layout   = ab === 'irr' ? LAYOUT_IRR  : LAYOUT_ECH;
     const maxCol   = ab === 'irr' ? MAX_COL_IRR : MAX_COL_ECH;
     const umap     = BD[ab].umap;
-    const driveMap = ab === 'ech' ? DRIVE_FOLDERS_ECH : DRIVE_FOLDERS_IRR;
+    const driveMap = includeLinks ? (ab === 'ech' ? DRIVE_FOLDERS_ECH : DRIVE_FOLDERS_IRR) : {};
 
     // ── Calcular métricas ────────────────────────────────────────────────────
     let dContr = 0, dRC = 0, dVac = 0, dPilot = 0;
@@ -454,8 +457,8 @@ async function exportStackingPDF() {
           }
         };
 
-        const estacDrive = ab === 'ech' ? DRIVE_FOLDERS_ECH_ESTAC : DRIVE_FOLDERS_IRR_ESTAC;
-        const bodDrive   = ab === 'ech' ? DRIVE_FOLDERS_ECH_BOD   : DRIVE_FOLDERS_IRR_BOD;
+        const estacDrive = includeLinks ? (ab === 'ech' ? DRIVE_FOLDERS_ECH_ESTAC : DRIVE_FOLDERS_IRR_ESTAC) : {};
+        const bodDrive   = includeLinks ? (ab === 'ech' ? DRIVE_FOLDERS_ECH_BOD   : DRIVE_FOLDERS_IRR_BOD)   : {};
 
         drawRow(allPark, getParkingCategory, estacDrive, String(piso),              pcol.n);
         drawRow(allBod,  getBodegaCategory,  bodDrive,   allPark.length ? 'Bod.' : String(piso), bcol.n);
@@ -580,6 +583,19 @@ function toggleHeader(btn) {
   btn.classList.toggle('active', !hide);
 }
 window.toggleHeader = toggleHeader;
+
+let pdfModalResolve = () => {};
+function showPdfModal() {
+  return new Promise(resolve => {
+    pdfModalResolve = (val) => {
+      document.getElementById('pdf-export-modal').style.display = 'none';
+      document.getElementById('pdf-include-links').checked = false;
+      resolve(val);
+    };
+    document.getElementById('pdf-export-modal').style.display = 'flex';
+  });
+}
+window.pdfModalResolve = (val) => pdfModalResolve(val);
 
 window.switchBuilding    = switchBuilding;
 window.toggleTipologia   = toggleTipologia;

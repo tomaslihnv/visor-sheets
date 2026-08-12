@@ -717,4 +717,29 @@ document.getElementById('btn-signout').addEventListener('click', () => signOut(a
   }
 })();
 </script>
+<!-- Modal exportar PDF -->
+<div id="pdf-export-modal" class="pdf-modal-overlay" style="display:none" onclick="if(event.target===this)pdfModalResolve(null)">
+  <div class="pdf-modal">
+    <div class="pdf-modal-header">
+      <span class="pdf-modal-title">Exportar Stacking PDF</span>
+      <button class="pdf-modal-close" onclick="pdfModalResolve(null)">✕</button>
+    </div>
+    <div class="pdf-modal-body">
+      <label class="pdf-modal-option">
+        <div class="pdf-modal-option-text">
+          <span class="pdf-modal-option-label">Links a contratos (Drive)</span>
+          <span class="pdf-modal-option-desc">Las celdas del PDF serán clickeables y abrirán la carpeta de contratos del departamento. Solo para uso interno.</span>
+        </div>
+        <div class="pdf-modal-toggle-wrap">
+          <input type="checkbox" id="pdf-include-links" class="pdf-modal-checkbox">
+          <span class="pdf-modal-toggle"></span>
+        </div>
+      </label>
+    </div>
+    <div class="pdf-modal-footer">
+      <button class="pdf-modal-btn-cancel" onclick="pdfModalResolve(null)">Cancelar</button>
+      <button class="pdf-modal-btn-ok" onclick="pdfModalResolve({includeLinks: document.getElementById('pdf-include-links').checked})">Generar PDF</button>
+    </div>
+  </div>
+</div>
 </body>
