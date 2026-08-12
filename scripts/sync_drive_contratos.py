@@ -204,10 +204,17 @@ def sync_building(service, building, source_dirs, csv_map):
     return csv_changed
 
 def main():
+    import sys
+    filtro = sys.argv[1].lower() if len(sys.argv) > 1 else None
+    if filtro and filtro not in SOURCES:
+        print(f"Edificio no reconocido: '{filtro}'. Opciones: {', '.join(SOURCES)}")
+        sys.exit(1)
+
     creds = service_account.Credentials.from_service_account_file(str(CREDS_JSON), scopes=SCOPES)
     service = build('drive', 'v3', credentials=creds)
 
-    for building, source_dirs in SOURCES.items():
+    targets = {filtro: SOURCES[filtro]} if filtro else SOURCES
+    for building, source_dirs in targets.items():
         print(f"\n{'='*50}")
         print(f"  {building.upper()}")
         print(f"{'='*50}")
