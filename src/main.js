@@ -1,9 +1,9 @@
 import { state, BD, CHARTS } from './state.js';
 import { URLS, URLS_CONTRATOS, LAYOUT_IRR, LAYOUT_ECH, MAX_COL_IRR, MAX_COL_ECH, CAT_STYLE } from './config.js';
-import { getCategory } from './categories.js';
-import { DRIVE_FOLDERS_ECH, driveUrl } from './drive.js';
+import { getCategory, getParkingCategory, getBodegaCategory } from './categories.js';
+import { DRIVE_FOLDERS_ECH, DRIVE_FOLDERS_ECH_ESTAC, DRIVE_FOLDERS_ECH_BOD, DRIVE_FOLDERS_IRR, DRIVE_FOLDERS_IRR_ESTAC, DRIVE_FOLDERS_IRR_BOD, driveUrl } from './drive.js';
 import { nfdKey } from './utils.js';
-import { resolveColumns, resolveParkingColumns, resolveBodegaColumns, resolveEvolColumns } from './columns.js';
+import { resolveColumns, resolveParkingColumns, resolveBodegaColumns, resolveEvolColumns, pcol, bcol } from './columns.js';
 import { calcIPC, precompute } from './data.js';
 import { applyFilters, resetFilters, populateDropdowns, initVencFilter, initUFFilter, onVencSlider, onUFRange } from './filters.js';
 import { renderStacking, renderSubterraneoStacking, injectBodegasIntoFloors, alignBodegaColumns, alignSubterraneoColumns } from './render/stacking.js';
@@ -99,7 +99,7 @@ async function exportStackingPDF() {
     const layout   = ab === 'irr' ? LAYOUT_IRR  : LAYOUT_ECH;
     const maxCol   = ab === 'irr' ? MAX_COL_IRR : MAX_COL_ECH;
     const umap     = BD[ab].umap;
-    const driveMap = ab === 'ech' ? DRIVE_FOLDERS_ECH : {};
+    const driveMap = ab === 'ech' ? DRIVE_FOLDERS_ECH : DRIVE_FOLDERS_IRR;
 
     // ── Calcular métricas ────────────────────────────────────────────────────
     let dContr = 0, dRC = 0, dVac = 0, dPilot = 0;
@@ -297,7 +297,8 @@ async function exportStackingPDF() {
 
     // ── Pisos ─────────────────────────────────────────────────────────────────
     const lblFontSize = Math.max(4, Math.min(6.5, cellH * 0.52));
-    const numFontSize = Math.max(3.5, Math.min(6,   cellW * 0.30));
+    const numFontSize = Math.max(4.5, Math.min(7.5, cellW * 0.42));
+    const tipFontSize = Math.max(3,   Math.min(5,   cellW * 0.28));
 
     layout.forEach((floor, fi) => {
       const colMap = {};
@@ -313,17 +314,31 @@ async function exportStackingPDF() {
         const n = colMap[c];
         if (!n) continue;
         const x = cellsX + (c - 1) * (cellW + gap);
-        const style = CAT_STYLE[getCategory(umap[n])] || CAT_STYLE.default;
+        const u = umap[n];
+        const style = CAT_STYLE[getCategory(u)] || CAT_STYLE.default;
+        const tipo  = (u?.['Tipo'] || '').trim();
 
         doc.setFillColor(...rgb(style.bg));
         doc.setDrawColor(...rgb(style.border));
         doc.setLineWidth(0.18);
         doc.roundedRect(x, y, cellW, cellH, 0.7, 0.7, 'FD');
 
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(numFontSize);
-        doc.setTextColor(...rgb(style.color));
-        doc.text(String(n), x + cellW / 2, y + cellH / 2 + numFontSize * 0.18, { align: 'center' });
+        const cx = x + cellW / 2;
+        if (tipo) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(numFontSize);
+          doc.setTextColor(...rgb(style.color));
+          doc.text(String(n), cx, y + cellH * 0.42 + numFontSize * 0.18, { align: 'center' });
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(tipFontSize);
+          doc.setTextColor(...rgb(style.color));
+          doc.text(tipo, cx, y + cellH * 0.78 + tipFontSize * 0.18, { align: 'center' });
+        } else {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(numFontSize);
+          doc.setTextColor(...rgb(style.color));
+          doc.text(String(n), cx, y + cellH / 2 + numFontSize * 0.18, { align: 'center' });
+        }
 
         if (driveMap[n]) doc.link(x, y, cellW, cellH, { url: driveUrl(driveMap[n]) });
       }
@@ -357,6 +372,111 @@ async function exportStackingPDF() {
       doc.setFontSize(5.5);
       doc.setTextColor(138, 155, 176);
       doc.text('· Celdas clickeables — abren carpeta de contratos en Google Drive', lx + 6, legendY - 0.3);
+    }
+
+    // ── Página 2: Subterráneo ─────────────────────────────────────────────────
+    const parkData = BD[ab].park || [];
+    const bodData  = BD[ab].bod  || [];
+    if (parkData.length || bodData.length) {
+      doc.addPage();
+
+      // Header igual al de p.1
+      doc.setDrawColor(...accentRgb);
+      doc.setLineWidth(0.8);
+      doc.line(margin, 8, pageW - margin, 8);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(26, 35, 50);
+      doc.text(`${bldgName}  —  Subterráneo`, margin, 15);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(138, 155, 176);
+      doc.text(dateStr, margin, 21);
+
+      // Agrupar por piso
+      const parkByPiso = {}, bodByPiso = {};
+      parkData.forEach(row => {
+        const p = parseInt((row[pcol.piso] || '').toString().trim());
+        if (!isNaN(p)) { if (!parkByPiso[p]) parkByPiso[p] = []; parkByPiso[p].push(row); }
+      });
+      bodData.forEach(row => {
+        const p = parseInt((row[bcol.piso] || '').toString().trim());
+        if (!isNaN(p) && p < 0) { if (!bodByPiso[p]) bodByPiso[p] = []; bodByPiso[p].push(row); }
+      });
+
+      const negPisos = [...new Set([
+        ...Object.keys(parkByPiso).map(Number),
+        ...Object.keys(bodByPiso).map(Number),
+      ].filter(p => p < 0))].sort((a, b) => b - a);
+
+      const subCellW = 9, subCellH = 7.5, subGap = 1, subLblW = 10;
+      const subX = margin + subLblW + subGap;
+      let   subY = headerH + 4;
+      const MAX_ROW = 30;
+
+      const sortByN = (a, b) => parseInt(a[pcol.n]) - parseInt(b[pcol.n]);
+      const subNumFs = 5;
+
+      negPisos.forEach(piso => {
+        const allPark = (parkByPiso[piso] || []).slice().sort(sortByN);
+        const allBod  = (bodByPiso[piso]  || []).slice().sort((a,b) => parseInt(a[bcol.n]) - parseInt(b[bcol.n]));
+
+        const drawRow = (units, catFn, driveMapSub, rowLabel, nCol) => {
+          if (!units.length) return;
+          for (let i = 0; i < units.length; i += MAX_ROW) {
+            const chunk = units.slice(i, i + MAX_ROW);
+            const rowH  = subCellH + subGap;
+            if (subY + rowH > pageH - margin - legendH) {
+              doc.addPage();
+              subY = margin + 4;
+            }
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(5);
+            doc.setTextColor(154, 144, 128);
+            doc.text(i === 0 ? rowLabel : '', margin + subLblW - 1, subY + subCellH / 2 + 1, { align: 'right' });
+
+            chunk.forEach((u, ci) => {
+              const n   = (u[nCol] || '').toString().trim();
+              const cat = catFn(u);
+              const s   = CAT_STYLE[cat] || CAT_STYLE.default;
+              const cx  = subX + ci * (subCellW + subGap);
+              doc.setFillColor(...rgb(s.bg));
+              doc.setDrawColor(...rgb(s.border));
+              doc.setLineWidth(0.15);
+              doc.roundedRect(cx, subY, subCellW, subCellH, 0.5, 0.5, 'FD');
+              doc.setFont('helvetica', 'bold');
+              doc.setFontSize(subNumFs);
+              doc.setTextColor(...rgb(s.color));
+              doc.text(n, cx + subCellW / 2, subY + subCellH / 2 + subNumFs * 0.18, { align: 'center' });
+              if (driveMapSub[parseInt(n)]) doc.link(cx, subY, subCellW, subCellH, { url: driveUrl(driveMapSub[parseInt(n)]) });
+            });
+            subY += rowH;
+          }
+        };
+
+        const estacDrive = ab === 'ech' ? DRIVE_FOLDERS_ECH_ESTAC : DRIVE_FOLDERS_IRR_ESTAC;
+        const bodDrive   = ab === 'ech' ? DRIVE_FOLDERS_ECH_BOD   : DRIVE_FOLDERS_IRR_BOD;
+
+        drawRow(allPark, getParkingCategory, estacDrive, String(piso),              pcol.n);
+        drawRow(allBod,  getBodegaCategory,  bodDrive,   allPark.length ? 'Bod.' : String(piso), bcol.n);
+        subY += 2;
+      });
+
+      // Leyenda p.2
+      const leg2Y = pageH - margin - 4;
+      let lx2 = margin;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.5);
+      legendCats.forEach(({ key, label }) => {
+        const s = CAT_STYLE[key];
+        doc.setFillColor(...rgb(s.bg));
+        doc.setDrawColor(...rgb(s.border));
+        doc.setLineWidth(0.15);
+        doc.roundedRect(lx2, leg2Y - swatchSz, swatchSz, swatchSz, 0.4, 0.4, 'FD');
+        doc.setTextColor(60, 60, 60);
+        doc.text(label, lx2 + swatchSz + 1.2, leg2Y - 0.3);
+        lx2 += swatchSz + doc.getTextWidth(label) + 5;
+      });
     }
 
     doc.save(`stacking_${ab}_${new Date().toISOString().slice(0,10)}.pdf`);
