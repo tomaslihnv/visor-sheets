@@ -1,5 +1,7 @@
 import { state, BD, CHARTS } from './state.js';
-import { URLS, URLS_CONTRATOS } from './config.js';
+import { URLS, URLS_CONTRATOS, LAYOUT_IRR, LAYOUT_ECH, MAX_COL_IRR, MAX_COL_ECH, CAT_STYLE } from './config.js';
+import { getCategory } from './categories.js';
+import { DRIVE_FOLDERS_ECH, driveUrl } from './drive.js';
 import { nfdKey } from './utils.js';
 import { resolveColumns, resolveParkingColumns, resolveBodegaColumns, resolveEvolColumns } from './columns.js';
 import { calcIPC, precompute } from './data.js';
@@ -92,93 +94,136 @@ async function exportStackingPDF() {
   btn.disabled = true;
   btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Generando…`;
 
-  const panelEl  = document.getElementById('panel-stacking');
-  const leftEl   = document.querySelector('.stacking-left');
-  const wrapEl   = document.querySelector('.stacking-wrap');
-  const sidebar  = document.querySelector('.filters-panel');
-  const tooltip  = document.getElementById('unit-tt');
-
-  const origPanel  = { overflow: panelEl.style.overflow, height: panelEl.style.height };
-  const origLeft   = { overflow: leftEl.style.overflow };
-  const origWrap   = { overflow: wrapEl.style.overflow, height: wrapEl.style.height, flex: wrapEl.style.flex };
-  const origSidebar = sidebar.style.display;
-
-  function restoreStyles() {
-    panelEl.style.overflow  = origPanel.overflow;
-    panelEl.style.height    = origPanel.height;
-    leftEl.style.overflow   = origLeft.overflow;
-    wrapEl.style.overflow   = origWrap.overflow;
-    wrapEl.style.height     = origWrap.height;
-    wrapEl.style.flex       = origWrap.flex;
-    sidebar.style.display   = origSidebar;
-  }
-
   try {
-    panelEl.style.overflow = 'visible';
-    panelEl.style.height   = 'auto';
-    leftEl.style.overflow  = 'visible';
-    wrapEl.style.overflow  = 'visible';
-    wrapEl.style.height    = 'auto';
-    wrapEl.style.flex      = 'none';
-    sidebar.style.display  = 'none';
-    if (tooltip) tooltip.style.display = 'none';
-
-    await new Promise(r => setTimeout(r, 120));
-
-    const canvas = await html2canvas(leftEl, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#f0f4f8',
-      removeContainer: true
-    });
-
-    restoreStyles();
+    const ab      = state.AB;
+    const layout  = ab === 'irr' ? LAYOUT_IRR  : LAYOUT_ECH;
+    const maxCol  = ab === 'irr' ? MAX_COL_IRR : MAX_COL_ECH;
+    const umap    = BD[ab].umap;
+    const driveMap = ab === 'ech' ? DRIVE_FOLDERS_ECH : {};
 
     const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
 
-    const pageW  = pdf.internal.pageSize.getWidth();
-    const pageH  = pdf.internal.pageSize.getHeight();
-    const margin = 10;
-    const headerH = 22;
+    const pageW   = doc.internal.pageSize.getWidth();   // 420mm
+    const pageH   = doc.internal.pageSize.getHeight();  // 297mm
+    const margin  = 10;
+    const headerH = 25;
+    const legendH = 18;
+    const lblW    = 11; // floor label column
+    const gap     = 0.5;
 
-    const imgAspect = canvas.width / canvas.height;
-    let imgW = pageW - margin * 2;
-    let imgH = imgW / imgAspect;
+    const availW = pageW - margin * 2 - lblW - gap;
+    const availH = pageH - margin - headerH - legendH - margin;
+    const nFloors = layout.length;
 
-    if (imgH > pageH - headerH - margin) {
-      imgH = pageH - headerH - margin;
-      imgW = imgH * imgAspect;
+    // Cell size respetando proporción 34:28 del visor, restringido por ancho Y alto
+    const cellWbyW = (availW - (maxCol - 1) * gap) / maxCol;
+    const cellHbyH = (availH - (nFloors - 1) * gap) / nFloors;
+    const cellW = Math.min(cellWbyW, cellHbyH * (34 / 28));
+    const cellH = cellW * (28 / 34);
+
+    // Centrar grid en la página
+    const gridW  = maxCol * cellW + (maxCol - 1) * gap;
+    const gridH  = nFloors * cellH + (nFloors - 1) * gap;
+    const startX = margin + lblW + gap + (availW - gridW) / 2;
+    const startY = headerH + (availH - gridH) / 2;
+
+    // Helper hex → [r,g,b]
+    const rgb = hex => {
+      const h = hex.replace('#', '');
+      return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+    };
+
+    // ── Header ───────────────────────────────────────────────────────────────
+    const bldgName   = ab === 'irr' ? 'INSITU IRARRÁZAVAL' : 'INSITU ECHAURREN';
+    const accentRgb  = ab === 'irr' ? [0,209,102] : [52,193,214];
+    const dateStr    = new Date().toLocaleDateString('es-CL', { day:'2-digit', month:'long', year:'numeric' });
+
+    doc.setDrawColor(...accentRgb);
+    doc.setLineWidth(0.8);
+    doc.line(margin, 8, pageW - margin, 8);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(26, 35, 50);
+    doc.text(`${bldgName}  —  Stacking Plan`, margin, 15);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(138, 155, 176);
+    doc.text(dateStr, margin, 21);
+
+    // ── Pisos ─────────────────────────────────────────────────────────────────
+    const lblFontSize = Math.max(4, Math.min(6.5, cellH * 0.52));
+    const numFontSize = Math.max(3.5, Math.min(6, cellW * 0.3));
+
+    layout.forEach((floor, fi) => {
+      const colMap = {};
+      floor.cells.forEach(c => { colMap[c.c] = c.n; });
+      const y = startY + fi * (cellH + gap);
+
+      // Etiqueta de piso
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(lblFontSize);
+      doc.setTextColor(154, 144, 128);
+      doc.text(`P${floor.p}`, margin + lblW - 1, y + cellH / 2 + lblFontSize * 0.18, { align: 'right' });
+
+      for (let c = 1; c <= maxCol; c++) {
+        const n = colMap[c];
+        if (!n) continue;
+        const x = startX + (c - 1) * (cellW + gap);
+        const u = umap[n];
+        const style = CAT_STYLE[getCategory(u)] || CAT_STYLE.default;
+
+        doc.setFillColor(...rgb(style.bg));
+        doc.setDrawColor(...rgb(style.border));
+        doc.setLineWidth(0.18);
+        doc.roundedRect(x, y, cellW, cellH, 0.7, 0.7, 'FD');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(numFontSize);
+        doc.setTextColor(...rgb(style.color));
+        doc.text(String(n), x + cellW / 2, y + cellH / 2 + numFontSize * 0.18, { align: 'center' });
+
+        if (driveMap[n]) {
+          doc.link(x, y, cellW, cellH, { url: driveUrl(driveMap[n]) });
+        }
+      }
+    });
+
+    // ── Leyenda ───────────────────────────────────────────────────────────────
+    const legendY   = pageH - margin - 4;
+    const swatchSz  = 3.5;
+    const legendCats = [
+      { key:'contrato',    label:'Arrendado'    },
+      { key:'rc',          label:'RC'           },
+      { key:'vacante',     label:'Vacante'      },
+      { key:'piloto',      label:'Piloto'       },
+      { key:'visita',      label:'Visita'       },
+      { key:'inhabilitado',label:'Inhabilitado' },
+    ];
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    let lx = margin;
+    legendCats.forEach(({ key, label }) => {
+      const s = CAT_STYLE[key];
+      doc.setFillColor(...rgb(s.bg));
+      doc.setDrawColor(...rgb(s.border));
+      doc.setLineWidth(0.15);
+      doc.roundedRect(lx, legendY - swatchSz, swatchSz, swatchSz, 0.4, 0.4, 'FD');
+      doc.setTextColor(60, 60, 60);
+      doc.text(label, lx + swatchSz + 1.2, legendY - 0.3);
+      lx += swatchSz + doc.getTextWidth(label) + 5;
+    });
+
+    if (Object.keys(driveMap).length) {
+      doc.setFontSize(5.5);
+      doc.setTextColor(138, 155, 176);
+      doc.text('· Las celdas son clickeables — abren la carpeta de contratos en Google Drive', margin, legendY + 5);
     }
 
-    const bldgName = state.AB === 'irr' ? 'INSITU IRARRÁZAVAL' : 'INSITU ECHAURREN';
-    const accentColor = state.AB === 'irr' ? [0, 209, 102] : [52, 193, 214];
-    const dateStr = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' });
-
-    pdf.setDrawColor(...accentColor);
-    pdf.setLineWidth(0.8);
-    pdf.line(margin, 8, pageW - margin, 8);
-
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(13);
-    pdf.setTextColor(26, 35, 50);
-    pdf.text(`${bldgName}  —  Stacking Plan`, margin, 15);
-
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9);
-    pdf.setTextColor(138, 155, 176);
-    pdf.text(dateStr, margin, 20);
-
-    const xOffset = (pageW - imgW) / 2;
-    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', xOffset, headerH, imgW, imgH);
-
-    const filename = `stacking_${state.AB}_${new Date().toISOString().slice(0, 10)}.pdf`;
-    pdf.save(filename);
+    doc.save(`stacking_${ab}_${new Date().toISOString().slice(0,10)}.pdf`);
 
   } catch (err) {
     console.error('Error exportando PDF:', err);
-    restoreStyles();
     alert('Error al generar el PDF. Revisa la consola (F12).');
   }
 
