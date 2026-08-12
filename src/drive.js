@@ -1,5 +1,5 @@
-// Mapa depto → Google Drive folder ID (Contratos - Estructurados / IRR)
-export const DRIVE_FOLDERS_IRR = {
+// Mapa depto → Google Drive folder ID (Contratos - Estructurados / ECH)
+export const DRIVE_FOLDERS_ECH = {
   101: '1vY5XQDvINgHtiyf_Mn85MgbRkpGlG3i_',
   102: '1EqbOHdr4h5mpknviErZSnnBlcnx4_8e_',
   103: '1g6SM4-m65VOJqB0LXY3ao67jSlHQ-W50',
