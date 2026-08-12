@@ -154,6 +154,23 @@ async function exportStackingPDF() {
     }
     orientSegs.push({ label: ORIENT_LABEL[segOrient] || segOrient, fromCol: segStart, span: maxCol - segStart + 1 });
 
+    // Límites de columna donde cambia la orientación (para líneas divisoras)
+    const orientBoundariesPDF = new Set();
+    for (let c = 2; c <= maxCol; c++) {
+      if ((colOrient[c] ?? null) !== (colOrient[c-1] ?? null)) orientBoundariesPDF.add(c);
+    }
+
+    // Bodegas sobre nivel de suelo (piso > 0), agrupadas por piso
+    const aboveBodByPiso = {};
+    (BD[ab].bod || []).forEach(row => {
+      const p = parseInt((row[bcol.piso] || '').toString().trim());
+      if (!isNaN(p) && p > 0) {
+        if (!aboveBodByPiso[p]) aboveBodByPiso[p] = [];
+        aboveBodByPiso[p].push(row);
+      }
+    });
+    const maxBodPerFloor = Object.values(aboveBodByPiso).reduce((m, a) => Math.max(m, a.length), 0);
+
     // ── jsPDF setup ──────────────────────────────────────────────────────────
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
@@ -169,11 +186,20 @@ async function exportStackingPDF() {
     const gap      = 0.5;
     const orientH  = 6;
 
-    const stackX   = margin + metricsW + metGap;          // x donde empieza el bloque stacking
-    const availW   = pageW - stackX - margin - lblW - gap; // ancho disponible para celdas
-    const availH   = pageH - margin - headerH - orientH - legendH - margin;
-    const nFloors  = layout.length;
+    const stackX    = margin + metricsW + metGap;
+    const availWFull = pageW - stackX - margin - lblW - gap;
+    const availH    = pageH - margin - headerH - orientH - legendH - margin;
+    const nFloors   = layout.length;
 
+    // Paso 1: estimar cellW sin reserva de bodegas, para calcular cuánto espacio necesitan
+    const cellWest  = Math.min(
+      (availWFull - (maxCol - 1) * gap) / maxCol,
+      ((availH - (nFloors - 1) * gap) / nFloors) * (34 / 28)
+    );
+    const bodRightW = maxBodPerFloor > 0 ? (7 + maxBodPerFloor * (cellWest + gap)) : 0;
+
+    // Paso 2: recalcular con espacio reservado para bodegas
+    const availW   = availWFull - bodRightW;
     const cellWbyW = (availW - (maxCol - 1) * gap) / maxCol;
     const cellHbyH = (availH - (nFloors - 1) * gap) / nFloors;
     const cellW    = Math.min(cellWbyW, cellHbyH * (34 / 28));
@@ -293,7 +319,7 @@ async function exportStackingPDF() {
       doc.setLineWidth(0);
       doc.roundedRect(segX, orientY, segW, orientH - 1.5, 0.8, 0.8, 'F');
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(Math.min(5.5, segW * 0.12));
+      doc.setFontSize(Math.max(5, Math.min(6.5, segW * 0.15)));
       doc.setTextColor(74, 64, 48);
       doc.text(label || '—', segX + segW / 2, orientY + (orientH - 1.5) / 2 + 1, { align: 'center' });
     });
@@ -346,6 +372,46 @@ async function exportStackingPDF() {
         if (driveMap[n]) doc.link(x, y, cellW, cellH, { url: driveUrl(driveMap[n]) });
       }
     });
+
+    // ── Líneas divisoras de orientación ──────────────────────────────────────
+    doc.setDrawColor(160, 148, 128);
+    doc.setLineWidth(0.5);
+    orientBoundariesPDF.forEach(c => {
+      const bx = cellsX + (c - 1) * (cellW + gap) - gap / 2;
+      doc.line(bx, cellsY - 1, bx, cellsY + gridH + 1);
+    });
+
+    // ── Bodegas sobre nivel de suelo ──────────────────────────────────────────
+    if (maxBodPerFloor > 0) {
+      const bodSepX   = cellsX + gridW + 3;
+      const bodStartX = bodSepX + 4;
+      const bodDriveMap = includeLinks ? (ab === 'ech' ? DRIVE_FOLDERS_ECH_BOD : DRIVE_FOLDERS_IRR_BOD) : {};
+      doc.setDrawColor(160, 148, 128);
+      doc.setLineWidth(0.4);
+      doc.line(bodSepX, cellsY, bodSepX, cellsY + gridH);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(5);
+      doc.setTextColor(154, 144, 128);
+      doc.text('Bod.', bodSepX + 2, cellsY - 1.5);
+      layout.forEach((floor, fi) => {
+        const bods = (aboveBodByPiso[floor.p] || []).slice().sort((a,b) => parseInt(a[bcol.n]) - parseInt(b[bcol.n]));
+        const y = cellsY + fi * (cellH + gap);
+        bods.forEach((unit, bi) => {
+          const n     = (unit[bcol.n] || '').toString().trim();
+          const style = CAT_STYLE[getBodegaCategory(unit)];
+          const bx    = bodStartX + bi * (cellW + gap);
+          doc.setFillColor(...rgb(style.bg));
+          doc.setDrawColor(...rgb(style.border));
+          doc.setLineWidth(0.18);
+          doc.roundedRect(bx, y, cellW, cellH, 0.7, 0.7, 'FD');
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(numFontSize);
+          doc.setTextColor(...rgb(style.color));
+          doc.text(String(n), bx + cellW / 2, y + cellH / 2 + numFontSize * 0.18, { align: 'center' });
+          if (bodDriveMap[parseInt(n)]) doc.link(bx, y, cellW, cellH, { url: driveUrl(bodDriveMap[parseInt(n)]) });
+        });
+      });
+    }
 
     // ── Leyenda ───────────────────────────────────────────────────────────────
     const legendY  = pageH - margin - 4;
@@ -417,51 +483,78 @@ async function exportStackingPDF() {
       let   subY = headerH + 4;
       const MAX_ROW = 30;
 
-      const sortByN = (a, b) => parseInt(a[pcol.n]) - parseInt(b[pcol.n]);
+      const sortByN  = (a, b) => parseInt(a[pcol.n]) - parseInt(b[pcol.n]);
       const subNumFs = 5;
+      const isInhab  = u => getParkingCategory(u) === 'inhabilitado';
+      const isMoto   = u => !isInhab(u) && (u[pcol.destino] || '').toString().trim().toUpperCase().includes('MOTO');
 
-      negPisos.forEach(piso => {
-        const allPark = (parkByPiso[piso] || []).slice().sort(sortByN);
-        const allBod  = (bodByPiso[piso]  || []).slice().sort((a,b) => parseInt(a[bcol.n]) - parseInt(b[bcol.n]));
+      const drawSubCell = (u, catFn, nCol, driveMapSub, cx, cy) => {
+        const n = (u[nCol] || '').toString().trim();
+        const s = CAT_STYLE[catFn(u)] || CAT_STYLE.default;
+        doc.setFillColor(...rgb(s.bg));
+        doc.setDrawColor(...rgb(s.border));
+        doc.setLineWidth(0.15);
+        doc.roundedRect(cx, cy, subCellW, subCellH, 0.5, 0.5, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(subNumFs);
+        doc.setTextColor(...rgb(s.color));
+        doc.text(n, cx + subCellW / 2, cy + subCellH / 2 + subNumFs * 0.18, { align: 'center' });
+        if (driveMapSub[parseInt(n)]) doc.link(cx, cy, subCellW, subCellH, { url: driveUrl(driveMapSub[parseInt(n)]) });
+      };
 
-        const drawRow = (units, catFn, driveMapSub, rowLabel, nCol) => {
-          if (!units.length) return;
-          for (let i = 0; i < units.length; i += MAX_ROW) {
-            const chunk = units.slice(i, i + MAX_ROW);
-            const rowH  = subCellH + subGap;
-            if (subY + rowH > pageH - margin - legendH) {
-              doc.addPage();
-              subY = margin + 4;
-            }
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(5);
-            doc.setTextColor(154, 144, 128);
-            doc.text(i === 0 ? rowLabel : '', margin + subLblW - 1, subY + subCellH / 2 + 1, { align: 'right' });
+// Pre-calcular el sepX fijo alineando al piso con más autos en la primera fila
+      // (equivalente a alignSubterraneoColumns del visor web)
+      const estacDrive = includeLinks ? (ab === 'ech' ? DRIVE_FOLDERS_ECH_ESTAC : DRIVE_FOLDERS_IRR_ESTAC) : {};
+      const bodDrive   = includeLinks ? (ab === 'ech' ? DRIVE_FOLDERS_ECH_BOD   : DRIVE_FOLDERS_IRR_BOD)   : {};
 
-            chunk.forEach((u, ci) => {
-              const n   = (u[nCol] || '').toString().trim();
-              const cat = catFn(u);
-              const s   = CAT_STYLE[cat] || CAT_STYLE.default;
-              const cx  = subX + ci * (subCellW + subGap);
-              doc.setFillColor(...rgb(s.bg));
-              doc.setDrawColor(...rgb(s.border));
-              doc.setLineWidth(0.15);
-              doc.roundedRect(cx, subY, subCellW, subCellH, 0.5, 0.5, 'FD');
-              doc.setFont('helvetica', 'bold');
-              doc.setFontSize(subNumFs);
-              doc.setTextColor(...rgb(s.color));
-              doc.text(n, cx + subCellW / 2, subY + subCellH / 2 + subNumFs * 0.18, { align: 'center' });
-              if (driveMapSub[parseInt(n)]) doc.link(cx, subY, subCellW, subCellH, { url: driveUrl(driveMapSub[parseInt(n)]) });
-            });
-            subY += rowH;
+      const pisoGroups = negPisos.map(piso => {
+        const allRaw = (parkByPiso[piso] || []).slice();
+        const allBod = (bodByPiso[piso]  || []).slice().sort((a,b) => parseInt(a[bcol.n]) - parseInt(b[bcol.n]));
+        const autos  = allRaw.filter(u => !isMoto(u) && !isInhab(u)).sort(sortByN);
+        const motos  = allRaw.filter(u => isMoto(u)).sort(sortByN);
+        return { piso, autos, motos, allBod };
+      }).filter(g => g.autos.length || g.motos.length || g.allBod.length);
+
+      // Bodega reserve para calcular el máximo de autos por fila
+      const maxBodInSub  = Math.max(0, ...pisoGroups.map(g => g.allBod.length));
+      const bodReserveSub = maxBodInSub > 0 ? maxBodInSub * (subCellW + subGap) + 7 : 0;
+      const parkPerRowSub = Math.max(1, Math.floor((pageW - margin - subX - bodReserveSub) / (subCellW + subGap)));
+      // Separador fijo: ancho del piso con más autos en la primera fila
+      const maxFirstChunk = Math.max(1, ...pisoGroups.map(g => Math.min(g.autos.length, parkPerRowSub)));
+      const fixedSepX = subX + maxFirstChunk * (subCellW + subGap) + 2;
+
+      pisoGroups.forEach(({ piso, autos, motos, allBod }) => {
+        // Autos con bodegas alineadas a la derecha
+        const autoChunks = [];
+        for (let i = 0; i < Math.max(autos.length, 1); i += parkPerRowSub) autoChunks.push(autos.slice(i, i + parkPerRowSub));
+        autoChunks.forEach((chunk, ci) => {
+          const rowH = subCellH + subGap;
+          if (subY + rowH > pageH - margin - legendH) { doc.addPage(); subY = margin + 4; }
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(5); doc.setTextColor(154, 144, 128);
+          doc.text(ci === 0 ? String(piso) : '', margin + subLblW - 1, subY + subCellH / 2 + 1, { align: 'right' });
+          chunk.forEach((u, idx) => drawSubCell(u, getParkingCategory, pcol.n, estacDrive, subX + idx * (subCellW + subGap), subY));
+          if (ci === 0 && allBod.length) {
+            doc.setDrawColor(160, 148, 128); doc.setLineWidth(0.3);
+            doc.line(fixedSepX, subY, fixedSepX, subY + subCellH);
+            allBod.forEach((u, bi) => drawSubCell(u, getBodegaCategory, bcol.n, bodDrive, fixedSepX + 3 + bi * (subCellW + subGap), subY));
           }
-        };
+          subY += rowH;
+        });
 
-        const estacDrive = includeLinks ? (ab === 'ech' ? DRIVE_FOLDERS_ECH_ESTAC : DRIVE_FOLDERS_IRR_ESTAC) : {};
-        const bodDrive   = includeLinks ? (ab === 'ech' ? DRIVE_FOLDERS_ECH_BOD   : DRIVE_FOLDERS_IRR_BOD)   : {};
+        // Motos en fila separada (sin bodegas, sin inhabilitados)
+        if (motos.length) {
+          const motoChunks = [];
+          for (let i = 0; i < motos.length; i += parkPerRowSub) motoChunks.push(motos.slice(i, i + parkPerRowSub));
+          motoChunks.forEach((chunk, ci) => {
+            const rowH = subCellH + subGap;
+            if (subY + rowH > pageH - margin - legendH) { doc.addPage(); subY = margin + 4; }
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(5); doc.setTextColor(154, 144, 128);
+            doc.text(ci === 0 ? (autos.length ? 'Moto' : String(piso)) : '', margin + subLblW - 1, subY + subCellH / 2 + 1, { align: 'right' });
+            chunk.forEach((u, idx) => drawSubCell(u, getParkingCategory, pcol.n, estacDrive, subX + idx * (subCellW + subGap), subY));
+            subY += rowH;
+          });
+        }
 
-        drawRow(allPark, getParkingCategory, estacDrive, String(piso),              pcol.n);
-        drawRow(allBod,  getBodegaCategory,  bodDrive,   allPark.length ? 'Bod.' : String(piso), bcol.n);
         subY += 2;
       });
 
