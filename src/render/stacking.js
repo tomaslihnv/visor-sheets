@@ -3,6 +3,7 @@ import { LAYOUT_IRR, LAYOUT_ECH, MAX_COL_IRR, MAX_COL_ECH, CAT_STYLE } from '../
 import { getCategory, getParkingCategory, getBodegaCategory } from '../categories.js';
 import { showTooltip, hideTooltip, moveTooltip, showParkingTooltip, showBodegaTooltip, addTapToShow } from '../tooltip.js';
 import { pcol, bcol, resolveParkingColumns, resolveBodegaColumns } from '../columns.js';
+import { DRIVE_FOLDERS_IRR, driveUrl } from '../drive.js';
 
 // Determina, para cada columna, la primera orientación no vacía encontrada
 // recorriendo los pisos en el orden del layout (de arriba hacia abajo).
@@ -56,6 +57,10 @@ export function renderStacking() {
         el.addEventListener('mouseleave', hideTooltip);
         el.addEventListener('mousemove',  moveTooltip);
         addTapToShow(el, e => showTooltip(e, n));
+        if (state.AB === 'irr' && DRIVE_FOLDERS_IRR[n]) {
+          el.addEventListener('click', () => window.open(driveUrl(DRIVE_FOLDERS_IRR[n]), '_blank'));
+          el.title = 'Ver contratos en Drive';
+        }
       } else {
         el.className = 'cell-gap';
       }
