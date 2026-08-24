@@ -88,14 +88,25 @@ function exportXLSX(cols, rows, filename) {
 
 // ── PDF ──────────────────────────────────────────────────────────────────────
 
+// Más columnas → letra y padding más chicos, para que autoTable no tenga que
+// partir el contenido en varias líneas dentro de la celda.
+function fontSizeForCols(n) {
+  if (n <= 12) return 7;
+  if (n <= 18) return 6;
+  if (n <= 24) return 5;
+  if (n <= 32) return 4.2;
+  return 3.5;
+}
+
 function exportPDF(cols, rows, filename) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
+  const fontSize = fontSizeForCols(cols.length);
   doc.autoTable({
     head: [cols],
     body: rows.map(r => cols.map(h => r[h] ?? '')),
-    styles: { fontSize: 6, cellPadding: 1.2 },
-    headStyles: { fillColor: [26, 24, 16] },
+    styles: { fontSize, cellPadding: fontSize < 5 ? 0.7 : 1.2, overflow: 'linebreak' },
+    headStyles: { fillColor: [26, 24, 16], fontSize },
     margin: { top: 10, left: 6, right: 6 },
   });
   doc.save(filename);
