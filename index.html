@@ -664,6 +664,7 @@
 import { initializeApp }                          from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
                                                   from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js';
+import { getFirestore, doc, getDoc, setDoc }      from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js';
 
 const ALLOWED_DOMAINS = ['situ.cl', 'insiturentas.cl'];
 const isAllowed = email => ALLOWED_DOMAINS.some(d => email.endsWith('@' + d));
@@ -677,8 +678,30 @@ const app  = initializeApp({
   appId:             '1:919455582844:web:422bbb939426a8df0597f9',
 });
 const auth     = getAuth(app);
+const db       = getFirestore(app);
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: 'select_account' }); // sin hd: permite ambos dominios
+
+// Selección de columnas predeterminada del exportador de Estatus Actual —
+// compartida entre todos los usuarios (config/estatusExportCols en Firestore).
+window.__estatusColsPreset = {
+  async load() {
+    try {
+      const snap = await getDoc(doc(db, 'config', 'estatusExportCols'));
+      return snap.exists() ? snap.data().cols : null;
+    } catch (err) {
+      console.error('Error cargando preset de columnas:', err);
+      return null;
+    }
+  },
+  async save(cols) {
+    await setDoc(doc(db, 'config', 'estatusExportCols'), {
+      cols,
+      updatedAt: Date.now(),
+      updatedBy: auth.currentUser?.email || null,
+    });
+  },
+};
 
 const overlay   = document.getElementById('auth-overlay');
 const appRoot   = document.getElementById('app-root');
@@ -793,9 +816,12 @@ document.getElementById('btn-signout').addEventListener('click', () => signOut(a
           <button type="button" onclick="toggleAllExportCols(true)">Todas</button>
           <span>·</span>
           <button type="button" onclick="toggleAllExportCols(false)">Ninguna</button>
+          <span>·</span>
+          <button type="button" onclick="saveExportColsPreset(this)">Guardar como predeterminado</button>
         </div>
       </div>
       <div class="exp-cols-list" id="exp-cols-list"></div>
+      <div class="exp-cols-preset-status" id="exp-cols-preset-status"></div>
     </div>
     <div class="pdf-modal-footer exp-format-footer">
       <button class="exp-format-btn" onclick="runEstatusExport('csv', this)">

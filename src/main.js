@@ -9,7 +9,7 @@ import { applyFilters, resetFilters, populateDropdowns, initVencFilter, initUFFi
 import { renderStacking, renderSubterraneoStacking, injectBodegasIntoFloors, alignBodegaColumns, alignSubterraneoColumns } from './render/stacking.js';
 import { updateMetrics } from './render/metrics.js';
 import { renderEstatusTable, renderRawTable } from './render/tables.js';
-import { openEstatusExportModal, closeEstatusExportModal, toggleAllExportCols, runEstatusExport } from './render/export-table.js';
+import { openEstatusExportModal, closeEstatusExportModal, toggleAllExportCols, runEstatusExport, saveExportColsPreset } from './render/export-table.js';
 import { initEvolSelects, initNetosSelects, renderEvolChart, renderNetosChart } from './render/charts/evolucion.js';
 import { initVencChartSelects, renderVencChart } from './render/charts/vencimiento.js';
 import { initRenewalChartSelects, renderRenewalChart } from './render/charts/renewal.js';
@@ -706,6 +706,7 @@ window.openEstatusExportModal  = openEstatusExportModal;
 window.closeEstatusExportModal = closeEstatusExportModal;
 window.toggleAllExportCols     = toggleAllExportCols;
 window.runEstatusExport        = runEstatusExport;
+window.saveExportColsPreset    = saveExportColsPreset;
 window.showTab            = showTab;
 window.exportStackingPDF  = exportStackingPDF;
 window.applyFilters       = applyFilters;
