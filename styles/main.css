@@ -462,6 +462,7 @@ tr:hover td { background: #ede8df; }
   border: 1px solid #e8e0d0; border-radius: 8px; padding: 10px 12px;
   background: #fff;
 }
+.exp-cols-preset-status { font-size: 10.5px; color: #8a7a68; margin-top: 6px; min-height: 13px; }
 .exp-col-item {
   display: flex; align-items: center; gap: 7px;
   font-size: 11.5px; color: #2a2218; padding: 3px 0; cursor: pointer;

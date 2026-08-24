@@ -4,7 +4,7 @@ import { downloadBlob } from '../utils.js';
 
 let _allCols = [];
 
-export function openEstatusExportModal() {
+export async function openEstatusExportModal() {
   const headers = BD[state.AB].fields || [];
   _allCols = [...headers, ...CALC_COLS];
 
@@ -17,6 +17,15 @@ export function openEstatusExportModal() {
   `).join('');
 
   document.getElementById('estatus-export-modal').style.display = 'flex';
+
+  // Preset compartido (Firestore) — si existe, marca solo esas columnas.
+  const preset = await window.__estatusColsPreset?.load();
+  if (preset?.length) {
+    const presetSet = new Set(preset);
+    document.querySelectorAll('#exp-cols-list input[type="checkbox"]').forEach((cb, i) => {
+      cb.checked = presetSet.has(_allCols[i]);
+    });
+  }
 }
 
 export function closeEstatusExportModal() {
@@ -25,6 +34,24 @@ export function closeEstatusExportModal() {
 
 export function toggleAllExportCols(checked) {
   document.querySelectorAll('#exp-cols-list input[type="checkbox"]').forEach(c => { c.checked = checked; });
+}
+
+export async function saveExportColsPreset(btn) {
+  const status = document.getElementById('exp-cols-preset-status');
+  const cols   = getSelectedCols();
+  if (!cols.length) { if (status) status.textContent = 'Selecciona al menos una columna.'; return; }
+
+  if (btn) btn.disabled = true;
+  try {
+    await window.__estatusColsPreset?.save(cols);
+    if (status) status.textContent = '✓ Guardado — todos los usuarios verán esta selección por defecto.';
+  } catch (err) {
+    console.error('Error guardando preset de columnas:', err);
+    if (status) status.textContent = 'Error al guardar. Revisa la consola (F12).';
+  } finally {
+    if (btn) btn.disabled = false;
+    setTimeout(() => { if (status) status.textContent = ''; }, 4000);
+  }
 }
 
 function getSelectedCols() {
