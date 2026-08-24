@@ -590,13 +590,13 @@ async function exportStackingPDF() {
   btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar PDF`;
 }
 
-// ── Copiar gráfico individual al portapapeles ───────────────────────────────
+// ── Copiar tarjeta (gráfico o card de caracterización) al portapapeles ──────
 const ICON_COPY  = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
 const ICON_CHECK = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
-async function copyChartCard(btn) {
+async function copyCardAsImage(btn, cardSelector) {
   btn.disabled = true;
-  const card = btn.closest('.evol-card');
+  const card = btn.closest(cardSelector);
   try {
     const canvas = await html2canvas(card, { scale: 4, useCORS: true, logging: false, backgroundColor: '#ffffff' });
     canvas.toBlob(async blob => {
@@ -610,33 +610,13 @@ async function copyChartCard(btn) {
       }
     }, 'image/png');
   } catch (err) {
-    console.error('Error copiando gráfico:', err);
+    console.error('Error copiando tarjeta:', err);
     btn.disabled = false; btn.innerHTML = ICON_COPY;
   }
 }
 
-const ICON_COPY_DIR  = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
-
-async function copyDirCard(btn) {
-  btn.disabled = true;
-  const card = btn.closest('.dir-card');
-  try {
-    const canvas = await html2canvas(card, { scale: 4, useCORS: true, logging: false, backgroundColor: '#ffffff' });
-    canvas.toBlob(async blob => {
-      try {
-        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-        btn.innerHTML = ICON_CHECK;
-        setTimeout(() => { btn.disabled = false; btn.innerHTML = ICON_COPY_DIR; }, 2000);
-      } catch {
-        alert('El navegador no permite copiar imágenes al portapapeles desde este contexto (requiere HTTPS).');
-        btn.disabled = false; btn.innerHTML = ICON_COPY_DIR;
-      }
-    }, 'image/png');
-  } catch (err) {
-    console.error('Error copiando tarjeta:', err);
-    btn.disabled = false; btn.innerHTML = ICON_COPY_DIR;
-  }
-}
+const copyChartCard = btn => copyCardAsImage(btn, '.evol-card');
+const copyDirCard   = btn => copyCardAsImage(btn, '.dir-card');
 
 // ── Pinch-to-zoom stacking (mobile/tablet) ─────────────────────────────────
 (function initStackingPinchZoom() {

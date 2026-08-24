@@ -14,6 +14,20 @@ export function nfdKey(str) {
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
 }
 
+// Busca el primer header que cumpla `test` sobre su forma normalizada (nfdKey).
+export function findCol(headers, test) {
+  return headers.find(h => test(nfdKey(h))) || null;
+}
+
+export function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function parseDate(str) {
   if (!str) return null;
   const parts = String(str).trim().split('/');

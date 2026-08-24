@@ -1,5 +1,6 @@
 import { state, BD } from '../state.js';
 import { CALC_COLS, computeCellText } from './tables.js';
+import { downloadBlob } from '../utils.js';
 
 let _allCols = [];
 
@@ -47,15 +48,6 @@ function toCSV(cols, rows) {
   const lines = [cols.map(esc).join(',')];
   rows.forEach(r => lines.push(cols.map(h => esc(r[h])).join(',')));
   return '﻿' + lines.join('\r\n'); // BOM para que Excel abra bien los acentos
-}
-
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
 }
 
 // ── Tabla (portapapeles) ──────────────────────────────────────────────────────
