@@ -754,6 +754,13 @@ document.addEventListener('DOMContentLoaded', initChartFontSliders);
 
 renderStacking();
 
+function revealStacking() {
+  const skel = document.getElementById('stacking-skel');
+  const real = document.getElementById('stacking-zoom-inner');
+  if (skel) skel.style.display = 'none';
+  if (real) real.style.display = '';
+}
+
 // Fase 1 IRR: carga ESTATUS ACTUAL → colorea stacking inmediatamente
 fetch(URLS.irr[0]).then(r => r.text()).then(csv => {
   const p1i = Papa.parse(csv.trim(), {header:true, skipEmptyLines:true});
@@ -761,10 +768,13 @@ fetch(URLS.irr[0]).then(r => r.text()).then(csv => {
   BD.irr.fields = p1i.meta.fields;
   const unidadCol = p1i.meta.fields.find(h => nfdKey(h) === 'UNIDAD') || 'Unidad';
   p1i.data.forEach(row => { const n = parseInt((row[unidadCol]||'').trim()); if (!isNaN(n)) BD.irr.umap[n] = row; });
-  resolveColumns(p1i.meta.fields);
-  populateDropdowns(BD.irr.data);
-  renderStacking();
-  applyFilters();
+  if (state.AB === 'irr') {
+    resolveColumns(p1i.meta.fields);
+    populateDropdowns(BD.irr.data);
+    renderStacking();
+    applyFilters();
+    revealStacking();
+  }
 }).catch(err => console.error('Error cargando ESTATUS IRR:', err));
 
 // Fase 1 ECH: carga ESTATUS ACTUAL → tiene datos listos para cuando el usuario cambie
@@ -779,6 +789,7 @@ fetch(URLS.ech[0]).then(r => r.text()).then(csv => {
     populateDropdowns(BD.ech.data);
     renderStacking();
     applyFilters();
+    revealStacking();
   }
 }).catch(err => console.error('Error cargando ESTATUS ECH:', err));
 
