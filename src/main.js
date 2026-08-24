@@ -742,10 +742,12 @@ fetch(URLS.irr[0]).then(r => r.text()).then(csv => {
   BD.irr.fields = p1i.meta.fields;
   const unidadCol = p1i.meta.fields.find(h => nfdKey(h) === 'UNIDAD') || 'Unidad';
   p1i.data.forEach(row => { const n = parseInt((row[unidadCol]||'').trim()); if (!isNaN(n)) BD.irr.umap[n] = row; });
-  resolveColumns(p1i.meta.fields);
-  populateDropdowns(BD.irr.data);
-  renderStacking();
-  applyFilters();
+  if (state.AB === 'irr') {
+    resolveColumns(p1i.meta.fields);
+    populateDropdowns(BD.irr.data);
+    renderStacking();
+    applyFilters();
+  }
 }).catch(err => console.error('Error cargando ESTATUS IRR:', err));
 
 // Fase 1 ECH: carga ESTATUS ACTUAL → tiene datos listos para cuando el usuario cambie
