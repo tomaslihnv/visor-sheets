@@ -90,6 +90,7 @@
   <button class="tab-btn" onclick="showTab('venc',this)">Vencimientos</button>
   <button class="tab-btn" onclick="showTab('sal',this)">Salidas</button>
   <button class="tab-btn" onclick="showTab('auditoria',this)">Reparaciones</button>
+  <button class="tab-btn" onclick="showTab('caracterizacion',this)">Caracterización</button>
 </div>
 
 <div id="panel-stacking" class="panel active">
@@ -291,7 +292,13 @@
 
 <div id="panel-hoja1" class="panel">
   <div class="table-wrap">
-    <div class="table-notice" id="ipc-notice">⏳ Cargando valores UF…</div>
+    <div class="table-notice table-notice-row">
+      <span id="ipc-notice">⏳ Cargando valores UF…</span>
+      <button class="btn-export-pdf" onclick="openEstatusExportModal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar
+      </button>
+    </div>
     <div id="table1"><p style="padding:40px;text-align:center;color:#8a9bb0">Cargando…</p></div>
   </div>
 </div>
@@ -621,7 +628,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script type="module" src="src/main.js"></script>
 
 <script type="module">
@@ -742,4 +752,113 @@ document.getElementById('btn-signout').addEventListener('click', () => signOut(a
     </div>
   </div>
 </div>
+
+<!-- Modal exportar Estatus Actual -->
+<div id="estatus-export-modal" class="pdf-modal-overlay" style="display:none" onclick="if(event.target===this)closeEstatusExportModal()">
+  <div class="pdf-modal exp-modal">
+    <div class="pdf-modal-header">
+      <span class="pdf-modal-title">Exportar Estatus Actual</span>
+      <button class="pdf-modal-close" onclick="closeEstatusExportModal()">✕</button>
+    </div>
+    <div class="pdf-modal-body">
+      <div class="exp-cols-toolbar">
+        <span class="exp-cols-label">Columnas a incluir</span>
+        <div class="exp-cols-actions">
+          <button type="button" onclick="toggleAllExportCols(true)">Todas</button>
+          <span>·</span>
+          <button type="button" onclick="toggleAllExportCols(false)">Ninguna</button>
+        </div>
+      </div>
+      <div class="exp-cols-list" id="exp-cols-list"></div>
+    </div>
+    <div class="pdf-modal-footer exp-format-footer">
+      <button class="exp-format-btn" onclick="runEstatusExport('csv', this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        CSV
+      </button>
+      <button class="exp-format-btn" onclick="runEstatusExport('xlsx', this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        XLSX
+      </button>
+      <button class="exp-format-btn" onclick="runEstatusExport('table', this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Tabla
+      </button>
+      <button class="exp-format-btn" onclick="runEstatusExport('pdf', this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DIRECTORIO ─────────────────────────────────────────────────────── -->
+<div id="panel-caracterizacion" class="panel">
+  <div class="dir-layout">
+
+    <!-- Fila superior -->
+    <div class="dir-row dir-row-top">
+
+      <!-- Composición del hogar -->
+      <div class="dir-card dir-card-hogar">
+        <div class="dir-card-title">Composición del hogar<button class="btn-copy-dir" onclick="copyDirCard(this)" title="Copiar como imagen"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+        <div class="dir-card-body dir-chart-medium">
+          <canvas id="dir-chart-hogar"></canvas>
+          <div id="dir-hogar-nodata" class="dir-nodata" style="display:none">
+            Sin datos de composición en la columna <em>Descripción</em>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ocupación -->
+      <div class="dir-card dir-card-ocup">
+        <div class="dir-card-title">Ocupación residentes<button class="btn-copy-dir" onclick="copyDirCard(this)" title="Copiar como imagen"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+        <div class="dir-card-body dir-chart-medium">
+          <canvas id="dir-chart-ocupacion"></canvas>
+          <div id="dir-ocup-nodata" class="dir-nodata" style="display:none">
+            Requiere columna <em>Ocupación</em> en la hoja de datos
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="dir-card dir-card-kpis">
+        <div class="dir-card-title">Caracterización<button class="btn-copy-dir" onclick="copyDirCard(this)" title="Copiar como imagen"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+        <div id="dir-kpis" class="dir-kpis-list"></div>
+      </div>
+
+    </div>
+
+    <!-- Fila inferior -->
+    <div class="dir-row dir-row-bottom">
+
+      <!-- Edad × Tipología -->
+      <div class="dir-card dir-card-edad">
+        <div class="dir-card-title">Residente por grupo etario y tipología<button class="btn-copy-dir" onclick="copyDirCard(this)" title="Copiar como imagen"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+        <div class="dir-card-body dir-chart-tall">
+          <canvas id="dir-chart-edad"></canvas>
+          <div id="dir-edad-nodata" class="dir-nodata" style="display:none">
+            Requiere columna <em>Edad</em> en la hoja de datos
+          </div>
+        </div>
+      </div>
+
+      <!-- Residentes por sexo -->
+      <div class="dir-card dir-card-arriendos">
+        <div class="dir-card-title">Residentes por sexo<button class="btn-copy-dir" onclick="copyDirCard(this)" title="Copiar como imagen"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+        <div class="dir-card-body dir-chart-tall">
+          <canvas id="dir-chart-sexo"></canvas>
+        </div>
+      </div>
+
+      <!-- Tabla stock -->
+      <div class="dir-card dir-card-tabla">
+        <div class="dir-card-title">Arriendos vs stock total (neto de pilotos)<button class="btn-copy-dir" onclick="copyDirCard(this)" title="Copiar como imagen"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+        <div id="dir-tabla-stock" class="dir-tabla-wrap"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 </body>

@@ -9,6 +9,7 @@ import { applyFilters, resetFilters, populateDropdowns, initVencFilter, initUFFi
 import { renderStacking, renderSubterraneoStacking, injectBodegasIntoFloors, alignBodegaColumns, alignSubterraneoColumns } from './render/stacking.js';
 import { updateMetrics } from './render/metrics.js';
 import { renderEstatusTable, renderRawTable } from './render/tables.js';
+import { openEstatusExportModal, closeEstatusExportModal, toggleAllExportCols, runEstatusExport } from './render/export-table.js';
 import { initEvolSelects, initNetosSelects, renderEvolChart, renderNetosChart } from './render/charts/evolucion.js';
 import { initVencChartSelects, renderVencChart } from './render/charts/vencimiento.js';
 import { initRenewalChartSelects, renderRenewalChart } from './render/charts/renewal.js';
@@ -16,6 +17,7 @@ import { initSalidasChartSelects, renderSalidasChart, initMotivoChartSelects, re
 import { initEntradaChartSelects, renderEntradaChart, initFlujoChartSelects, renderFlujoChart } from './render/charts/entrada.js';
 import { renderPermanenciaChart, initPermanenciaSelects } from './render/charts/permanencia.js';
 import { renderAuditoria, resetAuditoria } from './render/auditoria.js';
+import { renderDirectorio } from './render/directorio.js';
 import { URLS_REPARACION } from './config.js';
 import { openExportPanel, initChartFontSliders, reapplyFontSize } from './export-chart.js';
 
@@ -67,6 +69,7 @@ function switchBuilding(id) {
   resetAuditoria();
   renderBothEvolCharts();
   renderAuditoria();
+  if (document.getElementById('panel-caracterizacion')?.classList.contains('active')) renderDirectorio();
   populateDropdowns(BD[state.AB].data);
   initVencFilter(BD[state.AB].data);
   initUFFilter(BD[state.AB].data);
@@ -85,8 +88,9 @@ function showTab(id, btn) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('panel-' + id).classList.add('active');
   btn.classList.add('active');
-  if (id === 'evolucion') renderBothEvolCharts();
-  if (id === 'auditoria') renderAuditoria();
+  if (id === 'evolucion')  renderBothEvolCharts();
+  if (id === 'auditoria')  renderAuditoria();
+  if (id === 'caracterizacion') renderDirectorio();
 }
 
 async function exportStackingPDF() {
@@ -594,7 +598,7 @@ async function copyChartCard(btn) {
   btn.disabled = true;
   const card = btn.closest('.evol-card');
   try {
-    const canvas = await html2canvas(card, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
+    const canvas = await html2canvas(card, { scale: 4, useCORS: true, logging: false, backgroundColor: '#ffffff' });
     canvas.toBlob(async blob => {
       try {
         await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
@@ -608,6 +612,29 @@ async function copyChartCard(btn) {
   } catch (err) {
     console.error('Error copiando gráfico:', err);
     btn.disabled = false; btn.innerHTML = ICON_COPY;
+  }
+}
+
+const ICON_COPY_DIR  = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+
+async function copyDirCard(btn) {
+  btn.disabled = true;
+  const card = btn.closest('.dir-card');
+  try {
+    const canvas = await html2canvas(card, { scale: 4, useCORS: true, logging: false, backgroundColor: '#ffffff' });
+    canvas.toBlob(async blob => {
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        btn.innerHTML = ICON_CHECK;
+        setTimeout(() => { btn.disabled = false; btn.innerHTML = ICON_COPY_DIR; }, 2000);
+      } catch {
+        alert('El navegador no permite copiar imágenes al portapapeles desde este contexto (requiere HTTPS).');
+        btn.disabled = false; btn.innerHTML = ICON_COPY_DIR;
+      }
+    }, 'image/png');
+  } catch (err) {
+    console.error('Error copiando tarjeta:', err);
+    btn.disabled = false; btn.innerHTML = ICON_COPY_DIR;
   }
 }
 
@@ -694,6 +721,11 @@ window.switchBuilding    = switchBuilding;
 window.toggleTipologia   = toggleTipologia;
 window.switchLegendTab   = switchLegendTab;
 window.copyChartCard   = copyChartCard;
+window.copyDirCard     = copyDirCard;
+window.openEstatusExportModal  = openEstatusExportModal;
+window.closeEstatusExportModal = closeEstatusExportModal;
+window.toggleAllExportCols     = toggleAllExportCols;
+window.runEstatusExport        = runEstatusExport;
 window.showTab            = showTab;
 window.exportStackingPDF  = exportStackingPDF;
 window.applyFilters       = applyFilters;
@@ -886,6 +918,7 @@ if (!URLS_CONTRATOS.irr.startsWith('PENDIENTE')) {
       initFlujoChartSelects(BD.irr.contratos);
       renderEntradaChart();
       renderFlujoChart();
+      if (document.getElementById('panel-caracterizacion')?.classList.contains('active')) renderDirectorio();
     }
   }).catch(err => console.error('Error cargando I. Contratos IRR:', err));
 }
@@ -899,6 +932,7 @@ if (!URLS_CONTRATOS.ech.startsWith('PENDIENTE')) {
       initFlujoChartSelects(BD.ech.contratos);
       renderEntradaChart();
       renderFlujoChart();
+      if (document.getElementById('panel-caracterizacion')?.classList.contains('active')) renderDirectorio();
     }
   }).catch(err => console.error('Error cargando I. Contratos ECH:', err));
 }

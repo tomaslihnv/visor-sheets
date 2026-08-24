@@ -1,5 +1,29 @@
 export const CALC_COLS = ['Ajuste x IPC', 'Canon CLP', 'Canon UF', 'Canon UF/m²', 'Salario/arriendo', 'Días Remanentes'];
 
+// Texto plano de una celda (sin estilos) — usado por el exportador de "Estatus Actual".
+// Replica los mismos cálculos que renderEstatusTable para no divergir del valor mostrado en pantalla.
+export function computeCellText(row, h) {
+  const dest = (row['Destino'] || '').trim().replace('−', '-');
+  const isC  = (row['Estatus'] || '').trim() === '1' && dest === '-';
+  switch (h) {
+    case 'Ajuste x IPC':
+      if (row.__ipc == null) return '—';
+      return `${row.__ipc >= 0 ? '+' : ''}${(row.__ipc * 100).toFixed(2)}%`;
+    case 'Canon CLP':
+      return row.__canonCLP != null ? `$${Math.round(row.__canonCLP).toLocaleString('es-CL')}` : '—';
+    case 'Canon UF':
+      return row.__canonUF != null ? `${row.__canonUF.toFixed(2)} UF` : '—';
+    case 'Canon UF/m²':
+      return row.__canonUFm2 != null ? `${row.__canonUFm2.toFixed(2)} UF/m²` : '—';
+    case 'Salario/arriendo':
+      return (isC && row.__salarioRatio != null) ? `${row.__salarioRatio.toFixed(1).replace('.', ',')}x` : '—';
+    case 'Días Remanentes':
+      return isC ? (row.__diasRemanentes != null ? String(row.__diasRemanentes) : '—') : '—';
+    default:
+      return (row[h] ?? '').toString();
+  }
+}
+
 export function renderEstatusTable(data, headers, refKey, refUF) {
   const augHeaders = [...headers, ...CALC_COLS];
   const notice = document.getElementById('ipc-notice');
