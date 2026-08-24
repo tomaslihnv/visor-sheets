@@ -1,6 +1,6 @@
 import { pcol, bcol } from './columns.js';
 import { parseCLP, nfdKey } from './utils.js';
-import { MOTIVO_COLOR_MAP, MOTIVO_PALETTE, TIPOLOGIA_COLOR_MAP, TIPOLOGIA_PALETTE } from './state.js';
+import { MOTIVO_COLOR_MAP, MOTIVO_PALETTE } from './state.js';
 import { MOTIVOS } from './config.js';
 
 export function getCategory(u) {
@@ -51,25 +51,3 @@ export function getMotivoColor(motivo) {
   return MOTIVO_COLOR_MAP[motivo];
 }
 
-export function getTipologiaColor(tipo) {
-  if (!TIPOLOGIA_COLOR_MAP[tipo]) {
-    const idx = Object.keys(TIPOLOGIA_COLOR_MAP).length % TIPOLOGIA_PALETTE.length;
-    TIPOLOGIA_COLOR_MAP[tipo] = TIPOLOGIA_PALETTE[idx];
-  }
-  return TIPOLOGIA_COLOR_MAP[tipo];
-}
-
-export function avgLineDataset(allMonths, data) {
-  const vals = data.filter(v => v != null && v > 0);
-  if (!vals.length) return null;
-  const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-  return {
-    type: 'line', label: 'Promedio',
-    data: allMonths.map(() => avg),
-    borderColor: 'rgba(239,68,68,0.55)', borderWidth: 1.5,
-    borderDash: [6, 5], pointRadius: 0, pointHoverRadius: 0,
-    fill: false, tension: 0, spanGaps: true,
-    datalabels: { display: false },
-    _avgValue: avg
-  };
-}

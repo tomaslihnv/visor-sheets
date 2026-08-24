@@ -208,7 +208,7 @@ export function applyFilters() {
   if (tabBtn) window.switchLegendTab(legendTab, tabBtn);
 }
 
-export function refreshUFRange(fu, ftb, ftT, ftS1, ftS2, foC, foA, vencOn, vencVal) {
+function refreshUFRange(fu, ftb, ftT, ftS1, ftS2, foC, foA, vencOn, vencVal) {
   const layout = state.AB === 'irr' ? LAYOUT_IRR : LAYOUT_ECH;
   const umap   = BD[state.AB].umap;
   if (!Object.keys(umap).length) return;

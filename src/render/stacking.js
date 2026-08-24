@@ -73,7 +73,7 @@ export function renderStacking() {
   });
 }
 
-export function makeParkingCell(unit) {
+function makeParkingCell(unit) {
   const n      = (unit[pcol.n]     || '').toString().trim();
   const cat    = getParkingCategory(unit);
   const s      = CAT_STYLE[cat];
@@ -277,16 +277,4 @@ export function alignSubterraneoColumns() {
     const diff = maxLeft - s.getBoundingClientRect().left;
     if (diff > 0) s.style.marginLeft = diff + 'px';
   });
-}
-
-export function updateCellTipo() {
-  const layout = state.AB === 'irr' ? LAYOUT_IRR : LAYOUT_ECH;
-  const umap   = BD[state.AB].umap;
-
-  layout.forEach(floor => floor.cells.forEach(cell => {
-    const el = document.getElementById('u-' + cell.n);
-    if (!el) return;
-    const tipoEl = el.querySelector('.unit-tipo');
-    if (tipoEl) tipoEl.textContent = (umap[cell.n]?.['Tipo'] || '').trim();
-  }));
 }

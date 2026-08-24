@@ -1,4 +1,5 @@
 import { CHARTS } from './state.js';
+import { downloadBlob } from './utils.js';
 
 const ASPECT_RATIOS  = { auto: null, '6:1': 6 / 1, '4:1': 4 / 1, '3:1': 3 / 1, '16:9': 16 / 9, '4:3': 4 / 3, '1:1': 1 };
 const EXPORT_WIDTH   = 2560;
@@ -6,8 +7,20 @@ const PREVIEW_WIDTH  = 1280;
 
 const ICON_DOWNLOAD = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
 const ICON_COPY     = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
-const ICON_EXPORT   = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
 const ICON_EYE      = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+
+function copyImageBlob(blob) {
+  return navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+}
+
+// Crea un setter de estado (mensaje + color) que se autolimpia a los 3.5s.
+function makeStatusSetter(el) {
+  return (msg, ok = true) => {
+    el.textContent = msg;
+    el.style.color = ok ? '#8a6830' : '#c0674d';
+    setTimeout(() => { if (el) el.textContent = ''; }, 3500);
+  };
+}
 
 // ── Font state per chart ───────────────────────────────────────────────────────
 const _fontSizes = {}; // un solo tamaño controla todo
@@ -42,7 +55,7 @@ function _makeSlider(label, min, max, def, onChange) {
   return wrap;
 }
 
-export function updateChartFontSize(chartKey, size) {
+function updateChartFontSize(chartKey, size) {
   _fontSizes[chartKey] = size;
   _applyAllFonts(chartKey, size);
 }
@@ -115,7 +128,7 @@ function buildPanel(chartKey, title) {
   const panel = document.createElement('div');
   panel.className = 'ep';
   panel.innerHTML = `
-    <div class="ep-title">${ICON_EXPORT} Exportar gráfico</div>
+    <div class="ep-title">${ICON_DOWNLOAD} Exportar gráfico</div>
 
     <div class="ep-label">Proporción de salida</div>
     <div class="ep-pills ep-pills-wrap" id="ep-ratio">
@@ -161,12 +174,7 @@ function buildPanel(chartKey, title) {
     });
   });
 
-  const status = panel.querySelector('.ep-status');
-  function setStatus(msg, ok = true) {
-    status.textContent = msg;
-    status.style.color = ok ? '#8a6830' : '#c0674d';
-    setTimeout(() => { if (status) status.textContent = ''; }, 3500);
-  }
+  const setStatus = makeStatusSetter(panel.querySelector('.ep-status'));
 
   panel.querySelector('.ep-btn-prev').addEventListener('click', () => {
     closePanel();
@@ -177,12 +185,7 @@ function buildPanel(chartKey, title) {
     setStatus('Generando…');
     try {
       const blob = await renderCapture(chartKey, EXPORT_WIDTH, ratio, bgColor);
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href = url;
-      a.download = `grafico-${chartKey}-${ratio.replace(':', 'x')}.png`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `grafico-${chartKey}-${ratio.replace(':', 'x')}.png`);
       setStatus('✓ Descargando PNG');
     } catch (e) { setStatus(e.message || 'Error al exportar', false); }
   });
@@ -191,7 +194,7 @@ function buildPanel(chartKey, title) {
     setStatus('Generando…');
     try {
       const blob = await renderCapture(chartKey, EXPORT_WIDTH, ratio, bgColor);
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      await copyImageBlob(blob);
       setStatus('✓ Copiado al portapapeles');
     } catch (e) {
       setStatus(
@@ -265,11 +268,7 @@ function openPreviewModal(chartKey, title, initRatio, initBg) {
   const checker = modal.querySelector('#mep-checker');
   const mstatus = modal.querySelector('#mep-status');
 
-  function setMStatus(msg, ok = true) {
-    mstatus.textContent = msg;
-    mstatus.style.color = ok ? '#8a6830' : '#c0674d';
-    setTimeout(() => { if (mstatus) mstatus.textContent = ''; }, 3500);
-  }
+  const setMStatus = makeStatusSetter(mstatus);
 
   async function refreshPreview() {
     spinner.style.display = 'flex';
@@ -322,12 +321,7 @@ function openPreviewModal(chartKey, title, initRatio, initBg) {
     setMStatus('Generando…');
     try {
       const blob = await renderCapture(chartKey, EXPORT_WIDTH, ratio, bgColor);
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href = url;
-      a.download = `grafico-${chartKey}-${ratio.replace(':', 'x')}.png`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `grafico-${chartKey}-${ratio.replace(':', 'x')}.png`);
       setMStatus('✓ Descargando PNG a 2560px');
     } catch (e) { setMStatus(e.message || 'Error', false); }
   });
@@ -336,7 +330,7 @@ function openPreviewModal(chartKey, title, initRatio, initBg) {
     setMStatus('Generando…');
     try {
       const blob = await renderCapture(chartKey, EXPORT_WIDTH, ratio, bgColor);
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      await copyImageBlob(blob);
       setMStatus('✓ Copiado al portapapeles (2560px)');
     } catch (e) {
       setMStatus(

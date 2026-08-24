@@ -1,11 +1,11 @@
-import { nfdKey } from './utils.js';
+import { nfdKey, findCol } from './utils.js';
 
 export let pcol = { n:'N°', piso:'Piso', tandem:'Tandem', destino:'Destino',
                     depto:'Depto.', canon:'Canon Estac.', ggcc:'GGCC Estac.',
                     estatus:'Estatus', titular:'Titular' };
 
 export function resolveParkingColumns(headers) {
-  const find = (test) => headers.find(h => test(nfdKey(h))) || null;
+  const find = test => findCol(headers, test);
   pcol.n       = find(k => k === 'N°' || k === 'Nº' || k === 'N' || k === '#' || k === 'NUMERO' || k === 'N.') || headers[0];
   pcol.piso    = find(k => k === 'PISO')                               || 'Piso';
   pcol.tandem  = find(k => k === 'TANDEM')                             || 'Tandem';
@@ -28,7 +28,7 @@ export let col = {
 };
 
 export function resolveColumns(headers) {
-  const find = (test) => headers.find(h => test(nfdKey(h))) || null;
+  const find = test => findCol(headers, test);
   col.util    = find(k => k === 'UTIL') || 'ÚTIL';
   col.termino = find(k => k === 'TERMINO' || k === 'VENCIMIENTO' || k.startsWith('TERMINO') || k.includes('VENCIMIENT'));
   col.firma   = find(k => k === 'FIRMA' || k.includes('FIRMA'));
@@ -42,7 +42,7 @@ export let bcol = { n:'N°', piso:'Piso', estatus:'Estatus', titular:'Titular',
                     depto:'Depto.', canon:'Canon Bod.', ggcc:'GGCC Bod.' };
 
 export function resolveBodegaColumns(headers) {
-  const find = (test) => headers.find(h => test(nfdKey(h))) || null;
+  const find = test => findCol(headers, test);
   bcol.n       = find(k => k === 'N°' || k === 'Nº' || k === 'N' || k === '#' || k === 'NUMERO' || k === 'N.') || headers[0];
   bcol.piso    = find(k => k === 'PISO')                             || 'Piso';
   bcol.estatus = find(k => k === 'ESTATUS')                          || 'Estatus';
@@ -61,7 +61,7 @@ export const EVOL_COL = {
 
 export function resolveEvolColumns(headers) {
   if (!headers || !headers.length) return;
-  const find = (test) => headers.find(h => test(nfdKey(h))) || null;
+  const find = test => findCol(headers, test);
   const netos = find(k => k.includes('NETO') && !k.includes('ACUMULADO')) ||
                 find(k => k.includes('NETO'));
   if (netos) EVOL_COL.netos = netos;
