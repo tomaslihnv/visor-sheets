@@ -846,7 +846,15 @@ function parseContratosCSV(csv) {
   const raw = Papa.parse(csv.trim(), { header: false, skipEmptyLines: false });
   const rows = raw.data;
   const headerIdx = 4; // fila 5 en Google Sheets (índice 0-based)
-  const headers = rows[headerIdx].map(h => h.toString().trim());
+  // La hoja repite nombres de columna (Nombre/Sexo/Edad/Estatus aparecen para
+  // Residente I y Residente II) — se desambiguan para no perder datos al
+  // convertir la fila a objeto.
+  const seen = {};
+  const headers = rows[headerIdx].map(h => {
+    const name = h.toString().trim();
+    seen[name] = (seen[name] || 0) + 1;
+    return seen[name] > 1 ? `${name} (${seen[name]})` : name;
+  });
   return rows.slice(headerIdx + 1)
     .filter(row => row.some(c => c && c.toString().trim()))
     .map(row => Object.fromEntries(headers.map((h, i) => [h, row[i] ?? ''])));
