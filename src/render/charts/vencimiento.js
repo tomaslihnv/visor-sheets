@@ -32,18 +32,8 @@ export function initVencChartSelects(vencData) {
   });
 
   const months = [...monthsSet].sort();
-  desdeEl.innerHTML = hastaEl.innerHTML = '';
-  months.forEach(mk => {
-    const [y, m] = mk.split('-');
-    const label = _MESES[parseInt(m)-1] + '-' + String(y).slice(-2);
-    desdeEl.appendChild(new Option(label, mk));
-    hastaEl.appendChild(new Option(label, mk));
-  });
-  if (months.length) {
-    desdeEl.value = months[0];
-    const cur = curMonthKey();
-    hastaEl.value = months.filter(mk => mk <= cur).pop() || months[months.length - 1];
-  }
+  if (months.length && !desdeEl.value) desdeEl.value = months[0];
+  if (!hastaEl.value) hastaEl.value = curMonthKey();
 }
 
 export function renderVencChart() {

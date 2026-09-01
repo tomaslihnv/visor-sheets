@@ -1,29 +1,36 @@
 import { state, BD, CHARTS, destroyChart } from '../../state.js';
 import { EVOL_COL } from '../../columns.js';
-import { parseEvolDate, formatEvolLabel, _MESES } from '../../utils.js';
+import { parseEvolDate, formatEvolLabel } from '../../utils.js';
 
-function defaultEvolHastaIdx(data) {
+function curMonthKey() {
   const now = new Date();
-  const curKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  let idx = data.length - 1;
-  data.forEach((row, i) => {
-    const d = parseEvolDate((row[EVOL_COL.fecha] || '').toString());
-    if (!d) return;
-    const mk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    if (mk <= curKey) idx = i;
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+}
+
+function rowMonthKey(row) {
+  const d = parseEvolDate((row[EVOL_COL.fecha] || '').toString());
+  if (!d) return null;
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+// Última fila con datos cuyo mes sea <= al mes calendario actual (o la
+// última disponible si todas son futuras/proyectadas).
+function defaultEvolHastaKey(data) {
+  let key = null;
+  const cur = curMonthKey();
+  data.forEach(row => {
+    const mk = rowMonthKey(row);
+    if (!mk) return;
+    if (key == null || (mk <= cur && mk > key) || (key > cur && mk < key)) key = mk;
   });
-  return idx;
+  return key;
 }
 
 function getEvolCutoffDate() {
   const el = document.getElementById('evol-corte');
-  if (el && el.value !== '') {
-    const evolData = BD[state.AB]?.evol;
-    const row = evolData?.[parseInt(el.value)];
-    if (row) {
-      const d = parseEvolDate((row[EVOL_COL.fecha] || '').toString());
-      if (d) return d;
-    }
+  if (el && el.value) {
+    const [y, m] = el.value.split('-').map(Number);
+    if (y && m) return new Date(y, m - 1, 1);
   }
   const now = new Date(); now.setDate(1); now.setHours(0,0,0,0);
   return now;
@@ -34,35 +41,22 @@ export function initEvolSelects(data) {
   const hastaEl = document.getElementById('evol-hasta');
   const corteEl = document.getElementById('evol-corte');
   if (!desdeEl) return;
-  desdeEl.innerHTML = hastaEl.innerHTML = '';
-  if (corteEl) corteEl.innerHTML = '';
-  data.forEach((row, i) => {
-    const f = (row[EVOL_COL.fecha] || '').toString().trim();
-    if (!f) return;
-    const label = formatEvolLabel(f);
-    desdeEl.appendChild(new Option(label, i));
-    hastaEl.appendChild(new Option(label, i));
-    if (corteEl) corteEl.appendChild(new Option(label, i));
-  });
-  desdeEl.value = 0;
-  hastaEl.value = defaultEvolHastaIdx(data);
-  if (corteEl) corteEl.value = defaultEvolHastaIdx(data);
+
+  const months = data.map(rowMonthKey).filter(Boolean).sort();
+  if (months.length && !desdeEl.value) desdeEl.value = months[0];
+  const hastaDefault = defaultEvolHastaKey(data) || curMonthKey();
+  if (!hastaEl.value) hastaEl.value = hastaDefault;
+  if (corteEl && !corteEl.value) corteEl.value = hastaDefault;
 }
 
 export function initNetosSelects(data) {
   const desdeEl = document.getElementById('netos-desde');
   const hastaEl = document.getElementById('netos-hasta');
   if (!desdeEl) return;
-  desdeEl.innerHTML = hastaEl.innerHTML = '';
-  data.forEach((row, i) => {
-    const f = (row[EVOL_COL.fecha] || '').toString().trim();
-    if (!f) return;
-    const label = formatEvolLabel(f);
-    desdeEl.appendChild(new Option(label, i));
-    hastaEl.appendChild(new Option(label, i));
-  });
-  desdeEl.value = 0;
-  hastaEl.value = defaultEvolHastaIdx(data);
+
+  const months = data.map(rowMonthKey).filter(Boolean).sort();
+  if (months.length && !desdeEl.value) desdeEl.value = months[0];
+  if (!hastaEl.value) hastaEl.value = defaultEvolHastaKey(data) || curMonthKey();
 }
 
 export function renderEvolChart() {
@@ -70,11 +64,11 @@ export function renderEvolChart() {
   const desdeEl = document.getElementById('evol-desde');
   const hastaEl = document.getElementById('evol-hasta');
   if (!desdeEl || !evolData.length) return;
-  const desde = parseInt(desdeEl.value);
-  const hasta  = parseInt(hastaEl.value);
-  if (isNaN(desde) || isNaN(hasta) || desde > hasta) return;
+  const desde = desdeEl.value;
+  const hasta = hastaEl.value;
+  if (!desde || !hasta || desde > hasta) return;
 
-  const rows = evolData.slice(desde, hasta + 1);
+  const rows = evolData.filter(r => { const mk = rowMonthKey(r); return mk && mk >= desde && mk <= hasta; });
 
   const cutoff = getEvolCutoffDate();
   const isPast = r => { const d = parseEvolDate((r[EVOL_COL.fecha] || '').toString()); return d && d < cutoff; };
@@ -181,11 +175,11 @@ export function renderNetosChart() {
   const desdeEl = document.getElementById('netos-desde');
   const hastaEl = document.getElementById('netos-hasta');
   if (!desdeEl || !evolData.length) return;
-  const desde = parseInt(desdeEl.value);
-  const hasta  = parseInt(hastaEl.value);
-  if (isNaN(desde) || isNaN(hasta) || desde > hasta) return;
+  const desde = desdeEl.value;
+  const hasta = hastaEl.value;
+  if (!desde || !hasta || desde > hasta) return;
 
-  const rows = evolData.slice(desde, hasta + 1);
+  const rows = evolData.filter(r => { const mk = rowMonthKey(r); return mk && mk >= desde && mk <= hasta; });
 
   const cutoff = getEvolCutoffDate();
   const isPast = r => { const d = parseEvolDate((r[EVOL_COL.fecha] || '').toString()); return d && d < cutoff; };
