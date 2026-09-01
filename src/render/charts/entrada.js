@@ -64,19 +64,12 @@ export function initEntradaChartSelects(data) {
     monthsSet.add(`${p.year}-${String(p.month).padStart(2,'0')}`);
   });
 
+  // Inputs de tipo mes: el usuario puede elegir cualquier mes, no solo los
+  // que ya tienen contratos — por defecto van del primer mes con datos al
+  // mes calendario actual.
   const months = [...monthsSet].sort();
-  desdeEl.innerHTML = hastaEl.innerHTML = '';
-  months.forEach(mk => {
-    const [y, m] = mk.split('-');
-    const label = _MESES[parseInt(m)-1] + '-' + String(y).slice(-2);
-    desdeEl.appendChild(new Option(label, mk));
-    hastaEl.appendChild(new Option(label, mk));
-  });
-  if (months.length) {
-    desdeEl.value = months[0];
-    const cur = curMonthKey();
-    hastaEl.value = months.filter(mk => mk <= cur).pop() || months[months.length - 1];
-  }
+  if (months.length && !desdeEl.value) desdeEl.value = months[0];
+  if (!hastaEl.value) hastaEl.value = curMonthKey();
 }
 
 export function renderEntradaChart() {
@@ -228,17 +221,8 @@ export function initFlujoChartSelects(contratosData) {
   }
 
   const months = [...monthsSet].sort();
-  desdeEl.innerHTML = hastaEl.innerHTML = '';
-  months.forEach(mk => {
-    const [y, m] = mk.split('-');
-    desdeEl.appendChild(new Option(_MESES[parseInt(m)-1] + '-' + String(y).slice(-2), mk));
-    hastaEl.appendChild(new Option(_MESES[parseInt(m)-1] + '-' + String(y).slice(-2), mk));
-  });
-  if (months.length) {
-    desdeEl.value = months[0];
-    const cur = curMonthKey();
-    hastaEl.value = months.filter(mk => mk <= cur).pop() || months[months.length - 1];
-  }
+  if (months.length && !desdeEl.value) desdeEl.value = months[0];
+  if (!hastaEl.value) hastaEl.value = curMonthKey();
 }
 
 export function renderFlujoChart() {
