@@ -1,6 +1,4 @@
 import { state, BD, CHARTS, destroyChart } from '../state.js';
-import { col } from '../columns.js';
-import { parseDate } from '../utils.js';
 
 const C = {
   granate: '#7c2d3e',
@@ -130,28 +128,73 @@ function findHabitantesCol(keys) {
   return keys.find(k => cc(k).includes('HABITANTES')) || null;
 }
 
+// La hoja "I. Contratos" trae una columna "Estatus" por cada residente
+// adicional (Residente I, Residente II) — a veces con nombre repetido
+// (Echaurren, desambiguado por parseContratosCSV como "Estatus", "Estatus (2)")
+// y a veces ya único de fábrica (Irarrázaval: "Estatus (R1)", "Estatus (R3)").
+// En ambos casos la primera columna "Estatus..." en orden de hoja corresponde
+// a Residente I, que es la fuente oficial de "Estudiante" (trae el conteo
+// precalculado en la propia hoja).
+function findEstatusCol(keys) {
+  return keys.find(k => cc(k).startsWith('ESTATUS')) || null;
+}
+
+// Agrupa ocupaciones/cargos en categorías amplias (orden = prioridad de match)
+const OCUP_CATEGORIAS = [
+  ['Salud',                        ['MEDIC', 'ENFERM', 'KINESIOLOG', 'ODONTOLOG', 'CIRUJAN', 'PSICOLOG', 'FARMAC', 'DENTIST']],
+  ['Legal',                        ['ABOGAD']],
+  ['Ingeniería y Tecnología',      ['INGENIER', 'SOFTWARE', 'DEVSEC', 'CIBERSEGURIDAD', 'TECHLEAD', 'DESARROLLADOR', 'DEVELOPER', 'INFORMATIC', 'SISTEMAS', 'PROGRAMADOR']],
+  ['Educación',                    ['PROFESOR', 'DOCENTE', 'ACADEMIC', 'INVESTIGADOR', 'PEDAGOG']],
+  ['Comercio y Ventas',            ['COMERCIANTE', 'VENDEDOR', 'VENTAS', 'COMERCIAL']],
+  ['Empresarios e Independientes', ['EMPRESARI', 'INDEPENDIENTE', 'EMPRENDEDOR', 'DUENO']],
+  ['Gerencia y Dirección',         ['GERENTE', 'DIRECTOR', 'SUBGERENTE', 'JEFE', 'SUPERVISOR', 'COORDINADOR', 'ENCARGADO', 'PRESIDENTE', 'PDTE', 'LIDER']],
+  ['Funcionarios Públicos',        ['FUNCIONARI', 'CARABINER', 'MUNICIPAL', 'INVESTIGACIONES', 'FISCALIZADOR']],
+  ['Administración y Oficina',     ['SECRETARI', 'ASISTENTE', 'ADMINISTRATIV', 'ADMINISTRACION', 'ADMIN']],
+  ['Oficios y Técnicos',           ['OBRERO', 'OPERARIO', 'OPERADOR', 'MECANIC', 'ELECTRIC', 'ELECTROMECANIC', 'CONDUCTOR', 'CHOFER', 'TRANSPORTISTA', 'PORTUARIO', 'AGRICOLA', 'MINERO', 'CONSTRUCTOR', 'MANTENCION', 'MANTENEDOR', 'TECNIC']],
+  ['Arquitectura y Diseño',        ['ARQUITECTO', 'GEOMENSOR', 'DISENADOR', 'GEOFISIC', 'GEOSCIENT', 'PAISAJIST']],
+  ['Estudiantes y Jubilados',      ['ESTUDIANTE', 'JUBILAD', 'PENSIONADO', 'TRAINEE']],
+];
+
+function classifyOcupacion(occ) {
+  const norm = cc(occ);
+  for (const [cat, kws] of OCUP_CATEGORIAS) {
+    if (kws.some(kw => norm.includes(kw))) return cat;
+  }
+  return 'Otros';
+}
+
 function renderOcupacion(data) {
   destroyChart('dirOcupacion');
   const canvas   = document.getElementById('dir-chart-ocupacion');
   const noDataEl = document.getElementById('dir-ocup-nodata');
   if (!canvas) return;
 
-  const ab       = state.AB;
+  const ab        = state.AB;
   const contratos = BD[ab].contratos || [];
   const keys      = Object.keys(contratos[0] || {});
-  const ocupCol   = findOcupCol(keys);
+  const ocupCol  = findOcupCol(keys);
+  const estatCol = findEstatusCol(keys);
 
   const counts = {};
-  if (ocupCol) {
-    contratos.forEach(row => {
+  contratos.forEach(row => {
+    // Titular: se clasifica por su "Actividad Laboral"
+    if (ocupCol) {
       const occ = (row[ocupCol] || '').toString().trim();
-      if (!occ) return;
-      counts[occ] = (counts[occ] || 0) + 1;
-    });
-  }
+      if (occ) {
+        const cat = classifyOcupacion(occ);
+        counts[cat] = (counts[cat] || 0) + 1;
+      }
+    }
+
+    // Residente I: no tiene ocupación propia, solo se identifica como
+    // estudiante vía su columna "Estatus"
+    if (estatCol && cc(row[estatCol] || '') === 'ESTUDIANTE') {
+      counts['Estudiantes y Jubilados'] = (counts['Estudiantes y Jubilados'] || 0) + 1;
+    }
+  });
 
   const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  const TOP_N  = 9;
+  const TOP_N  = OCUP_CATEGORIAS.length + 1; // categorías + "Otros" fallback, sin necesidad de agrupar más
   const top    = sorted.slice(0, TOP_N);
   const otros  = sorted.slice(TOP_N).reduce((s, [, v]) => s + v, 0);
   if (otros > 0) top.push(['Otros', otros]);
@@ -166,7 +209,7 @@ function renderOcupacion(data) {
 
   const palette = [
     C.granate, C.slate, C.gris,
-    '#2d6a4f','#6d28d9','#9a3412','#0369a1','#b45309','#374151','#be185d','#0e7490',
+    '#2d6a4f','#6d28d9','#9a3412','#0369a1','#b45309','#374151','#be185d','#0e7490','#65a30d','#57534e',
   ];
 
   CHARTS.dirOcupacion = new Chart(canvas, {
@@ -193,8 +236,9 @@ function renderOcupacion(data) {
             boxWidth: 10, padding: 7,
             generateLabels(chart) {
               const ds = chart.data.datasets[0];
+              const total = ds.data.reduce((a, b) => a + b, 0);
               return chart.data.labels.map((l, i) => ({
-                text: `${l} (${ds.data[i]})`,
+                text: `${l} (${Math.round(ds.data[i] / total * 100)}%)`,
                 fillStyle: ds.backgroundColor[i],
                 strokeStyle: '#fff',
                 lineWidth: 1,
@@ -203,13 +247,21 @@ function renderOcupacion(data) {
             },
           },
         },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed} residentes` } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+              return ` ${ctx.label}: ${Math.round(ctx.parsed / total * 100)}% (${ctx.parsed} residentes)`;
+            },
+          },
+        },
         datalabels: {
           color: '#fff',
           font: { family: 'IBM Plex Sans, system-ui, sans-serif', size: 10, weight: '600' },
           formatter: (v, ctx) => {
             const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-            return v / total > 0.06 ? String(v) : '';
+            const pct = v / total;
+            return pct > 0.06 ? `${Math.round(pct * 100)}%` : '';
           },
         },
       },
@@ -412,34 +464,37 @@ function renderSexoResidentes(data) {
 
 // ── Tabla stock ───────────────────────────────────────────────────────────────
 
+// Inicio real de arriendo de cada proyecto (no se puede derivar del CSV: la
+// hoja "Estatus Actual" solo trae la firma vigente por unidad, no el
+// historial completo de rotación).
+const PROJECT_START = {
+  ech: { year: 2023, month: 12 },
+  irr: { year: 2024, month: 2 },
+};
+
 function renderTablaStock(data) {
   const el = document.getElementById('dir-tabla-stock');
   if (!el) return;
 
-  const firmaCol = col.firma || 'Firma';
   const stock = {}, firmas = {};
-  let minMk = null, maxMk = null;
   data.forEach(row => {
-    const dest  = (row['Destino'] || '').toString().trim().replace('−', '-');
     const estat = (row['Estatus'] || '').toString().trim();
     const tipo  = (row['Tipo'] || '').toString().trim();
     if (!tipo) return;
-    if (dest !== 'P') stock[tipo] = (stock[tipo] || 0) + 1;
-    if (estat === '1' && dest === '-') {
-      firmas[tipo] = (firmas[tipo] || 0) + 1;
-      const p = parseDate(row[firmaCol]);
-      if (p) {
-        const mk = p.year * 12 + p.month;
-        if (minMk == null || mk < minMk) minMk = mk;
-        if (maxMk == null || mk > maxMk) maxMk = mk;
-      }
-    }
+    stock[tipo] = (stock[tipo] || 0) + 1;
+    if (estat === '1') firmas[tipo] = (firmas[tipo] || 0) + 1;
   });
 
+  const start     = PROJECT_START[state.AB];
+  const startMk   = start.year * 12 + start.month;
+  const now       = new Date();
+  const nowMk     = now.getFullYear() * 12 + (now.getMonth() + 1);
   const tipos     = Object.keys(stock).sort();
   const totStock  = Object.values(stock).reduce((a, b) => a + b, 0);
   const totFirmas = Object.values(firmas).reduce((a, b) => a + b, 0);
-  const meses     = minMk != null ? Math.max(1, maxMk - minMk + 1) : 1;
+  // "Meses de renta": tiempo transcurrido desde que empezó el proyecto (misma
+  // ventana para todas las tipologías, no una por fila).
+  const meses     = Math.max(1, nowMk - startMk + 1);
   const fmtP      = (f, s) => s > 0 ? (f / s * 100).toFixed(1) + '%' : '—';
   const fmtV      = f => f > 0 ? (f / meses).toFixed(1) + '/mes' : '—';
 

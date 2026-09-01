@@ -34,17 +34,11 @@ function renderBothEvolCharts() {
   renderPermanenciaChart();
 }
 
-function switchBuilding(id) {
-  if (state.AB === id) return;
-  state.AB = id;
-  const color = id === 'irr' ? '#00D166' : '#34C1D6';
-  document.documentElement.style.setProperty('--accent', color);
-  document.querySelectorAll('.bldg-tab').forEach(t => {
-    t.classList.toggle('active', t.id === 'bt-' + id);
-    t.style.borderBottomColor = '';
-    t.querySelector('.bldg-name').style.color = '';
-  });
-  resetFilters();
+// Vuelve a pintar TODO lo que depende de BD[state.AB] — usada tanto al cambiar
+// de edificio como cada vez que termina de llegar más data en segundo plano
+// (si no, un fetch que resuelve mientras el usuario está en el otro edificio
+// nunca dispara estos renders, y queda pegado hasta el próximo switchBuilding).
+function refreshBuildingUI() {
   renderStacking();
   applyFilters();
   updateMetrics(BD[state.AB].data, BD[state.AB].park, BD[state.AB].bod);
@@ -74,6 +68,24 @@ function switchBuilding(id) {
   initVencFilter(BD[state.AB].data);
   initUFFilter(BD[state.AB].data);
   applyFilters();
+  const notice = document.getElementById('ipc-notice');
+  if (notice && BD[state.AB].refKey) {
+    notice.textContent = `UF ref (${BD[state.AB].refKey}): ${BD[state.AB].refUF?.toFixed(2) ?? '—'}`;
+  }
+}
+
+function switchBuilding(id) {
+  if (state.AB === id) return;
+  state.AB = id;
+  const color = id === 'irr' ? '#00D166' : '#34C1D6';
+  document.documentElement.style.setProperty('--accent', color);
+  document.querySelectorAll('.bldg-tab').forEach(t => {
+    t.classList.toggle('active', t.id === 'bt-' + id);
+    t.style.borderBottomColor = '';
+    t.querySelector('.bldg-name').style.color = '';
+  });
+  resetFilters();
+  refreshBuildingUI();
 }
 
 function switchLegendTab(tab, btn) {
@@ -735,6 +747,13 @@ document.addEventListener('DOMContentLoaded', initChartFontSliders);
 
 renderStacking();
 
+function revealStacking() {
+  const skel = document.getElementById('stacking-skel');
+  const real = document.getElementById('stacking-zoom-inner');
+  if (skel) skel.style.display = 'none';
+  if (real) real.style.display = '';
+}
+
 // Fase 1 IRR: carga ESTATUS ACTUAL → colorea stacking inmediatamente
 fetch(URLS.irr[0]).then(r => r.text()).then(csv => {
   const p1i = Papa.parse(csv.trim(), {header:true, skipEmptyLines:true});
@@ -747,6 +766,7 @@ fetch(URLS.irr[0]).then(r => r.text()).then(csv => {
     populateDropdowns(BD.irr.data);
     renderStacking();
     applyFilters();
+    revealStacking();
   }
 }).catch(err => console.error('Error cargando ESTATUS IRR:', err));
 
@@ -762,6 +782,7 @@ fetch(URLS.ech[0]).then(r => r.text()).then(csv => {
     populateDropdowns(BD.ech.data);
     renderStacking();
     applyFilters();
+    revealStacking();
   }
 }).catch(err => console.error('Error cargando ESTATUS ECH:', err));
 
@@ -788,30 +809,7 @@ Promise.all(URLS.irr.slice(1).map(u => fetch(u).then(r => r.text())))
     BD.irr.refKey = refKey; BD.irr.refUF = refUF;
     precompute(BD.irr.data, refUF);
 
-    if (state.AB === 'irr') {
-      updateMetrics(BD.irr.data, BD.irr.park, BD.irr.bod);
-      renderEstatusTable(BD.irr.data, BD.irr.fields, BD.irr.refKey, BD.irr.refUF);
-      renderRawTable('table2', p2i);
-      renderRawTable('table3', p3i);
-      renderRawTable('table4', p4i);
-      renderRawTable('table5', p5i);
-      renderRawTable('table6', p6i);
-      renderSubterraneoStacking(BD.irr.park, BD.irr.bod);
-      initEvolSelects(BD.irr.evol);
-      initNetosSelects(BD.irr.evol);
-      initVencChartSelects(BD.irr.venc);
-      initRenewalChartSelects(BD.irr.venc);
-      initEntradaChartSelects(BD.irr.contratos);
-      initFlujoChartSelects(BD.irr.contratos);
-      initSalidasChartSelects(BD.irr.sal);
-      initMotivoChartSelects(BD.irr.sal);
-      initDesgloseSalidasSelects(BD.irr.sal);
-      initPermanenciaSelects(BD.irr.data);
-      initVencFilter(BD.irr.data);
-      initUFFilter(BD.irr.data);
-      applyFilters();
-      document.getElementById('ipc-notice').textContent = `UF ref (${refKey}): ${refUF?.toFixed(2) ?? '—'}`;
-    }
+    if (state.AB === 'irr') refreshBuildingUI();
   })
   .catch(err => console.error('Error cargando hojas secundarias IRR:', err));
 
@@ -830,37 +828,15 @@ Promise.all(URLS.ech.slice(1).map(u => fetch(u).then(r => r.text())))
     BD.ech.venc = p5e.data;
     BD.ech.sal  = p6e.data;
 
+    resolveParkingColumns(p3e.meta.fields);
+    resolveBodegaColumns(p4e.meta.fields);
+    resolveEvolColumns(p2e.meta.fields);
+
     const { refKey: refKeyE, refUF: refUFE } = await calcIPC(BD.ech.data);
     BD.ech.refKey = refKeyE; BD.ech.refUF = refUFE;
     precompute(BD.ech.data, refUFE);
 
-    if (state.AB === 'ech') {
-      resolveParkingColumns(p3e.meta.fields);
-      resolveBodegaColumns(p4e.meta.fields);
-      resolveEvolColumns(p2e.meta.fields);
-      updateMetrics(BD.ech.data, BD.ech.park, BD.ech.bod);
-      renderEstatusTable(BD.ech.data, BD.ech.fields, BD.ech.refKey, BD.ech.refUF);
-      renderRawTable('table2', p2e);
-      renderRawTable('table3', p3e);
-      renderRawTable('table4', p4e);
-      renderRawTable('table5', p5e);
-      renderRawTable('table6', p6e);
-      renderSubterraneoStacking(BD.ech.park, BD.ech.bod);
-      initEvolSelects(BD.ech.evol);
-      initNetosSelects(BD.ech.evol);
-      initVencChartSelects(BD.ech.venc);
-      initRenewalChartSelects(BD.ech.venc);
-      initEntradaChartSelects(BD.ech.contratos);
-      initFlujoChartSelects(BD.ech.contratos);
-      initSalidasChartSelects(BD.ech.sal);
-      initMotivoChartSelects(BD.ech.sal);
-      initDesgloseSalidasSelects(BD.ech.sal);
-      initPermanenciaSelects(BD.ech.data);
-      initVencFilter(BD.ech.data);
-      initUFFilter(BD.ech.data);
-      applyFilters();
-      document.getElementById('ipc-notice').textContent = `UF ref (${refKeyE}): ${refUFE?.toFixed(2) ?? '—'}`;
-    }
+    if (state.AB === 'ech') refreshBuildingUI();
   })
   .catch(err => console.error('Error cargando hojas secundarias ECH:', err));
 
@@ -870,7 +846,15 @@ function parseContratosCSV(csv) {
   const raw = Papa.parse(csv.trim(), { header: false, skipEmptyLines: false });
   const rows = raw.data;
   const headerIdx = 4; // fila 5 en Google Sheets (índice 0-based)
-  const headers = rows[headerIdx].map(h => h.toString().trim());
+  // La hoja repite nombres de columna (Nombre/Sexo/Edad/Estatus aparecen para
+  // Residente I y Residente II) — se desambiguan para no perder datos al
+  // convertir la fila a objeto.
+  const seen = {};
+  const headers = rows[headerIdx].map(h => {
+    const name = h.toString().trim();
+    seen[name] = (seen[name] || 0) + 1;
+    return seen[name] > 1 ? `${name} (${seen[name]})` : name;
+  });
   return rows.slice(headerIdx + 1)
     .filter(row => row.some(c => c && c.toString().trim()))
     .map(row => Object.fromEntries(headers.map((h, i) => [h, row[i] ?? ''])));
@@ -896,13 +880,7 @@ if (URLS_REPARACION.ech) {
 if (!URLS_CONTRATOS.irr.startsWith('PENDIENTE')) {
   fetch(URLS_CONTRATOS.irr).then(r => r.text()).then(csv => {
     BD.irr.contratos = parseContratosCSV(csv);
-    if (state.AB === 'irr') {
-      initEntradaChartSelects(BD.irr.contratos);
-      initFlujoChartSelects(BD.irr.contratos);
-      renderEntradaChart();
-      renderFlujoChart();
-      if (document.getElementById('panel-caracterizacion')?.classList.contains('active')) renderDirectorio();
-    }
+    if (state.AB === 'irr') refreshBuildingUI();
   }).catch(err => console.error('Error cargando I. Contratos IRR:', err));
 }
 
@@ -910,12 +888,6 @@ if (!URLS_CONTRATOS.irr.startsWith('PENDIENTE')) {
 if (!URLS_CONTRATOS.ech.startsWith('PENDIENTE')) {
   fetch(URLS_CONTRATOS.ech).then(r => r.text()).then(csv => {
     BD.ech.contratos = parseContratosCSV(csv);
-    if (state.AB === 'ech') {
-      initEntradaChartSelects(BD.ech.contratos);
-      initFlujoChartSelects(BD.ech.contratos);
-      renderEntradaChart();
-      renderFlujoChart();
-      if (document.getElementById('panel-caracterizacion')?.classList.contains('active')) renderDirectorio();
-    }
+    if (state.AB === 'ech') refreshBuildingUI();
   }).catch(err => console.error('Error cargando I. Contratos ECH:', err));
 }

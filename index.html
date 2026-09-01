@@ -196,7 +196,8 @@
 
       </div>
       <div class="stacking-wrap">
-        <div class="stacking-zoom-inner" id="stacking-zoom-inner">
+        <div class="skel-grid" id="stacking-skel" data-skel-rows="14" data-skel-cols="16"></div>
+        <div class="stacking-zoom-inner" id="stacking-zoom-inner" style="display:none">
           <div class="col-hdr-wrap" id="col-hdr-wrap">
             <div class="col-hdr-row" id="col-hdr-col"></div>
             <div class="col-hdr-row" id="col-hdr-tipo"></div>
@@ -299,28 +300,28 @@
         Exportar
       </button>
     </div>
-    <div id="table1"><p style="padding:40px;text-align:center;color:#8a9bb0">Cargando…</p></div>
+    <div id="table1"><div class="skel-table" data-skel-rows="8"></div></div>
   </div>
 </div>
 
 <div id="panel-hoja2" class="panel">
-  <div class="table-wrap" id="table2"><p style="padding:40px;text-align:center;color:#8a9bb0">Cargando…</p></div>
+  <div class="table-wrap" id="table2"><div class="skel-table" data-skel-rows="8"></div></div>
 </div>
 
 <div id="panel-estac" class="panel">
-  <div class="table-wrap" id="table3"><p style="padding:40px;text-align:center;color:#8a9bb0">Cargando…</p></div>
+  <div class="table-wrap" id="table3"><div class="skel-table" data-skel-rows="8"></div></div>
 </div>
 
 <div id="panel-bodegas" class="panel">
-  <div class="table-wrap" id="table4"><p style="padding:40px;text-align:center;color:#8a9bb0">Cargando…</p></div>
+  <div class="table-wrap" id="table4"><div class="skel-table" data-skel-rows="8"></div></div>
 </div>
 
 <div id="panel-venc" class="panel">
-  <div class="table-wrap" id="table5"><p style="padding:40px;text-align:center;color:#8a9bb0">Cargando…</p></div>
+  <div class="table-wrap" id="table5"><div class="skel-table" data-skel-rows="8"></div></div>
 </div>
 
 <div id="panel-sal" class="panel">
-  <div class="table-wrap" id="table6"><p style="padding:40px;text-align:center;color:#8a9bb0">Cargando…</p></div>
+  <div class="table-wrap" id="table6"><div class="skel-table" data-skel-rows="8"></div></div>
 </div>
 
 <div id="panel-auditoria" class="panel">
@@ -343,7 +344,7 @@
     <!-- ── Stacking plan coloreado ──────────────────────────────── -->
     <div class="aud-section-title">Estado de Reparaciones por Unidad</div>
     <div id="auditoria-stacking" class="aud-stacking-wrap">
-      <p style="padding:24px;text-align:center;color:#8a9bb0">Cargando datos de reparación…</p>
+      <div class="skel-grid" data-skel-rows="8" data-skel-cols="16"></div>
     </div>
 
     <!-- ── Gráfico de barras + tabla ────────────────────────────── -->
@@ -491,9 +492,9 @@
           <label class="evol-check-label"><input type="checkbox" id="entrada-chart-labels" onchange="renderEntradaChart()" checked> Etiquetas</label>
           <div class="evol-range">
             <label>Desde</label>
-            <select id="entrada-chart-desde" onchange="renderEntradaChart()"></select>
+            <input type="month" id="entrada-chart-desde" onchange="renderEntradaChart()">
             <label>Hasta</label>
-            <select id="entrada-chart-hasta" onchange="renderEntradaChart()"></select>
+            <input type="month" id="entrada-chart-hasta" onchange="renderEntradaChart()">
           </div>
         </div>
       </div>
@@ -512,9 +513,9 @@
           <label class="evol-check-label"><input type="checkbox" id="flujo-chart-labels" onchange="renderFlujoChart()" checked> Etiquetas</label>
           <div class="evol-range">
             <label>Desde</label>
-            <select id="flujo-chart-desde" onchange="renderFlujoChart()"></select>
+            <input type="month" id="flujo-chart-desde" onchange="renderFlujoChart()">
             <label>Hasta</label>
-            <select id="flujo-chart-hasta" onchange="renderFlujoChart()"></select>
+            <input type="month" id="flujo-chart-hasta" onchange="renderFlujoChart()">
           </div>
         </div>
       </div>
@@ -624,6 +625,31 @@
 </div>
 
 </div><!-- /#app-root -->
+
+<!-- Genera el contenido de los skeleton loaders (filas/celdas) para no repetir markup -->
+<script>
+(function() {
+  document.querySelectorAll('[data-skel-rows]').forEach(function(el) {
+    var rows   = parseInt(el.dataset.skelRows) || 6;
+    var cols   = parseInt(el.dataset.skelCols) || 0;
+    var isGrid = el.classList.contains('skel-grid');
+    var html   = '';
+    for (var r = 0; r < rows; r++) {
+      if (isGrid) {
+        html += '<div class="skel-grid-row"><div class="skel-block skel-lbl"></div>';
+        for (var c = 0; c < cols; c++) html += '<div class="skel-block skel-cell"></div>';
+        html += '</div>';
+      } else {
+        html += '<div class="skel-table-row' + (r === 0 ? ' skel-head' : '') + '">' +
+          '<div class="skel-block"></div><div class="skel-block"></div>' +
+          '<div class="skel-block"></div><div class="skel-block"></div>' +
+          '</div>';
+      }
+    }
+    el.innerHTML = html;
+  });
+})();
+</script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>

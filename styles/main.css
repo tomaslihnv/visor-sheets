@@ -480,6 +480,30 @@ tr:hover td { background: #ede8df; }
 .exp-format-btn:hover { background: #2a2818; }
 .exp-format-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* ── SKELETON LOADERS ── */
+@keyframes skel-shimmer { 0% { background-position: -300% 0; } 100% { background-position: 300% 0; } }
+.skel-block {
+  background: linear-gradient(90deg, #e4dccb 25%, #f2ede2 37%, #e4dccb 63%);
+  background-size: 400% 100%;
+  animation: skel-shimmer 1.6s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+.skel-table { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+.skel-table-row { display: flex; gap: 10px; }
+.skel-table-row .skel-block { height: 13px; flex: 1; }
+.skel-table-row .skel-block:nth-child(1) { flex: 0 0 15%; }
+.skel-table-row.skel-head .skel-block { height: 11px; opacity: 0.6; }
+
+.skel-grid { padding: 14px; display: flex; flex-direction: column; gap: 4px; }
+.skel-grid-row { display: flex; align-items: center; gap: 4px; }
+.skel-grid-row .skel-block.skel-lbl { width: 22px; height: 20px; flex-shrink: 0; opacity: 0.5; }
+.skel-grid-row .skel-block.skel-cell { width: 30px; height: 20px; flex-shrink: 0; }
+
+.skel-chart { padding: 4px 2px; }
+.skel-chart .skel-block.skel-chart-title { width: 45%; height: 11px; margin-bottom: 16px; }
+.skel-chart .skel-block.skel-chart-body { width: 100%; height: 220px; }
+
 /* ── LEGEND COUNTS ── */
 .legend-count { font-size: 11px; font-weight: 700; color: #1a1810;
   background: #ede8de; border-radius: 10px; padding: 1px 7px; margin-left: 4px; }
@@ -506,8 +530,8 @@ tr:hover td { background: #ede8df; }
 .evol-card-title { font-size: 14px; font-weight: 600; color: #1a1810; }
 .evol-card-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .evol-range { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #9a9080; font-weight: 600; }
-.evol-range select { background: #f4f0e8; border: 1px solid #ddd5c4; border-radius: 6px; padding: 5px 8px; color: #1a1810; font-size: 11px; outline: none; cursor: pointer; font-family: 'IBM Plex Sans', sans-serif; }
-.evol-range select:focus { border-color: #b8935a; }
+.evol-range select, .evol-range input[type="month"] { background: #f4f0e8; border: 1px solid #ddd5c4; border-radius: 6px; padding: 5px 8px; color: #1a1810; font-size: 11px; outline: none; cursor: pointer; font-family: 'IBM Plex Sans', sans-serif; }
+.evol-range select:focus, .evol-range input[type="month"]:focus { border-color: #b8935a; }
 .evol-check-label { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #9a9080; font-weight: 600; cursor: pointer; user-select: none; }
 .evol-check-label input { cursor: pointer; accent-color: #2563eb; }
 .evol-perm-stat { font-size: 11px; font-weight: 700; color: #6b7280; background: #f3f4f6; border-radius: 4px; padding: 2px 8px; }
@@ -992,7 +1016,7 @@ tr:hover td { background: #ede8df; }
   .evol-h-260, .evol-h-300, .evol-h-320, .evol-h-340 { height: 190px; }
   .evol-range { flex-wrap: wrap; gap: 4px; font-size: 10px; }
   .evol-range label { font-size: 10px; }
-  .evol-range select { font-size: 10px; padding: 4px 6px; }
+  .evol-range select, .evol-range input[type="month"] { font-size: 10px; padding: 4px 6px; }
   .evol-check-label { font-size: 10px; }
 }
 
