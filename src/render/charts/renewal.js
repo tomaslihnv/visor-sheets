@@ -19,32 +19,19 @@ export function initRenewalChartSelects(vencData) {
     [...tipos].sort().forEach(t => tipoEl.appendChild(new Option(t, t)));
   }
 
-  const now = new Date();
-  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const capKey = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth()+1).padStart(2,'0')}`;
-
   const monthsWithData = new Set();
   vencData.forEach(r => {
     const p = parseDate((r[fechaCol]||'').toString().trim());
     if (!p) return;
     const mk = `${p.year}-${String(p.month).padStart(2,'0')}`;
-    if (mk > capKey) return;
     if ((r[eventoCol]||'').toString().trim()) monthsWithData.add(mk);
   });
 
   const months = [...monthsWithData].sort();
-  desdeEl.innerHTML = hastaEl.innerHTML = '';
-  months.forEach(mk => {
-    const [y, m] = mk.split('-');
-    const label = _MESES[parseInt(m)-1] + '-' + String(y).slice(-2);
-    desdeEl.appendChild(new Option(label, mk));
-    hastaEl.appendChild(new Option(label, mk));
-  });
-  if (months.length) {
-    desdeEl.value = months[0];
+  if (months.length && !desdeEl.value) desdeEl.value = months[0];
+  if (!hastaEl.value) {
     const now = new Date();
-    const cur = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-    hastaEl.value = months.filter(mk => mk <= cur).pop() || months[months.length - 1];
+    hastaEl.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   }
 }
 

@@ -26,10 +26,6 @@ export function initSalidasChartSelects(salData) {
   const motivoCol = Object.keys(sample).find(k => nfdKey(k).includes('MOTIVO')) || 'Motivo de Salida';
   const tipoCol   = Object.keys(sample).find(k => nfdKey(k) === 'TIPO') || 'Tipo';
 
-  const now = new Date();
-  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const capKey = `${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}`;
-
   if (tipoEl) {
     const tipos = new Set();
     salData.forEach(r => { const t = (r[tipoCol]||'').toString().trim(); if (t) tipos.add(t); });
@@ -41,23 +37,14 @@ export function initSalidasChartSelects(salData) {
   salData.forEach(r => {
     const p = parseDate((r[fechaCol]||'').toString().trim());
     if (!p) return;
-    const mk = `${p.year}-${String(p.month).padStart(2,'0')}`;
-    if (mk <= capKey) monthsSet.add(mk);
+    monthsSet.add(`${p.year}-${String(p.month).padStart(2,'0')}`);
   });
 
   const months = [...monthsSet].sort();
-  desdeEl.innerHTML = hastaEl.innerHTML = '';
-  months.forEach(mk => {
-    const [y, m] = mk.split('-');
-    const label = _MESES[parseInt(m)-1] + '-' + String(y).slice(-2);
-    desdeEl.appendChild(new Option(label, mk));
-    hastaEl.appendChild(new Option(label, mk));
-  });
-  if (months.length) {
-    desdeEl.value = months[0];
+  if (months.length && !desdeEl.value) desdeEl.value = months[0];
+  if (!hastaEl.value) {
     const now = new Date();
-    const cur = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-    hastaEl.value = months.filter(mk => mk <= cur).pop() || months[months.length - 1];
+    hastaEl.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   }
 
   // Pre-asignar colores a todos los motivos para que sean consistentes entre gráficos
@@ -255,31 +242,19 @@ export function initDesgloseSalidasSelects(salData) {
   const fechaCol = keys.find(k => nfdKey(k) === 'FECHA') || keys[0];
   const tipoCol  = resolveDesgloseCol(keys);
 
-  const now    = new Date();
-  const prev   = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const capKey = `${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}`;
-
   const monthsSet = new Set();
   salData.forEach(r => {
     const p = parseDate((r[fechaCol]||'').toString().trim());
     if (!p) return;
     const mk = `${p.year}-${String(p.month).padStart(2,'0')}`;
-    if (mk <= capKey && tipoCol && clasificarTipo((r[tipoCol]||'').toString())) monthsSet.add(mk);
+    if (tipoCol && clasificarTipo((r[tipoCol]||'').toString())) monthsSet.add(mk);
   });
 
   const months = [...monthsSet].sort();
-  desdeEl.innerHTML = hastaEl.innerHTML = '';
-  months.forEach(mk => {
-    const [y, m] = mk.split('-');
-    const label  = _MESES[parseInt(m)-1] + '-' + String(y).slice(-2);
-    desdeEl.appendChild(new Option(label, mk));
-    hastaEl.appendChild(new Option(label, mk));
-  });
-  if (months.length) {
-    desdeEl.value = months[0];
+  if (months.length && !desdeEl.value) desdeEl.value = months[0];
+  if (!hastaEl.value) {
     const now = new Date();
-    const cur = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-    hastaEl.value = months.filter(mk => mk <= cur).pop() || months[months.length - 1];
+    hastaEl.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   }
 }
 
@@ -439,25 +414,19 @@ export function initMotivoChartSelects(salData) {
   const tipoCol      = Object.keys(sample).find(k => nfdKey(k) === 'TIPO') || 'Tipo';
   const motivoCol    = Object.keys(sample).find(k => nfdKey(k).includes('MOTIVO')) || 'Motivo de Salida';
 
-  const now       = new Date();
-  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const capKey    = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth()+1).padStart(2,'0')}`;
-
   const months = new Set();
   salData.forEach(r => {
     const p = parseDate((r[fechaCol]||'').toString().trim());
     if (!p) return;
     const mk = `${p.year}-${String(p.month).padStart(2,'0')}`;
-    if (mk <= capKey && (r[motivoCol]||'').toString().trim()) months.add(mk);
+    if ((r[motivoCol]||'').toString().trim()) months.add(mk);
   });
   const sorted = [...months].sort();
-  if (!sorted.length) return;
-
-  desdeEl.innerHTML = sorted.map(mk => { const [y,m]=mk.split('-'); return `<option value="${mk}">${_MESES[+m-1]}-${y.slice(-2)}</option>`; }).join('');
-  hastaEl.innerHTML = desdeEl.innerHTML;
-  const now2 = new Date();
-  const cur2 = `${now2.getFullYear()}-${String(now2.getMonth()+1).padStart(2,'0')}`;
-  hastaEl.value = sorted.filter(mk => mk <= cur2).pop() || sorted[sorted.length - 1];
+  if (sorted.length && !desdeEl.value) desdeEl.value = sorted[0];
+  if (!hastaEl.value) {
+    const now = new Date();
+    hastaEl.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  }
 
   if (tipEl) {
     const tips = new Set();
