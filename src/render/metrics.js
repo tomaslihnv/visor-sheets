@@ -64,33 +64,20 @@ export function updateMetrics(deptoData, estacData, bodData) {
     }).join('');
   }
 
-  let eContr = 0, eRC = 0, eVac = 0, eInhab = 0, eVisita = 0, eLocal = 0;
-  estacData.forEach(row => {
-    const cat = getParkingCategory(row);
-    if      (cat === 'contrato')     eContr++;
-    else if (cat === 'rc')           eRC++;
-    else if (cat === 'inhabilitado') eInhab++;
-    else if (cat === 'visita')       eVisita++;
-    else if (cat === 'local')        eLocal++;
-    else                             eVac++;
-  });
-  const eEnRenta = eContr + eRC;
-  // Total operativo: solo contrato + RC + vacante (excluye inhabilitados, visita y locales)
-  const eDisp    = eContr + eRC + eVac;
-  const eTotal   = eDisp + eInhab + eVisita + eLocal;
-  const eOccPct  = eDisp > 0 ? Math.round(eEnRenta / eDisp * 100) + '%' : '—';
+  // "EST" solo trae estacionamientos que pueden alojar un auto y son arrendables
+  // (los usados como bodega quedaron fuera de la hoja): ocupación = arrendados / total EST
+  const eTotal   = estacData.length;
+  const eEnRenta = estacData.filter(row => getParkingCategory(row) === 'contrato').length;
+  const eVac     = eTotal - eEnRenta;
+  const eOccPct  = eTotal > 0 ? Math.round(eEnRenta / eTotal * 100) + '%' : '—';
   document.getElementById('occ-estac').textContent = eOccPct;
   // Panel Estacionamientos
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   set('lc-estac-arr',   eEnRenta);
   set('lc-estac-vac',   eVac);
-  set('lc-estac-inhab', eInhab);
-  set('lc-estac-visita',eVisita);
-  set('lc-estac-local', eLocal);
   set('occ-estac-pct',  eOccPct);
-  set('occ-estac-un',   eDisp > 0 ? `(${eEnRenta}/${eDisp})` : '');
+  set('occ-estac-un',   eTotal > 0 ? `(${eEnRenta}/${eTotal})` : '');
   set('occ-estac-total',eTotal);
-  set('occ-estac-noarr',eVisita);
 
   let bContr = 0, bVac = 0;
   bodData.forEach(row => {
