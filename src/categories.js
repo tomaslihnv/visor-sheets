@@ -24,7 +24,7 @@ export function getParkingCategory(row) {
   if (estatus === '2') return 'inhabilitado';
   const titular = (row[pcol.titular] || '').trim().toLowerCase();
   if (titular === 'visita') return 'visita';
-  if (estatus === '1') return 'contrato';
+  if (estatus === '1' || titular === 'ford') return 'contrato'; // Ford arrienda sin contrato individual (Estatus '-')
   const destUp = (row[pcol.destino] || '').trim().replace('−','-').toUpperCase();
   if (destUp === 'RC' || destUp === 'FORD') return 'contrato';
   return 'vacante';
