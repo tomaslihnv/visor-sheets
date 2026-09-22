@@ -627,8 +627,9 @@ async function copyCardAsImage(btn, cardSelector) {
   }
 }
 
-const copyChartCard = btn => copyCardAsImage(btn, '.evol-card');
-const copyDirCard   = btn => copyCardAsImage(btn, '.dir-card');
+const copyChartCard          = btn => copyCardAsImage(btn, '.evol-card');
+const copyDirCard            = btn => copyCardAsImage(btn, '.dir-card');
+const copyAuditStackingCard  = btn => copyCardAsImage(btn, '.aud-stacking-card');
 
 // ── Pinch-to-zoom stacking (mobile/tablet) ─────────────────────────────────
 (function initStackingPinchZoom() {
@@ -712,8 +713,9 @@ window.pdfModalResolve = (val) => pdfModalResolve(val);
 window.switchBuilding    = switchBuilding;
 window.toggleTipologia   = toggleTipologia;
 window.switchLegendTab   = switchLegendTab;
-window.copyChartCard   = copyChartCard;
-window.copyDirCard     = copyDirCard;
+window.copyChartCard         = copyChartCard;
+window.copyDirCard           = copyDirCard;
+window.copyAuditStackingCard = copyAuditStackingCard;
 window.openEstatusExportModal  = openEstatusExportModal;
 window.closeEstatusExportModal = closeEstatusExportModal;
 window.toggleAllExportCols     = toggleAllExportCols;
