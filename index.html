@@ -347,10 +347,11 @@
 
     <!-- ── Gráfico de barras + tabla ────────────────────────────── -->
     <div class="aud-bottom-grid">
-      <div class="aud-chart-card">
+      <div class="aud-chart-card" data-chart-key="auditoria">
         <div class="aud-section-title">
-          Vencimientos con Reparaciones Pendientes
+          <span class="evol-card-title" style="font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit">Vencimientos con Reparaciones Pendientes</span>
           <span id="auditoria-month-label" class="aud-month-chip"></span>
+          <button class="btn-export-chart" style="margin-left:auto" onclick="openExportPanel(this)" title="Exportar gráfico"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
         </div>
         <p class="aud-hint">Haz clic en una barra para filtrar el stacking plan y ver el detalle</p>
         <div class="aud-bar-wrap">
