@@ -1,6 +1,7 @@
 import { state, BD, CHARTS, destroyChart } from '../state.js';
 import { LAYOUT_IRR, LAYOUT_ECH, MAX_COL_IRR, MAX_COL_ECH } from '../config.js';
 import { parseDate, parseEvolDate, _MESES } from '../utils.js';
+import { reapplyFontSize } from '../export-chart.js';
 
 // ── Colores por estado de reparación ────────────────────────────────────────
 const REP_STATUS = {
@@ -414,5 +415,6 @@ export function renderAuditoria() {
   if (canvas)  canvas.style.display = '';
   if (noData)  noData.style.display = 'none';
   renderAuditoriaBarChart();
+  reapplyFontSize('auditoria');
   renderAuditoriaStacking();
 }

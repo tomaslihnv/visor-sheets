@@ -1049,18 +1049,18 @@ tr:hover td { background: #ede8df; }
 }
 .aud-floor-row { display: flex; align-items: center; margin-bottom: 2px; }
 .aud-floor-label {
-  width: 32px; min-width: 32px; font-size: 10px; font-weight: 700;
+  width: calc(var(--aud-fs, 9px) * 3.6); flex-shrink: 0; font-size: calc(var(--aud-fs, 9px) + 1px); font-weight: 700;
   color: #9ca3af; text-align: right; padding-right: 6px;
 }
 .aud-floor-cells { display: flex; gap: 2px; }
 .aud-unit {
-  width: 34px; height: 28px; border-radius: 4px; border: 1.5px solid;
+  width: calc(var(--aud-fs, 9px) * 3.8); height: calc(var(--aud-fs, 9px) * 3.1); border-radius: 4px; border: 1.5px solid;
   display: flex; align-items: center; justify-content: center;
   cursor: default; transition: opacity 0.15s;
 }
 .aud-unit:hover { opacity: 0.8; }
-.aud-unit-num { font-size: 9px; font-weight: 700; }
-.aud-cell-gap { width: 34px; height: 28px; }
+.aud-unit-num { font-size: var(--aud-fs, 9px); font-weight: 700; }
+.aud-cell-gap { width: calc(var(--aud-fs, 9px) * 3.8); height: calc(var(--aud-fs, 9px) * 3.1); }
 
 /* Bottom grid: chart + table side by side */
 .aud-bottom-grid {
