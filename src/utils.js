@@ -48,10 +48,34 @@ export function toAPIDate(date) {
   return `${String(date.getDate()).padStart(2,'0')}-${String(date.getMonth()+1).padStart(2,'0')}-${date.getFullYear()}`;
 }
 
-export function fetchUF(dateStr) {
-  return fetch(`https://mindicador.cl/api/uf/${dateStr}`)
+// Caché de UF en IndexedDB: la UF de una fecha pasada no cambia, así que nunca se invalida.
+// Si IndexedDB no está disponible, todo sigue funcionando sin caché.
+let _ufDB;
+function ufStore(mode) {
+  _ufDB ??= new Promise((res, rej) => {
+    const rq = indexedDB.open('visor-uf', 1);
+    rq.onupgradeneeded = () => rq.result.createObjectStore('uf');
+    rq.onsuccess = () => res(rq.result);
+    rq.onerror = () => rej(rq.error);
+  });
+  return _ufDB.then(db => db.transaction('uf', mode).objectStore('uf'));
+}
+const idbReq = rq => new Promise((res, rej) => { rq.onsuccess = () => res(rq.result); rq.onerror = () => rej(rq.error); });
+const ufGet = k => ufStore('readonly').then(s => idbReq(s.get(k))).catch(() => null);
+const ufPut = (k, v) => ufStore('readwrite').then(s => idbReq(s.put(v, k))).catch(() => {});
+
+// mindicador.cl es lento (4–20s por consulta) y a veces no responde: timeout para no
+// bloquear la carga, y solo se consulta lo que falta en el caché.
+export async function fetchUF(dateStr) {
+  const cached = await ufGet(dateStr);
+  if (cached) return cached;
+  return fetch(`https://mindicador.cl/api/uf/${dateStr}`, { signal: AbortSignal.timeout(15000) })
     .then(r => r.json())
-    .then(d => d?.serie?.[0]?.valor ?? null)
+    .then(d => {
+      const v = d?.serie?.[0]?.valor ?? null;
+      if (v) ufPut(dateStr, v);
+      return v;
+    })
     .catch(() => null);
 }
 
