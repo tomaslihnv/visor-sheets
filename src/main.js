@@ -1,4 +1,4 @@
-import { state, BD, CHARTS } from './state.js';
+import { state, BD, CHARTS, destroyChart } from './state.js';
 import { URLS, URLS_CONTRATOS, LAYOUTS, MAX_COLS, BUILDINGS, CAT_STYLE } from './config.js';
 import { getCategory, getParkingCategory, getBodegaCategory } from './categories.js';
 import { DRIVE, driveUrl } from './drive.js';
@@ -22,6 +22,8 @@ import { URLS_REPARACION } from './config.js';
 import { openExportPanel, initChartFontSliders, reapplyFontSize } from './export-chart.js';
 
 function renderBothEvolCharts() {
+  // Primero se borran: los render con hoja vacía hacen return sin limpiar y dejarían la gráfica del otro edificio.
+  ['evol','netos','venc','renewal','entrada','termino','salidas','motivo','desglose','permanencia'].forEach(destroyChart);
   renderEvolChart();
   renderNetosChart();
   renderVencChart();
