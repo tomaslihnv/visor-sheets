@@ -1,4 +1,12 @@
 export const URLS = {
+  tm: [
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vSqKKkERKX-ZW4vWN6BV4eXhP-uJNbKaSvk2jlp8RnloNhWTNA_H0Z5MSkxURlv3JKXA2qLEW0Rmh7d/pub?gid=1862656755&single=true&output=csv',
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vSqKKkERKX-ZW4vWN6BV4eXhP-uJNbKaSvk2jlp8RnloNhWTNA_H0Z5MSkxURlv3JKXA2qLEW0Rmh7d/pub?gid=1081809439&single=true&output=csv',
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vSqKKkERKX-ZW4vWN6BV4eXhP-uJNbKaSvk2jlp8RnloNhWTNA_H0Z5MSkxURlv3JKXA2qLEW0Rmh7d/pub?gid=548387695&single=true&output=csv',
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vSqKKkERKX-ZW4vWN6BV4eXhP-uJNbKaSvk2jlp8RnloNhWTNA_H0Z5MSkxURlv3JKXA2qLEW0Rmh7d/pub?gid=5472402&single=true&output=csv',
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vSqKKkERKX-ZW4vWN6BV4eXhP-uJNbKaSvk2jlp8RnloNhWTNA_H0Z5MSkxURlv3JKXA2qLEW0Rmh7d/pub?gid=60619886&single=true&output=csv',
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vSqKKkERKX-ZW4vWN6BV4eXhP-uJNbKaSvk2jlp8RnloNhWTNA_H0Z5MSkxURlv3JKXA2qLEW0Rmh7d/pub?gid=1703237303&single=true&output=csv'
+  ],
   irr: [
     'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_SrPMC9v_h6szyyZUjhqywYeyrwp8AwiguskyC7PzNt8CCE_W6HA_wUTrKA1PWew77AAC1qhVR88i/pub?gid=822970761&single=true&output=csv',
     'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_SrPMC9v_h6szyyZUjhqywYeyrwp8AwiguskyC7PzNt8CCE_W6HA_wUTrKA1PWew77AAC1qhVR88i/pub?gid=777209700&single=true&output=csv',
@@ -23,6 +31,7 @@ export const URLS = {
 export const URLS_CONTRATOS = {
   irr: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_SrPMC9v_h6szyyZUjhqywYeyrwp8AwiguskyC7PzNt8CCE_W6HA_wUTrKA1PWew77AAC1qhVR88i/pub?gid=531179770&single=true&output=csv',
   ech: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRAuordQ35zGoq-VV0PTJYtoebha0PyUuWS1YTPLo69nTzytyNzg9AtOUMegCmhV1Q7_Ouiv8YGQCXv/pub?gid=1692181581&single=true&output=csv',
+  tm: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSqKKkERKX-ZW4vWN6BV4eXhP-uJNbKaSvk2jlp8RnloNhWTNA_H0Z5MSkxURlv3JKXA2qLEW0Rmh7d/pub?gid=469977731&single=true&output=csv',
 };
 
 export const LAYOUT_IRR = [
@@ -62,10 +71,37 @@ export const LAYOUT_ECH = [
 ];
 export const MAX_COL_ECH = 23;
 
+// INSITU Tomás Moro: layout provisorio. Torre B | separador | Torre A y, dentro de cada torre,
+// agrupado por la orientación propia de cada unidad (N, O, S, P). Ajustar `c` con el plano real.
+export const LAYOUT_TM = [
+  {p:10,cells:[{c:1,n:'1005B'},{c:8,n:'1006B'},{c:9,n:'1007B'},{c:10,n:'1008B'},{c:11,n:'1001B'},{c:12,n:'1002B'},{c:13,n:'1003B'},{c:14,n:'1004B'},{c:15,n:'1009B'},{c:16,n:'1010B'},{c:17,n:'1011B'},{c:18,n:'1012B'},{c:24,n:'1001A'},{c:25,n:'1002A'},{c:26,n:'1003A'},{c:27,n:'1008A'},{c:28,n:'1009A'},{c:29,n:'1010A'},{c:30,n:'1004A'},{c:31,n:'1005A'},{c:32,n:'1006A'},{c:33,n:'1007A'}]},
+  {p:9,cells:[{c:1,n:'905B'},{c:2,n:'906B'},{c:3,n:'907B'},{c:4,n:'908B'},{c:5,n:'909B'},{c:6,n:'910B'},{c:7,n:'911B'},{c:8,n:'912B'},{c:9,n:'913B'},{c:10,n:'914B'},{c:11,n:'901B'},{c:12,n:'902B'},{c:13,n:'903B'},{c:14,n:'904B'},{c:15,n:'915B'},{c:16,n:'916B'},{c:17,n:'917B'},{c:18,n:'918B'},{c:20,n:'904A'},{c:21,n:'905A'},{c:22,n:'906A'},{c:23,n:'907A'},{c:24,n:'901A'},{c:25,n:'902A'},{c:26,n:'903A'},{c:27,n:'912A'},{c:28,n:'913A'},{c:29,n:'914A'},{c:30,n:'908A'},{c:31,n:'909A'},{c:32,n:'910A'},{c:33,n:'911A'}]},
+  {p:8,cells:[{c:1,n:'805B'},{c:2,n:'806B'},{c:3,n:'807B'},{c:4,n:'808B'},{c:5,n:'809B'},{c:6,n:'810B'},{c:7,n:'811B'},{c:8,n:'812B'},{c:9,n:'813B'},{c:10,n:'814B'},{c:11,n:'801B'},{c:12,n:'802B'},{c:13,n:'803B'},{c:14,n:'804B'},{c:15,n:'815B'},{c:16,n:'816B'},{c:17,n:'817B'},{c:18,n:'818B'},{c:20,n:'804A'},{c:21,n:'805A'},{c:22,n:'806A'},{c:23,n:'807A'},{c:24,n:'801A'},{c:25,n:'802A'},{c:26,n:'803A'},{c:27,n:'812A'},{c:28,n:'813A'},{c:29,n:'814A'},{c:30,n:'808A'},{c:31,n:'809A'},{c:32,n:'810A'},{c:33,n:'811A'}]},
+  {p:7,cells:[{c:1,n:'705B'},{c:2,n:'706B'},{c:3,n:'707B'},{c:4,n:'708B'},{c:5,n:'709B'},{c:6,n:'710B'},{c:7,n:'711B'},{c:8,n:'712B'},{c:9,n:'713B'},{c:10,n:'714B'},{c:11,n:'701B'},{c:12,n:'702B'},{c:13,n:'703B'},{c:14,n:'704B'},{c:15,n:'715B'},{c:16,n:'716B'},{c:17,n:'717B'},{c:18,n:'718B'},{c:20,n:'704A'},{c:21,n:'705A'},{c:22,n:'706A'},{c:23,n:'707A'},{c:24,n:'701A'},{c:25,n:'702A'},{c:26,n:'703A'},{c:27,n:'712A'},{c:28,n:'713A'},{c:29,n:'714A'},{c:30,n:'708A'},{c:31,n:'709A'},{c:32,n:'710A'},{c:33,n:'711A'}]},
+  {p:6,cells:[{c:1,n:'605B'},{c:2,n:'606B'},{c:3,n:'607B'},{c:4,n:'608B'},{c:5,n:'609B'},{c:6,n:'610B'},{c:7,n:'611B'},{c:8,n:'612B'},{c:9,n:'613B'},{c:10,n:'614B'},{c:11,n:'601B'},{c:12,n:'602B'},{c:13,n:'603B'},{c:14,n:'604B'},{c:15,n:'615B'},{c:16,n:'616B'},{c:17,n:'617B'},{c:18,n:'618B'},{c:20,n:'604A'},{c:21,n:'605A'},{c:22,n:'606A'},{c:23,n:'607A'},{c:24,n:'601A'},{c:25,n:'602A'},{c:26,n:'603A'},{c:27,n:'612A'},{c:28,n:'613A'},{c:29,n:'614A'},{c:30,n:'608A'},{c:31,n:'609A'},{c:32,n:'610A'},{c:33,n:'611A'}]},
+  {p:5,cells:[{c:1,n:'505B'},{c:2,n:'506B'},{c:3,n:'507B'},{c:4,n:'508B'},{c:5,n:'509B'},{c:6,n:'510B'},{c:7,n:'511B'},{c:8,n:'512B'},{c:9,n:'513B'},{c:10,n:'514B'},{c:11,n:'501B'},{c:12,n:'502B'},{c:13,n:'503B'},{c:14,n:'504B'},{c:15,n:'515B'},{c:16,n:'516B'},{c:17,n:'517B'},{c:18,n:'518B'},{c:20,n:'504A'},{c:21,n:'505A'},{c:22,n:'506A'},{c:23,n:'507A'},{c:24,n:'501A'},{c:25,n:'502A'},{c:26,n:'503A'},{c:27,n:'512A'},{c:28,n:'513A'},{c:29,n:'514A'},{c:30,n:'508A'},{c:31,n:'509A'},{c:32,n:'510A'},{c:33,n:'511A'}]},
+  {p:4,cells:[{c:1,n:'405B'},{c:2,n:'406B'},{c:3,n:'407B'},{c:4,n:'408B'},{c:5,n:'409B'},{c:6,n:'410B'},{c:7,n:'411B'},{c:8,n:'412B'},{c:9,n:'413B'},{c:10,n:'414B'},{c:11,n:'401B'},{c:12,n:'402B'},{c:13,n:'403B'},{c:14,n:'404B'},{c:15,n:'415B'},{c:16,n:'416B'},{c:17,n:'417B'},{c:18,n:'418B'},{c:20,n:'404A'},{c:21,n:'405A'},{c:22,n:'406A'},{c:23,n:'407A'},{c:24,n:'401A'},{c:25,n:'402A'},{c:26,n:'403A'},{c:27,n:'412A'},{c:28,n:'413A'},{c:29,n:'414A'},{c:30,n:'408A'},{c:31,n:'409A'},{c:32,n:'410A'},{c:33,n:'411A'}]},
+  {p:3,cells:[{c:1,n:'305B'},{c:2,n:'306B'},{c:3,n:'307B'},{c:4,n:'308B'},{c:5,n:'309B'},{c:6,n:'310B'},{c:7,n:'311B'},{c:8,n:'312B'},{c:9,n:'313B'},{c:10,n:'314B'},{c:11,n:'301B'},{c:12,n:'302B'},{c:13,n:'303B'},{c:14,n:'304B'},{c:15,n:'315B'},{c:16,n:'316B'},{c:17,n:'317B'},{c:18,n:'318B'},{c:20,n:'304A'},{c:21,n:'305A'},{c:22,n:'306A'},{c:23,n:'307A'},{c:24,n:'301A'},{c:25,n:'302A'},{c:26,n:'303A'},{c:27,n:'312A'},{c:28,n:'313A'},{c:29,n:'314A'},{c:30,n:'308A'},{c:31,n:'309A'},{c:32,n:'310A'},{c:33,n:'311A'}]},
+  {p:2,cells:[{c:1,n:'205B'},{c:2,n:'206B'},{c:3,n:'207B'},{c:4,n:'208B'},{c:5,n:'209B'},{c:6,n:'210B'},{c:7,n:'211B'},{c:8,n:'212B'},{c:9,n:'213B'},{c:10,n:'214B'},{c:11,n:'201B'},{c:12,n:'202B'},{c:13,n:'203B'},{c:14,n:'204B'},{c:15,n:'215B'},{c:16,n:'216B'},{c:17,n:'217B'},{c:18,n:'218B'},{c:20,n:'204A'},{c:21,n:'205A'},{c:22,n:'206A'},{c:23,n:'207A'},{c:24,n:'201A'},{c:25,n:'202A'},{c:26,n:'203A'},{c:27,n:'212A'},{c:28,n:'213A'},{c:29,n:'214A'},{c:30,n:'208A'},{c:31,n:'209A'},{c:32,n:'210A'},{c:33,n:'211A'}]},
+  {p:1,cells:[{c:1,n:'105B'},{c:8,n:'104B'},{c:9,n:'106B'},{c:10,n:'107B'},{c:11,n:'101B'},{c:12,n:'102B'},{c:13,n:'103B'},{c:14,n:'108B'},{c:15,n:'109B'},{c:16,n:'110B'},{c:17,n:'111B'},{c:24,n:'101A'},{c:25,n:'102A'}]},
+];
+export const MAX_COL_TM = 33;
+
+export const LAYOUTS  = { irr: LAYOUT_IRR,  ech: LAYOUT_ECH,  tm: LAYOUT_TM  };
+export const MAX_COLS = { irr: MAX_COL_IRR, ech: MAX_COL_ECH, tm: MAX_COL_TM };
+
+// Nombre y color de acento por edificio (UI y encabezado del PDF).
+export const BUILDINGS = {
+  irr: { name: 'INSITU IRARRÁZAVAL', accent: '#00D166', pdfAccent: [0, 209, 102] },
+  ech: { name: 'INSITU ECHAURREN',   accent: '#34C1D6', pdfAccent: [52, 193, 214] },
+  tm:  { name: 'INSITU TOMÁS MORO',  accent: '#ede0ce', pdfAccent: [149, 110, 55] }, // colores de insitu-tomasmoro.cl
+};
+
 // URLs de la hoja "Reparación" por edificio.
 export const URLS_REPARACION = {
   irr: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_SrPMC9v_h6szyyZUjhqywYeyrwp8AwiguskyC7PzNt8CCE_W6HA_wUTrKA1PWew77AAC1qhVR88i/pub?gid=1828849230&single=true&output=csv',
   ech: null,
+  tm: null,
 };
 
 // Lista maestra de motivos de salida (todos los disponibles en el dropdown del Google Sheets).

@@ -2,7 +2,8 @@ export const state = { AB: 'irr' };
 
 export const BD = {
   irr: { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], contratos:[], rep:[], fields:[], refKey:'', refUF:0 },
-  ech: { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], contratos:[], rep:[], fields:[], refKey:'', refUF:0 }
+  ech: { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], contratos:[], rep:[], fields:[], refKey:'', refUF:0 },
+  tm:  { umap:{}, data:[], evol:[], park:[], bod:[], venc:[], sal:[], contratos:[], rep:[], fields:[], refKey:'', refUF:0 }
 };
 
 export const CHARTS = { evol: null, netos: null, venc: null, renewal: null, entrada: null, termino: null, salidas: null, motivo: null, desglose: null, permanencia: null, auditoria: null, dirHogar: null, dirOcupacion: null, dirEdad: null, dirSexo: null };

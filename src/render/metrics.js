@@ -1,5 +1,5 @@
 import { state, BD } from '../state.js';
-import { LAYOUT_IRR, LAYOUT_ECH } from '../config.js';
+import { LAYOUTS } from '../config.js';
 import { getCategory, getParkingCategory, getBodegaCategory } from '../categories.js';
 import { EVOL_COL } from '../columns.js';
 import { parseEvolDate } from '../utils.js';
@@ -7,7 +7,7 @@ import { parseEvolDate } from '../utils.js';
 const ORIENT_LABELS = { N: 'Norte', S: 'Sur', O: 'Oriente', P: 'Poniente' };
 
 export function updateMetrics(deptoData, estacData, bodData) {
-  const layout = state.AB === 'irr' ? LAYOUT_IRR : LAYOUT_ECH;
+  const layout = LAYOUTS[state.AB];
   const umap   = BD[state.AB].umap;
 
   let dContr = 0, dRC = 0, dVac = 0, dPilot = 0;

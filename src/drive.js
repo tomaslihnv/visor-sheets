@@ -632,3 +632,10 @@ export const DRIVE_FOLDERS_IRR_BOD = {
 };
 
 export const driveUrl = id => `https://drive.google.com/drive/folders/${id}`;
+
+// Carpetas de Drive por edificio y tipo de unidad. tm: pendiente.
+export const DRIVE = {
+  irr: { depto: DRIVE_FOLDERS_IRR, estac: DRIVE_FOLDERS_IRR_ESTAC, bod: DRIVE_FOLDERS_IRR_BOD },
+  ech: { depto: DRIVE_FOLDERS_ECH, estac: DRIVE_FOLDERS_ECH_ESTAC, bod: DRIVE_FOLDERS_ECH_BOD },
+  tm:  { depto: {}, estac: {}, bod: {} },
+};
