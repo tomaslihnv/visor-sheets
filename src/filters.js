@@ -1,5 +1,5 @@
 import { state, BD } from './state.js';
-import { LAYOUT_IRR, LAYOUT_ECH, CAT_STYLE } from './config.js';
+import { LAYOUTS, CAT_STYLE } from './config.js';
 import { getCategory, getParkingCategory, getBodegaCategory } from './categories.js';
 import { pcol, bcol } from './columns.js';
 import { renderColumnHeaders } from './render/headers.js';
@@ -93,7 +93,7 @@ export function updateUFFill(min, max, lo, hi) {
 }
 
 export function applyFilters() {
-  const layout = state.AB === 'irr' ? LAYOUT_IRR : LAYOUT_ECH;
+  const layout = LAYOUTS[state.AB];
   const umap   = BD[state.AB].umap;
   const pmapData = BD[state.AB].park;
   const bmapData = BD[state.AB].bod;
@@ -209,7 +209,7 @@ export function applyFilters() {
 }
 
 function refreshUFRange(fu, ftb, ftT, ftS1, ftS2, foC, foA, vencOn, vencVal) {
-  const layout = state.AB === 'irr' ? LAYOUT_IRR : LAYOUT_ECH;
+  const layout = LAYOUTS[state.AB];
   const umap   = BD[state.AB].umap;
   if (!Object.keys(umap).length) return;
 

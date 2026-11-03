@@ -1,9 +1,9 @@
 import { state, BD } from '../state.js';
-import { LAYOUT_IRR, LAYOUT_ECH, MAX_COL_IRR, MAX_COL_ECH, CAT_STYLE } from '../config.js';
+import { LAYOUTS, MAX_COLS, CAT_STYLE } from '../config.js';
 import { getCategory, getParkingCategory, getBodegaCategory } from '../categories.js';
 import { showTooltip, hideTooltip, moveTooltip, showParkingTooltip, showBodegaTooltip, addTapToShow } from '../tooltip.js';
 import { pcol, bcol, resolveParkingColumns, resolveBodegaColumns } from '../columns.js';
-import { DRIVE_FOLDERS_ECH, DRIVE_FOLDERS_ECH_ESTAC, DRIVE_FOLDERS_ECH_BOD, DRIVE_FOLDERS_IRR, DRIVE_FOLDERS_IRR_ESTAC, DRIVE_FOLDERS_IRR_BOD, driveUrl } from '../drive.js';
+import { DRIVE, driveUrl } from '../drive.js';
 
 // Determina, para cada columna, la primera orientación no vacía encontrada
 // recorriendo los pisos en el orden del layout (de arriba hacia abajo).
@@ -29,8 +29,8 @@ function computeOrientBoundaries(layout, maxCol, umap) {
 export function renderStacking() {
   const bldg = document.getElementById('building');
   bldg.innerHTML = '';
-  const layout = state.AB === 'irr' ? LAYOUT_IRR : LAYOUT_ECH;
-  const maxCol  = state.AB === 'irr' ? MAX_COL_IRR : MAX_COL_ECH;
+  const layout = LAYOUTS[state.AB];
+  const maxCol  = MAX_COLS[state.AB];
   const umap    = BD[state.AB].umap;
   const orientBoundaries = computeOrientBoundaries(layout, maxCol, umap);
 
@@ -57,7 +57,7 @@ export function renderStacking() {
         el.addEventListener('mouseleave', hideTooltip);
         el.addEventListener('mousemove',  moveTooltip);
         addTapToShow(el, e => showTooltip(e, n));
-        const deMap = state.AB === 'ech' ? DRIVE_FOLDERS_ECH : DRIVE_FOLDERS_IRR;
+        const deMap = DRIVE[state.AB].depto;
         if (deMap[n]) {
           el.addEventListener('click', () => window.open(driveUrl(deMap[n]), '_blank'));
           el.title = 'Ver contratos en Drive';
@@ -89,7 +89,7 @@ function makeParkingCell(unit) {
   el.addEventListener('mouseleave', hideTooltip);
   el.addEventListener('mousemove',  moveTooltip);
   addTapToShow(el, e => showParkingTooltip(e, unit));
-  const estacMap = state.AB === 'ech' ? DRIVE_FOLDERS_ECH_ESTAC : DRIVE_FOLDERS_IRR_ESTAC;
+  const estacMap = DRIVE[state.AB].estac;
   if (estacMap[parseInt(n)]) {
     el.addEventListener('click', () => window.open(driveUrl(estacMap[parseInt(n)]), '_blank'));
     el.title = 'Ver contratos en Drive';
@@ -112,7 +112,7 @@ export function makeBodegaCell(unit) {
   el.addEventListener('mouseleave', hideTooltip);
   el.addEventListener('mousemove',  moveTooltip);
   addTapToShow(el, e => showBodegaTooltip(e, unit));
-  const bodMap = state.AB === 'ech' ? DRIVE_FOLDERS_ECH_BOD : DRIVE_FOLDERS_IRR_BOD;
+  const bodMap = DRIVE[state.AB].bod;
   if (bodMap[parseInt(n)]) {
     el.addEventListener('click', () => window.open(driveUrl(bodMap[parseInt(n)]), '_blank'));
     el.title = 'Ver contratos en Drive';

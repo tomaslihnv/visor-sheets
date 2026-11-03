@@ -470,6 +470,7 @@ function renderSexoResidentes(data) {
 const PROJECT_START = {
   ech: { year: 2023, month: 12 },
   irr: { year: 2024, month: 2 },
+  tm:  { year: 2025, month: 1 }, // PENDIENTE: confirmar inicio real de arriendo
 };
 
 function renderTablaStock(data) {

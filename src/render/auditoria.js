@@ -1,5 +1,5 @@
 import { state, BD, CHARTS, destroyChart } from '../state.js';
-import { LAYOUT_IRR, LAYOUT_ECH, MAX_COL_IRR, MAX_COL_ECH } from '../config.js';
+import { LAYOUTS, MAX_COLS } from '../config.js';
 import { parseDate, parseEvolDate, _MESES } from '../utils.js';
 import { reapplyFontSize } from '../export-chart.js';
 
@@ -147,8 +147,8 @@ function fmtMonthLabel(key) {
 // ── Stacking plan de auditoría ───────────────────────────────────────────────
 export function renderAuditoriaStacking() {
   const ab        = state.AB;
-  const layout    = ab === 'irr' ? LAYOUT_IRR : LAYOUT_ECH;
-  const maxCol    = ab === 'irr' ? MAX_COL_IRR : MAX_COL_ECH;
+  const layout    = LAYOUTS[ab];
+  const maxCol    = MAX_COLS[ab];
   const repMap    = buildRepMap(BD[ab].rep || []);
   const cmap      = buildContratosMap(BD[ab].contratos || []);
   const container = document.getElementById('auditoria-stacking');

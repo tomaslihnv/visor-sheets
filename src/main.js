@@ -1,7 +1,7 @@
 import { state, BD, CHARTS } from './state.js';
-import { URLS, URLS_CONTRATOS, LAYOUT_IRR, LAYOUT_ECH, MAX_COL_IRR, MAX_COL_ECH, CAT_STYLE } from './config.js';
+import { URLS, URLS_CONTRATOS, LAYOUTS, MAX_COLS, BUILDINGS, CAT_STYLE } from './config.js';
 import { getCategory, getParkingCategory, getBodegaCategory } from './categories.js';
-import { DRIVE_FOLDERS_ECH, DRIVE_FOLDERS_ECH_ESTAC, DRIVE_FOLDERS_ECH_BOD, DRIVE_FOLDERS_IRR, DRIVE_FOLDERS_IRR_ESTAC, DRIVE_FOLDERS_IRR_BOD, driveUrl } from './drive.js';
+import { DRIVE, driveUrl } from './drive.js';
 import { nfdKey } from './utils.js';
 import { resolveColumns, resolveParkingColumns, resolveBodegaColumns, resolveEvolColumns, pcol, bcol } from './columns.js';
 import { calcIPC, precompute } from './data.js';
@@ -77,8 +77,7 @@ function refreshBuildingUI() {
 function switchBuilding(id) {
   if (state.AB === id) return;
   state.AB = id;
-  const color = id === 'irr' ? '#00D166' : '#34C1D6';
-  document.documentElement.style.setProperty('--accent', color);
+  document.documentElement.style.setProperty('--accent', BUILDINGS[id].accent);
   document.querySelectorAll('.bldg-tab').forEach(t => {
     t.classList.toggle('active', t.id === 'bt-' + id);
     t.style.borderBottomColor = '';
@@ -115,10 +114,10 @@ async function exportStackingPDF() {
     if (!opts) { btn.disabled = false; btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar PDF`; return; }
     const includeLinks = opts.includeLinks;
     const ab       = state.AB;
-    const layout   = ab === 'irr' ? LAYOUT_IRR  : LAYOUT_ECH;
-    const maxCol   = ab === 'irr' ? MAX_COL_IRR : MAX_COL_ECH;
+    const layout   = LAYOUTS[ab];
+    const maxCol   = MAX_COLS[ab];
     const umap     = BD[ab].umap;
-    const driveMap = includeLinks ? (ab === 'ech' ? DRIVE_FOLDERS_ECH : DRIVE_FOLDERS_IRR) : {};
+    const driveMap = includeLinks ? DRIVE[ab].depto : {};
 
     // ── Calcular métricas ────────────────────────────────────────────────────
     let dContr = 0, dRC = 0, dVac = 0, dPilot = 0;
@@ -232,8 +231,8 @@ async function exportStackingPDF() {
     };
 
     // ── Header ───────────────────────────────────────────────────────────────
-    const bldgName  = ab === 'irr' ? 'INSITU IRARRÁZAVAL' : 'INSITU ECHAURREN';
-    const accentRgb = ab === 'irr' ? [0,209,102] : [52,193,214];
+    const bldgName  = BUILDINGS[ab].name;
+    const accentRgb = BUILDINGS[ab].pdfAccent;
     const dateStr   = new Date().toLocaleDateString('es-CL', { day:'2-digit', month:'long', year:'numeric' });
 
     doc.setDrawColor(...accentRgb);
@@ -401,7 +400,7 @@ async function exportStackingPDF() {
     if (maxBodPerFloor > 0) {
       const bodSepX   = cellsX + gridW + 3;
       const bodStartX = bodSepX + 4;
-      const bodDriveMap = includeLinks ? (ab === 'ech' ? DRIVE_FOLDERS_ECH_BOD : DRIVE_FOLDERS_IRR_BOD) : {};
+      const bodDriveMap = includeLinks ? DRIVE[ab].bod : {};
       doc.setDrawColor(160, 148, 128);
       doc.setLineWidth(0.4);
       doc.line(bodSepX, cellsY, bodSepX, cellsY + gridH);
@@ -520,8 +519,8 @@ async function exportStackingPDF() {
 
 // Pre-calcular el sepX fijo alineando al piso con más autos en la primera fila
       // (equivalente a alignSubterraneoColumns del visor web)
-      const estacDrive = includeLinks ? (ab === 'ech' ? DRIVE_FOLDERS_ECH_ESTAC : DRIVE_FOLDERS_IRR_ESTAC) : {};
-      const bodDrive   = includeLinks ? (ab === 'ech' ? DRIVE_FOLDERS_ECH_BOD   : DRIVE_FOLDERS_IRR_BOD)   : {};
+      const estacDrive = includeLinks ? DRIVE[ab].estac : {};
+      const bodDrive   = includeLinks ? DRIVE[ab].bod : {};
 
       const pisoGroups = negPisos.map(piso => {
         const allRaw = (parkByPiso[piso] || []).slice();
@@ -756,91 +755,54 @@ function revealStacking() {
   if (real) real.style.display = '';
 }
 
-// Fase 1 IRR: carga ESTATUS ACTUAL → colorea stacking inmediatamente
-fetch(URLS.irr[0]).then(r => r.text()).then(csv => {
-  const p1i = Papa.parse(csv.trim(), {header:true, skipEmptyLines:true});
-  BD.irr.data   = p1i.data;
-  BD.irr.fields = p1i.meta.fields;
-  const unidadCol = p1i.meta.fields.find(h => nfdKey(h) === 'UNIDAD') || 'Unidad';
-  p1i.data.forEach(row => { const n = parseInt((row[unidadCol]||'').trim()); if (!isNaN(n)) BD.irr.umap[n] = row; });
-  if (state.AB === 'irr') {
-    resolveColumns(p1i.meta.fields);
-    populateDropdowns(BD.irr.data);
-    renderStacking();
-    applyFilters();
-    revealStacking();
-  }
-}).catch(err => console.error('Error cargando ESTATUS IRR:', err));
+const parseCSV = csv => Papa.parse(csv.trim(), { header: true, skipEmptyLines: true });
+// Edificios con hojas configuradas (tm queda fuera hasta tener URLs).
+const LOADABLE = Object.keys(BUILDINGS).filter(id => URLS[id].length);
 
-// Fase 1 ECH: carga ESTATUS ACTUAL → tiene datos listos para cuando el usuario cambie
-fetch(URLS.ech[0]).then(r => r.text()).then(csv => {
-  const p1e = Papa.parse(csv.trim(), {header:true, skipEmptyLines:true});
-  BD.ech.data   = p1e.data;
-  BD.ech.fields = p1e.meta.fields;
-  const unidadCol = p1e.meta.fields.find(h => nfdKey(h) === 'UNIDAD') || 'Unidad';
-  p1e.data.forEach(row => { const n = parseInt((row[unidadCol]||'').trim()); if (!isNaN(n)) BD.ech.umap[n] = row; });
-  if (state.AB === 'ech') {
-    resolveColumns(p1e.meta.fields);
-    populateDropdowns(BD.ech.data);
-    renderStacking();
-    applyFilters();
-    revealStacking();
-  }
-}).catch(err => console.error('Error cargando ESTATUS ECH:', err));
+// Fase 1: carga ESTATUS ACTUAL → colorea stacking inmediatamente.
+// Si el edificio no está activo, deja los datos listos para cuando el usuario cambie.
+function loadPhase1(id) {
+  fetch(URLS[id][0]).then(r => r.text()).then(csv => {
+    const p1 = parseCSV(csv);
+    BD[id].data   = p1.data;
+    BD[id].fields = p1.meta.fields;
+    const unidadCol = p1.meta.fields.find(h => nfdKey(h) === 'UNIDAD') || 'Unidad';
+    // clave string: en Tomás Moro las unidades son alfanuméricas (901A, 901B)
+    p1.data.forEach(row => { const n = (row[unidadCol]||'').trim(); if (n) BD[id].umap[n] = row; });
+    if (state.AB === id) {
+      resolveColumns(p1.meta.fields);
+      populateDropdowns(BD[id].data);
+      renderStacking();
+      applyFilters();
+      revealStacking();
+    }
+  }).catch(err => console.error(`Error cargando ESTATUS ${id}:`, err));
+}
 
-// Fase 2 IRR: resto de hojas en paralelo
-Promise.all(URLS.irr.slice(1).map(u => fetch(u).then(r => r.text())))
-  .then(async ([c2i,c3i,c4i,c5i,c6i]) => {
-    const p2i = Papa.parse(c2i.trim(), {header:true, skipEmptyLines:true});
-    const p3i = Papa.parse(c3i.trim(), {header:true, skipEmptyLines:true});
-    const p4i = Papa.parse(c4i.trim(), {header:true, skipEmptyLines:true});
-    const p5i = Papa.parse(c5i.trim(), {header:true, skipEmptyLines:true});
-    const p6i = Papa.parse(c6i.trim(), {header:true, skipEmptyLines:true});
+// Fase 2: resto de hojas en paralelo
+function loadPhase2(id) {
+  Promise.all(URLS[id].slice(1).map(u => fetch(u).then(r => r.text())))
+    .then(async csvs => {
+      const [p2, p3, p4, p5, p6] = csvs.map(parseCSV);
 
-    BD.irr.evol = p2i.data;
-    BD.irr.park = p3i.data;
-    BD.irr.bod  = p4i.data;
-    BD.irr.venc = p5i.data;
-    BD.irr.sal  = p6i.data;
+      BD[id].evol = p2.data;
+      BD[id].park = p3.data;
+      BD[id].bod  = p4.data;
+      BD[id].venc = p5.data;
+      BD[id].sal  = p6.data;
 
-    resolveParkingColumns(p3i.meta.fields);
-    resolveBodegaColumns(p4i.meta.fields);
-    resolveEvolColumns(p2i.meta.fields);
+      resolveParkingColumns(p3.meta.fields);
+      resolveBodegaColumns(p4.meta.fields);
+      resolveEvolColumns(p2.meta.fields);
 
-    const { refKey, refUF } = await calcIPC(BD.irr.data);
-    BD.irr.refKey = refKey; BD.irr.refUF = refUF;
-    precompute(BD.irr.data, refUF);
+      const { refKey, refUF } = await calcIPC(BD[id].data);
+      BD[id].refKey = refKey; BD[id].refUF = refUF;
+      precompute(BD[id].data, refUF);
 
-    if (state.AB === 'irr') refreshBuildingUI();
-  })
-  .catch(err => console.error('Error cargando hojas secundarias IRR:', err));
-
-// Fase 2 ECH: resto de hojas en paralelo
-Promise.all(URLS.ech.slice(1).map(u => fetch(u).then(r => r.text())))
-  .then(async ([c2e,c3e,c4e,c5e,c6e]) => {
-    const p2e = Papa.parse(c2e.trim(), {header:true, skipEmptyLines:true});
-    const p3e = Papa.parse(c3e.trim(), {header:true, skipEmptyLines:true});
-    const p4e = Papa.parse(c4e.trim(), {header:true, skipEmptyLines:true});
-    const p5e = Papa.parse(c5e.trim(), {header:true, skipEmptyLines:true});
-    const p6e = Papa.parse(c6e.trim(), {header:true, skipEmptyLines:true});
-
-    BD.ech.evol = p2e.data;
-    BD.ech.park = p3e.data;
-    BD.ech.bod  = p4e.data;
-    BD.ech.venc = p5e.data;
-    BD.ech.sal  = p6e.data;
-
-    resolveParkingColumns(p3e.meta.fields);
-    resolveBodegaColumns(p4e.meta.fields);
-    resolveEvolColumns(p2e.meta.fields);
-
-    const { refKey: refKeyE, refUF: refUFE } = await calcIPC(BD.ech.data);
-    BD.ech.refKey = refKeyE; BD.ech.refUF = refUFE;
-    precompute(BD.ech.data, refUFE);
-
-    if (state.AB === 'ech') refreshBuildingUI();
-  })
-  .catch(err => console.error('Error cargando hojas secundarias ECH:', err));
+      if (state.AB === id) refreshBuildingUI();
+    })
+    .catch(err => console.error(`Error cargando hojas secundarias ${id}:`, err));
+}
 
 // Parsea un CSV donde la primera fila podría ser un título vacío o decorativo.
 // Busca la primera fila con suficientes celdas no vacías y la usa como encabezado.
@@ -862,34 +824,24 @@ function parseContratosCSV(csv) {
     .map(row => Object.fromEntries(headers.map((h, i) => [h, row[i] ?? ''])));
 }
 
-// ── Hoja Reparación IRR ────────────────────────────────────────────────────
-if (URLS_REPARACION.irr) {
-  fetch(URLS_REPARACION.irr).then(r => r.text()).then(csv => {
-    BD.irr.rep = Papa.parse(csv.trim(), { header: true, skipEmptyLines: true }).data;
-    if (state.AB === 'irr') renderAuditoria();
-  }).catch(err => console.error('Error cargando Reparación IRR:', err));
+// ── Hoja Reparación ────────────────────────────────────────────────────────
+function loadReparacion(id) {
+  if (!URLS_REPARACION[id]) return;
+  fetch(URLS_REPARACION[id]).then(r => r.text()).then(csv => {
+    BD[id].rep = parseCSV(csv).data;
+    if (state.AB === id) renderAuditoria();
+  }).catch(err => console.error(`Error cargando Reparación ${id}:`, err));
 }
 
-// ── Hoja Reparación ECH ────────────────────────────────────────────────────
-if (URLS_REPARACION.ech) {
-  fetch(URLS_REPARACION.ech).then(r => r.text()).then(csv => {
-    BD.ech.rep = Papa.parse(csv.trim(), { header: true, skipEmptyLines: true }).data;
-    if (state.AB === 'ech') renderAuditoria();
-  }).catch(err => console.error('Error cargando Reparación ECH:', err));
+// ── Hoja I. Contratos ──────────────────────────────────────────────────────
+function loadContratos(id) {
+  if (URLS_CONTRATOS[id].startsWith('PENDIENTE')) return;
+  fetch(URLS_CONTRATOS[id]).then(r => r.text()).then(csv => {
+    BD[id].contratos = parseContratosCSV(csv);
+    if (state.AB === id) refreshBuildingUI();
+  }).catch(err => console.error(`Error cargando I. Contratos ${id}:`, err));
 }
 
-// ── Hoja I. Contratos IRR ──────────────────────────────────────────────────
-if (!URLS_CONTRATOS.irr.startsWith('PENDIENTE')) {
-  fetch(URLS_CONTRATOS.irr).then(r => r.text()).then(csv => {
-    BD.irr.contratos = parseContratosCSV(csv);
-    if (state.AB === 'irr') refreshBuildingUI();
-  }).catch(err => console.error('Error cargando I. Contratos IRR:', err));
-}
-
-// ── Hoja I. Contratos ECH ──────────────────────────────────────────────────
-if (!URLS_CONTRATOS.ech.startsWith('PENDIENTE')) {
-  fetch(URLS_CONTRATOS.ech).then(r => r.text()).then(csv => {
-    BD.ech.contratos = parseContratosCSV(csv);
-    if (state.AB === 'ech') refreshBuildingUI();
-  }).catch(err => console.error('Error cargando I. Contratos ECH:', err));
-}
+// Todas las fases de un tipo para todos los edificios antes de pasar a la siguiente
+// (la estatus actual de todos primero, después las hojas pesadas).
+[loadPhase1, loadPhase2, loadReparacion, loadContratos].forEach(load => LOADABLE.forEach(load));
