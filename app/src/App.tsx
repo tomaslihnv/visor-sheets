@@ -9,6 +9,7 @@ import { GraficoAntiguedad, GraficoDesglose, GraficoEntrada, GraficoFlujo, Grafi
 import { PestanaLaminas } from './laminas/PestanaLaminas'
 import { TablaEstatus, TablaHoja } from './tablas/Tablas'
 import { Mensaje } from './ui/Tarjeta'
+import { Reparaciones } from './reparaciones/Reparaciones'
 
 
 // Pestañas a nivel de edificio: las mismas del visor anterior, más Láminas.
@@ -105,7 +106,8 @@ export function App({ usuario }: { usuario: User }) {
         {pestana === 'bodegas' && <TablaHoja key={edificio.id} edificio={edificio} hoja="bod" />}
         {pestana === 'venc' && <TablaHoja key={edificio.id} edificio={edificio} hoja="venc" />}
         {pestana === 'sal' && <TablaHoja key={edificio.id} edificio={edificio} hoja="sal" />}
-        {(pestana === 'reparaciones' || pestana === 'caracterizacion') && (
+        {pestana === 'reparaciones' && <Reparaciones key={edificio.id} edificio={edificio} />}
+        {pestana === 'caracterizacion' && (
           <Mensaje>
             <span className="text-center">
               Esta pestaña todavía no está en la versión nueva.{' '}
