@@ -8,7 +8,7 @@
     "build": "tsc --noEmit && vite build --outDir dist --emptyOutDir",
     "preview": "vite preview",
     "test": "vitest run",
-    "publicar": "vitest run && tsc --noEmit && node -e \"require('fs').rmSync('../assets',{recursive:true,force:true})\" && vite build"
+    "publicar": "vitest run && tsc --noEmit && node -e \"require('fs').rmSync('../assets',{recursive:true,force:true})\" && vite build --outDir .. --emptyOutDir false"
   },
   "dependencies": {
     "@radix-ui/react-popover": "^1.3.1",

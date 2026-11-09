@@ -15,6 +15,9 @@
   --color-acento-fuerte: #7d2932;
 }
 
+/* Espacio fijo para la barra de scroll: si aparece o desaparece, el ancho disponible no cambia (evita que el
+   ajuste al ancho del stacking oscile). */
+html { scrollbar-gutter: stable; }
 body { @apply bg-slate-50 text-oscuro antialiased; }
 
 

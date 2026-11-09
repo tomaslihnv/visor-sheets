@@ -25,7 +25,9 @@ function Interruptor({ activo, onClick, children }: { activo: boolean; onClick: 
 
 // Escala del plano para que el edificio completo quepa en el ancho disponible. Entre 0,6 y 1,4: más chico no se
 // lee (en el celular se desliza de lado) y más grande no aporta.
-function useAjusteAlAncho(activo: boolean) {
+// Sin oscilar: solo se vigila el contenedor (el plano cambia de tamaño con el propio zoom), el zoom se redondea
+// hacia abajo y solo se cambia si la diferencia se nota; `clave` fuerza una nueva medición cuando llegan datos.
+function useAjusteAlAncho(activo: boolean, clave: string) {
   const contenedor = useRef<HTMLDivElement>(null)
   const contenido = useRef<HTMLDivElement>(null)
   const [zoom, setZoom] = useState(1)
@@ -37,16 +39,15 @@ function useAjusteAlAncho(activo: boolean) {
       // Ancho visual (con zoom) / zoom actual = ancho real del plano; scrollWidth en Chrome ya viene sin zoom.
       const natural = g.getBoundingClientRect().width / (parseFloat(g.style.zoom) || 1)
       const cs = getComputedStyle(c)
-      const disponible = c.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
-      setZoom(Math.min(1.4, Math.max(0.6, disponible / natural)))
+      const disponible = c.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 2
+      const nuevo = Math.floor(Math.min(1.4, Math.max(0.6, disponible / natural)) * 100) / 100
+      setZoom((z) => (Math.abs(nuevo - z) >= 0.015 ? nuevo : z))
     }
     medir()
-    // Se mide de nuevo si cambia el contenedor o el plano (p. ej. al pasar del esqueleto a los datos).
     const ro = new ResizeObserver(medir)
     ro.observe(c)
-    ro.observe(g)
     return () => ro.disconnect()
-  }, [activo])
+  }, [activo, clave])
   return { contenedor, contenido, zoom }
 }
 
@@ -69,7 +70,7 @@ export function StackingPlan({ edificio }: { edificio: Edificio }) {
   const [conCabecera, setConCabecera] = useState(true)
   const [conFiltros, setConFiltros] = useState(false)
   const [ajustar, setAjustar] = useState(true)
-  const { contenedor, contenido, zoom } = useAjusteAlAncho(ajustar)
+  const { contenedor, contenido, zoom } = useAjusteAlAncho(ajustar, [estatus.cargando, est.cargando, bod.cargando, conCabecera, conTipologia].join())
   const activos = filtrosActivos(filtros)
 
   const [ficha, setFicha] = useState<PosicionFicha | null>(null)
