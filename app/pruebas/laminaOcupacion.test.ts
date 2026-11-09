@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import Papa from 'papaparse'
 import PptxGenJS from 'pptxgenjs'
 import { describe, expect, it } from 'vitest'
@@ -30,7 +30,7 @@ describe('lámina de ocupación · Tomás Moro', () => {
   it('tabla: el mes real y luego proyección hasta llenar las columnas', () => {
     expect(l.tabla).toHaveLength(COLUMNAS_TABLA)
     expect(l.tabla[0]).toMatchObject({ etiqueta: 'oct-26', ingresos: 5, salidas: 0, neto: 5, presupuesto: 6, proyectado: false })
-    expect(l.tabla[0].variacion).toBeCloseTo(-1 / 6)
+    expect(l.tabla[0].variacion).toBe(-1)
     expect(l.tabla[1]).toMatchObject({ etiqueta: 'nov-26', ingresos: 12, neto: 12, presupuesto: 12, proyectado: true, variacion: 0 })
     expect(l.tabla[3]).toMatchObject({ etiqueta: 'ene-27', ingresos: 18, salidas: 1, neto: 17 })
   })
@@ -51,7 +51,7 @@ describe('lámina de ocupación · Irarrázaval', () => {
   it('neto negativo y variación contra presupuesto', () => {
     const sep = l.tabla.find((m) => m.mes === '2025-09')!
     expect(sep).toMatchObject({ ingresos: 5, salidas: 8, neto: -3, presupuesto: 4, proyectado: false })
-    expect(sep.variacion).toBeCloseTo(-7 / 4)
+    expect(sep.variacion).toBe(-7)
     expect(l.tabla.filter((m) => !m.proyectado)).toHaveLength(6)
   })
 })
@@ -64,6 +64,7 @@ it('arma la lámina de PowerPoint', async () => {
   agregarLaminaOcupacion(pptx, { nombre: 'INSITU Tomás Moro', color: { linea: '#c9ac80', base: '#956e37' } } as unknown as Edificio, l, 1)
   const archivo = (await pptx.write({ outputType: 'nodebuffer' })) as Buffer
   expect(archivo.length).toBeGreaterThan(10_000)
+  if (process.env.SALIDA_LAMINAS) writeFileSync(`${process.env.SALIDA_LAMINAS}/ocupacion.pptx`, archivo)
 })
 
 describe('etiquetas inteligentes', () => {

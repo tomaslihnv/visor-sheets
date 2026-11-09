@@ -16,7 +16,7 @@ export interface MesFlujo {
   salidas: number
   neto: number // ingresos − salidas
   presupuesto: number | null // neto presupuestado
-  variacion: number | null // (neto − presupuesto) / |presupuesto|
+  variacion: number | null // neto − presupuesto, en unidades
   proyectado: boolean // después del mes del reporte: valores de forecast
 }
 
@@ -120,7 +120,7 @@ export function laminaOcupacion(filas: Fila[], o: Opciones): LaminaOcupacion {
     const presupuesto = valor(f, c.presupuestoNeto)
     tabla.push({
       mes, etiqueta: etiquetaMes(mes), ingresos, salidas, neto, presupuesto, proyectado,
-      variacion: presupuesto ? (neto - presupuesto) / Math.abs(presupuesto) : null,
+      variacion: presupuesto === null ? null : neto - presupuesto,
     })
   }
 
@@ -140,5 +140,7 @@ export function laminaOcupacion(filas: Fila[], o: Opciones): LaminaOcupacion {
 }
 
 export const formatoPct = (v: number | null) => (v === null ? '—' : `${Math.round(v)}%`)
-export const formatoVariacion = (v: number | null) => (v === null ? '—' : `${v > 0 ? '+' : ''}${Math.round(v * 100)}%`)
-export const formatoNumero = (v: number | null) => (v === null ? '—' : v.toLocaleString('es-CL'))
+// Variación en unidades: con signo + si supera el presupuesto; negativos entre paréntesis como el resto de la tabla.
+export const formatoVariacion = (v: number | null) => (v === null ? '—' : v > 0 ? `+${v.toLocaleString('es-CL')}` : formatoNumero(v))
+// Formato contable, como las tablas del equipo: negativos entre paréntesis y cero como guion.
+export const formatoNumero = (v: number | null) => (v === null ? '—' : v === 0 ? '-' : v < 0 ? `(${(-v).toLocaleString('es-CL')})` : v.toLocaleString('es-CL'))

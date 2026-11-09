@@ -9,11 +9,12 @@ import { leyendaArriba } from '../../ui/graficos'
 import { SelectorMes, SelectorRangoMeses, Segmentado, atajosDeRango } from '../../ui/SelectorMes'
 import { mesesDisponibles } from '../../indicadores/evolucionArriendos/datos'
 import { META_OCUPACION, formatoNumero, formatoPct, formatoVariacion, laminaOcupacion, opcionesPorDefecto, type LaminaOcupacion, type Opciones } from './datos'
-import { COLOR_META, COLOR_NEGATIVO, COLOR_POSITIVO, COLOR_PRESUPUESTO } from './pptx'
+import { COLOR_META, COLOR_NEGATIVO, COLOR_POSITIVO, COLOR_PRESUPUESTO, TABLA } from './pptx'
 import { ubicarEtiquetas } from '../etiquetas'
 import { etiquetasOcupacion } from './etiquetas'
 
 const PRESUPUESTO = '#' + COLOR_PRESUPUESTO
+const sombra = (m: { proyectado: boolean }) => (m.proyectado ? { background: '#' + TABLA.proyectado } : undefined)
 const META = '#' + COLOR_META
 
 // Vista previa de la lámina en la web: mismo contenido que la de PowerPoint, adaptada al ancho de la pantalla.
@@ -89,23 +90,24 @@ export function LaminaOcupacionVista({ edificio, onLamina }: { edificio: Edifici
         </header>
 
         <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          {/* Mismo formato de la lámina: encabezado pizarra, total (Neto) en pizarra claro con letra blanca,
+              presupuesto en gris cursiva, cifras a la derecha y meses proyectados con la columna sombreada. */}
           <table className="w-full text-sm tabular-nums">
             <thead>
-              <tr className="text-white">
-                <th className="bg-oscuro px-3 py-1.5 text-left font-medium" />
-                {/* Meses proyectados en gris: valores de forecast, no reales. */}
-                {lamina.tabla.map((m) => <th key={m.mes} className={`min-w-16 px-2 py-1.5 font-medium ${m.proyectado ? 'bg-gris-claro' : 'bg-oscuro'}`}>{m.etiqueta}</th>)}
+              <tr className="text-white" style={{ background: '#' + TABLA.encabezado }}>
+                <th className="px-3 py-1.5 text-left font-semibold" />
+                {lamina.tabla.map((m) => <th key={m.mes} className="min-w-16 px-3 py-1.5 text-right font-semibold">{m.etiqueta}</th>)}
               </tr>
             </thead>
-            <tbody className="[&_td]:border-b [&_td]:border-slate-100 [&_td]:px-3 [&_td]:py-1.5 [&_td]:text-center [&_th]:border-b [&_th]:border-slate-100 [&_th]:px-3 [&_th]:py-1.5 [&_th]:text-left [&_th]:whitespace-nowrap">
-              <tr><th>Ingresos</th>{lamina.tabla.map((m) => <td key={m.mes} className={m.proyectado ? 'italic text-gris' : ''}>{formatoNumero(m.ingresos)}</td>)}</tr>
-              <tr><th>Salidas</th>{lamina.tabla.map((m) => <td key={m.mes} className={m.proyectado ? 'italic text-gris' : ''}>{formatoNumero(m.salidas)}</td>)}</tr>
-              <tr><th>Neto</th>{lamina.tabla.map((m) => <td key={m.mes} className={`font-bold ${m.proyectado ? 'italic text-gris' : ''}`}>{formatoNumero(m.neto)}</td>)}</tr>
-              <tr><th>Presupuesto (neto)</th>{lamina.tabla.map((m) => <td key={m.mes} className="text-gris">{formatoNumero(m.presupuesto)}</td>)}</tr>
-              <tr className="border-t-2 border-oscuro">
-                <th>Var. neto vs. ppto.</th>
+            <tbody className="[&_td]:border-b [&_td]:border-[#d9d9d9] [&_td]:px-3 [&_td]:py-1.5 [&_td]:text-right [&_th]:border-b [&_th]:border-[#d9d9d9] [&_th]:px-3 [&_th]:py-1.5 [&_th]:text-left [&_th]:font-normal [&_th]:whitespace-nowrap">
+              <tr><th>Ingresos</th>{lamina.tabla.map((m) => <td key={m.mes} style={sombra(m)}>{formatoNumero(m.ingresos)}</td>)}</tr>
+              <tr><th>Salidas</th>{lamina.tabla.map((m) => <td key={m.mes} style={sombra(m)}>{formatoNumero(m.salidas)}</td>)}</tr>
+              <tr className="font-bold text-white" style={{ background: '#' + TABLA.total }}><th className="!font-bold">Neto</th>{lamina.tabla.map((m) => <td key={m.mes}>{formatoNumero(m.neto)}</td>)}</tr>
+              <tr className="italic" style={{ color: '#' + TABLA.presupuesto }}><th>Presupuesto (neto)</th>{lamina.tabla.map((m) => <td key={m.mes} style={sombra(m)}>{formatoNumero(m.presupuesto)}</td>)}</tr>
+              <tr>
+                <th className="!font-bold">Var. neto vs. ppto. (un.)</th>
                 {lamina.tabla.map((m) => (
-                  <td key={m.mes} className={`font-bold ${m.proyectado ? 'italic' : ''}`} style={{ color: m.variacion === null ? undefined : '#' + (m.variacion >= 0 ? COLOR_POSITIVO : COLOR_NEGATIVO) }}>
+                  <td key={m.mes} className="font-bold" style={{ ...sombra(m), color: m.variacion === null ? undefined : '#' + (m.variacion >= 0 ? COLOR_POSITIVO : COLOR_NEGATIVO) }}>
                     {formatoVariacion(m.variacion)}
                   </td>
                 ))}
@@ -133,7 +135,7 @@ export function LaminaOcupacionVista({ edificio, onLamina }: { edificio: Edifici
             </LineChart>
           </ResponsiveContainer>
         </div>
-        <p className="mt-2 text-[11px] text-gris">Fuente: hoja Evolución. Ocupación = arriendos acumulados / {lamina.totalUnidades ?? '—'} unidades. Neto = ingresos − salidas. Columnas en gris: proyección (forecast).</p>
+        <p className="mt-2 text-[11px] text-gris">Fuente: hoja Evolución. Ocupación = arriendos acumulados / {lamina.totalUnidades ?? '—'} unidades. Neto = ingresos − salidas. Columnas sombreadas: proyección (forecast).</p>
       </article>
     </div>
   )
