@@ -2,7 +2,7 @@
 import type PptxGenJS from 'pptxgenjs'
 import type { Edificio } from '../../edificios'
 import { etiquetaMesLarga } from '../../datos/fechas'
-import { ANCHO_UTIL, FUENTE, GRIS, GRIS_CLARO, MARGEN, OSCURO, cabecera, ejesEstandar, hex, pie } from '../estilo'
+import { ANCHO_UTIL, FUENTE, GRIS, MARGEN, OSCURO, cabecera, ejesEstandar, hex, pie } from '../estilo'
 import { ubicarEtiquetas } from '../etiquetas'
 import { etiquetasOcupacion } from './etiquetas'
 import { META_OCUPACION, formatoNumero, formatoVariacion, type LaminaOcupacion } from './datos'
@@ -11,6 +11,9 @@ export const COLOR_PRESUPUESTO = 'C4C9CE'
 export const COLOR_META = '1F2A44' // azul marino
 export const COLOR_POSITIVO = '1A8F55'
 export const COLOR_NEGATIVO = 'B42318'
+// Tabla con el formato de las láminas del equipo: encabezado pizarra, totales en pizarra claro con letra blanca,
+// presupuesto en gris y meses proyectados con la columna sombreada.
+export const TABLA = { encabezado: '44546A', total: '8497B0', presupuesto: '7F7F7F', proyectado: 'EDEDED', borde: 'D9D9D9' }
 
 // Área del gráfico y del trazado fijas: las etiquetas se ubican a mano (ubicarEtiquetas) para que nunca se tapen,
 // cosa que PowerPoint no hace con las suyas.
@@ -24,22 +27,24 @@ export function agregarLaminaOcupacion(pptx: PptxGenJS, edificio: Edificio, l: L
   const color = hex(edificio.color.linea)
   const colorTexto = hex(edificio.color.base)
 
-  // Tabla: una columna por mes, el mes del reporte al final.
-  // Meses proyectados (forecast) con encabezado gris y cifras en cursiva, para no confundirlos con los reales.
-  const cab = (t: string, proyectado = false, align: 'left' | 'center' = 'center'): PptxGenJS.TableCell => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: proyectado ? GRIS_CLARO : OSCURO }, align } })
-  const celda = (v: number | null, proyectado: boolean, opc: PptxGenJS.TableCellProps = {}): PptxGenJS.TableCell => ({ text: formatoNumero(v), options: { align: 'center', ...(proyectado && { italic: true, color: GRIS }), ...opc } })
-  const linea = { type: 'solid' as const, pt: 1.5, color: OSCURO }
+  // Tabla: una columna por mes, el mes del reporte al final. Cifras a la derecha; los meses proyectados
+  // (forecast) con la columna sombreada.
+  const fondo = (m: { proyectado: boolean }) => (m.proyectado ? { fill: { color: TABLA.proyectado } } : {})
+  const cab = (t: string, align: 'left' | 'right' = 'right'): PptxGenJS.TableCell => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: TABLA.encabezado }, align } })
+  const titulo = (t: string, opc: PptxGenJS.TableCellProps = {}): PptxGenJS.TableCell => ({ text: t, options: { align: 'left', ...opc } })
+  const total = { bold: true, color: 'FFFFFF', fill: { color: TABLA.total } }
+  const ppto = { italic: true, color: TABLA.presupuesto }
   const filas: PptxGenJS.TableRow[] = [
-    [cab('', false, 'left'), ...l.tabla.map((m) => cab(m.etiqueta, m.proyectado))],
-    [{ text: 'Ingresos', options: { bold: true } }, ...l.tabla.map((m) => celda(m.ingresos, m.proyectado))],
-    [{ text: 'Salidas', options: { bold: true } }, ...l.tabla.map((m) => celda(m.salidas, m.proyectado))],
-    [{ text: 'Neto', options: { bold: true } }, ...l.tabla.map((m) => celda(m.neto, m.proyectado, { bold: true }))],
-    [{ text: 'Presupuesto (neto)', options: { bold: true } }, ...l.tabla.map((m) => celda(m.presupuesto, m.proyectado, { color: GRIS }))],
+    [cab('', 'left'), ...l.tabla.map((m) => cab(m.etiqueta))],
+    [titulo('Ingresos'), ...l.tabla.map((m) => ({ text: formatoNumero(m.ingresos), options: fondo(m) }))],
+    [titulo('Salidas'), ...l.tabla.map((m) => ({ text: formatoNumero(m.salidas), options: fondo(m) }))],
+    [titulo('Neto', total), ...l.tabla.map((m) => ({ text: formatoNumero(m.neto), options: total }))],
+    [titulo('Presupuesto (neto)', ppto), ...l.tabla.map((m) => ({ text: formatoNumero(m.presupuesto), options: { ...ppto, ...fondo(m) } }))],
     [
-      { text: 'Var. neto vs. ppto.', options: { bold: true, border: [linea, { type: 'none' }, { type: 'none' }, { type: 'none' }] } },
+      titulo('Var. neto vs. ppto. (un.)', { bold: true }),
       ...l.tabla.map((m): PptxGenJS.TableCell => ({
         text: formatoVariacion(m.variacion),
-        options: { align: 'center', bold: true, italic: m.proyectado, color: m.variacion === null ? GRIS : m.variacion >= 0 ? COLOR_POSITIVO : COLOR_NEGATIVO, border: [linea, { type: 'none' }, { type: 'none' }, { type: 'none' }] },
+        options: { bold: true, color: m.variacion === null ? GRIS : m.variacion >= 0 ? COLOR_POSITIVO : COLOR_NEGATIVO, ...fondo(m) },
       })),
     ],
   ]
@@ -47,7 +52,7 @@ export function agregarLaminaOcupacion(pptx: PptxGenJS, edificio: Edificio, l: L
   const anchoMes = (ANCHO_UTIL - anchoEtiqueta) / Math.max(1, l.tabla.length) // la tabla ocupa todo el ancho
   s.addTable(filas, {
     x: MARGEN, y: 1.3, w: anchoEtiqueta + anchoMes * l.tabla.length, colW: [anchoEtiqueta, ...l.tabla.map(() => anchoMes)], rowH: 0.3,
-    fontFace: FUENTE, fontSize: 11, color: OSCURO, valign: 'middle', border: { type: 'solid', color: 'E5E7EB', pt: 0.5 },
+    fontFace: FUENTE, fontSize: 11, color: OSCURO, valign: 'middle', align: 'right', border: { type: 'solid', color: TABLA.borde, pt: 0.5 },
   })
 
   // Gráfico: cuatro series, cada una con su propio estilo (gráfico combinado de líneas).
@@ -97,5 +102,5 @@ export function agregarLaminaOcupacion(pptx: PptxGenJS, edificio: Edificio, l: L
     fontFace: FUENTE, fontSize: 9, bold: true, color: COLOR_META,
   })
 
-  pie(s, `Fuente: hoja Evolución. Ocupación = arriendos acumulados / ${l.totalUnidades ?? '—'} unidades. Neto = ingresos − salidas. Columnas en gris: proyección (forecast).`, n)
+  pie(s, `Fuente: hoja Evolución. Ocupación = arriendos acumulados / ${l.totalUnidades ?? '—'} unidades. Neto = ingresos − salidas. Columnas sombreadas: proyección (forecast).`, n)
 }

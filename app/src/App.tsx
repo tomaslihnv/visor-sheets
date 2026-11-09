@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { User } from 'firebase/auth'
+import { saludo, nombreDe } from './ui/saludo'
 import { EDIFICIOS, urlVisorAnterior } from './edificios'
 import { Pildora } from './ui/Pildora'
 import { salir } from './auth'
@@ -50,6 +51,8 @@ export function App({ usuario }: { usuario: User }) {
     raiz.setProperty('--color-acento-fuerte', edificio.color.fuerte)
   }, [id, edificio])
 
+  // Un saludo por sesión (no cambia al navegar).
+  const [bienvenida] = useState(() => saludo(nombreDe(usuario)))
   const [pestana, setPestana] = useState<IdPestana>(pestanaDelHash)
   useEffect(() => {
     const alCambiar = () => setPestana(pestanaDelHash())
@@ -69,8 +72,8 @@ export function App({ usuario }: { usuario: User }) {
               </button>
             ))}
           </nav>
-          <h1 className="shrink-0"><img src={edificio.logo} alt={edificio.nombre} className="h-7 w-auto sm:h-9" /></h1>
-          <span className="hidden text-xs text-gris lg:inline">{usuario.email}</span>
+          <h1 className="sr-only">{edificio.nombre}</h1>
+          <span className="hidden shrink-0 text-sm text-gris md:inline" title={usuario.email ?? undefined}>{bienvenida}</span>
           <button onClick={salir} className="shrink-0 text-xs font-medium text-gris hover:text-oscuro">Salir</button>
         </div>
         <nav className="flex gap-1 overflow-x-auto border-t border-slate-100 px-3 [scrollbar-width:none] sm:px-6">
