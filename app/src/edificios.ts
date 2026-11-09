@@ -6,7 +6,7 @@ import logoTM from './assets/logos/tm.svg'
 import logoIRR from './assets/logos/irr.svg'
 import logoECH from './assets/logos/ech.svg'
 
-export type Hoja = 'estatus' | 'evolucion' | 'est' | 'bod' | 'venc' | 'sal' | 'contratos'
+export type Hoja = 'estatus' | 'evolucion' | 'est' | 'bod' | 'venc' | 'sal' | 'contratos' | 'reparacion'
 
 export interface Edificio {
   id: string
@@ -40,6 +40,7 @@ export const EDIFICIOS: Edificio[] = [
       venc: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_SrPMC9v_h6szyyZUjhqywYeyrwp8AwiguskyC7PzNt8CCE_W6HA_wUTrKA1PWew77AAC1qhVR88i/pub?gid=1256476780&single=true&output=csv',
       sal: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_SrPMC9v_h6szyyZUjhqywYeyrwp8AwiguskyC7PzNt8CCE_W6HA_wUTrKA1PWew77AAC1qhVR88i/pub?gid=1440415170&single=true&output=csv',
       contratos: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_SrPMC9v_h6szyyZUjhqywYeyrwp8AwiguskyC7PzNt8CCE_W6HA_wUTrKA1PWew77AAC1qhVR88i/pub?gid=531179770&single=true&output=csv',
+      reparacion: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_SrPMC9v_h6szyyZUjhqywYeyrwp8AwiguskyC7PzNt8CCE_W6HA_wUTrKA1PWew77AAC1qhVR88i/pub?gid=1828849230&single=true&output=csv',
     },
     layout: LAYOUT_IRR,
   },
