@@ -1,17 +1,26 @@
 // Colores semánticos de los gráficos (los del visor anterior, CHART_COLORS en state.js).
 // Una etiqueta que aparece en más de un gráfico usa siempre el mismo color.
+// Paleta categórica validada (daltonismo y contraste, skill dataviz): orden fijo, nunca se cicla más allá de 5.
+export const SERIES = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4']
+export const OTROS = '#b8bfc7'
+export const TINTA = '#2d3334'
+
 export const COLORES = {
   noRenovacion: '#fb923c',
-  renovacion: '#34d399',
+  renovacion: '#1baf7a',
   salidaAnticipada: '#a855f7',
-  porDefinir: '#cbd5e1',
-  nuevosContratos: '#3b82f6',
-  salidas: '#f43f5e',
-  netos: '#10b981',
-  real: '#44546a',
-  netoNegativo: '#c0674d',
-  proyectadoPositivo: '#a8b8c8',
-  proyectadoNegativo: '#e8a898',
+  porDefinir: '#c3c9d0',
+  nuevosContratos: '#2a78d6',
+  salidas: '#e34948',
+  netos: TINTA,
+  real: '#5b6670', // gris SITU
+  situ: '#96323c', // rojo SITU
+}
+
+// Texto legible sobre un relleno: blanco en colores oscuros, tinta en los claros.
+export function tintaSobre(fondo: string) {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(fondo.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.04 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.3 ? TINTA : '#fff'
 }
 
 // Motivos de salida en el orden de config.js; cada uno con su color fijo.
@@ -22,7 +31,7 @@ export const MOTIVOS = [
   'Disconformidad', 'Déficit financiero', 'Mora',
 ]
 const PALETA_MOTIVOS = [
-  '#60a5fa', '#4ade80', '#fbbf24', '#94a3b8', '#f87171', '#fde047', '#2dd4bf', '#fb923c', '#a3e635', '#a855f7',
+  '#60a5fa', '#4ade80', '#fbbf24', '#94a3b8', '#f87171', '#fde047', '#2dd4bf', COLORES.noRenovacion, '#a3e635', COLORES.salidaAnticipada,
   '#be123c', '#9f1239', '#fb7185', '#b45309', '#7c3aed', '#dc2626', '#0891b2', '#6b7280',
 ]
 const sinTildes = (s: string) => s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/^dis/, 'des')
@@ -36,5 +45,5 @@ export function colorMotivo(motivo: string): string {
   return PALETA_MOTIVOS[h % PALETA_MOTIVOS.length]
 }
 
-const PALETA_GENERAL = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16', '#ec4899', '#14b8a6']
-export const colorSerie = (i: number) => PALETA_GENERAL[i % PALETA_GENERAL.length]
+// Serie i-ésima de un gráfico; desde la sexta, gris (agrupar en "Otros" antes de llegar ahí).
+export const colorSerie = (i: number) => SERIES[i] ?? OTROS

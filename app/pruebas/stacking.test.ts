@@ -74,6 +74,14 @@ describe('stacking de Tomás Moro', () => {
     expect(metricasSimple(b).total).toBe(b.length)
   })
 
+  it('subterráneo: un estacionamiento movido al piso 1 en EST aparece arriba, sin arrastrar bodegas', () => {
+    const e = construirEstacionamientos(leer('tm_est.csv')).map((x, i) => (i === 0 ? { ...x, piso: 1 } : x))
+    const sub = pisosSubterraneo(e, construirBodegas(leer('tm_bod.csv')))
+    expect(sub.map((s) => s.piso)).toEqual([1, -1, -2])
+    expect(sub[0].autos.map((x) => x.n)).toEqual([e[0].n])
+    expect(sub[0].bodegas).toEqual([])
+  })
+
   it('filtro "Vacantes" atenúa los contratos', () => {
     const contrato = [...unidades.values()].find((x) => x.categoria === 'contrato')!
     expect(unidadVisible(contrato, FILTROS_INICIALES)).toBe(true)

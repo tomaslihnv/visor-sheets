@@ -1,15 +1,16 @@
 import { useMemo, useState } from 'react'
-import { Bar, CartesianGrid, ComposedChart, LabelList, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, type TooltipProps } from 'recharts'
+import { Bar, ComposedChart, LabelList, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, type TooltipProps } from 'recharts'
 import type { Edificio } from '../../edificios'
 import { useHoja } from '../../datos/hojas'
 import { Casilla, Mensaje, Tarjeta } from '../../ui/Tarjeta'
 import { EsqueletoGrafico } from '../../ui/Esqueleto'
 import { SelectorMes, SelectorRangoMeses, atajosDeRango } from '../../ui/SelectorMes'
 import { mesActual, sumarMeses } from '../../datos/fechas'
+import { ejeX, ejeY, leyendaArriba } from '../../ui/graficos'
 import { evolucionArriendos, mesesDisponibles, opcionesPorDefecto, type Opciones, type PuntoEvolucion } from './datos'
 
 // Los mismos colores de las láminas (exportarPptx.ts de los otros proyectos).
-const C = { real: '#96323c', proyectado: '#d7a1a7', linea: '#2d3334', lineaProy: '#a5acb2', presupuesto: '#5b6670', grilla: '#eef0f2', eje: '#5b6670' }
+const C = { real: '#96323c', proyectado: '#d7a1a7', linea: '#2d3334', lineaProy: '#8a949c', presupuesto: '#5b6670', eje: '#5b6670' }
 
 type PuntoGrafico = PuntoEvolucion & { pctReal: number | null; pctProy: number | null; lblReal: string; lblProy: string }
 
@@ -55,7 +56,6 @@ export function EvolucionArriendos({ edificio }: { edificio: Edificio }) {
   )
 
   const total = evolucion?.totalUnidades
-  const subtitulo = 'Unidades arrendadas acumuladas y % de ocupación' + (total ? ` · ${total} unidades` : '')
 
   let cuerpo
   if (hoja.cargando) cuerpo = <EsqueletoGrafico alto="h-96" />
@@ -65,29 +65,30 @@ export function EvolucionArriendos({ edificio }: { edificio: Edificio }) {
   else cuerpo = (
     <div className="h-96 aparecer">
       <ResponsiveContainer>
-        <ComposedChart data={datos} margin={{ top: 20, right: 8, bottom: 0, left: 0 }}>
-          <CartesianGrid vertical={false} stroke={C.grilla} />
-          <XAxis dataKey="etiqueta" tick={{ fontSize: 11, fill: C.eje }} tickLine={false} axisLine={{ stroke: C.grilla }} interval="preserveStartEnd" minTickGap={8} />
+        <ComposedChart data={datos} margin={{ top: 22, right: 12, bottom: 4, left: 0 }}>
+          <XAxis dataKey="etiqueta" {...ejeX} interval="preserveStartEnd" />
           {/* Ejes alineados: el 100% del eje izquierdo cae a la altura del total de unidades del derecho. */}
-          <YAxis yAxisId="pct" domain={[0, 120]} ticks={[0, 20, 40, 60, 80, 100, 120]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 11, fill: C.eje }} tickLine={false} axisLine={false} width={44} />
-          <YAxis yAxisId="un" orientation="right" domain={[0, total ? Math.ceil(total * 1.2) : 'auto']} tick={{ fontSize: 11, fill: C.eje }} tickLine={false} axisLine={false} width={40} allowDecimals={false} />
+          <YAxis yAxisId="pct" {...ejeY('Ocupación')} domain={[0, 120]} ticks={[0, 20, 40, 60, 80, 100, 120]} tickFormatter={(v) => `${v}%`} />
+          <YAxis yAxisId="un" orientation="right" {...ejeY('Unidades')} domain={[0, total ? total * 1.2 : 'auto']}
+            ticks={total ? [0, 0.2, 0.4, 0.6, 0.8, 1, 1.2].map((f) => Math.round(total * f)) : undefined}
+            label={{ ...ejeY('Unidades').label, angle: 90, position: 'insideRight' }} />
           <Tooltip content={<Detalle />} cursor={{ fill: '#96323c0d' }} />
-          <Legend verticalAlign="top" align="left" height={32} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, color: C.eje }} />
+          <Legend {...leyendaArriba} />
           <Bar yAxisId="un" dataKey="real" name="Arrendadas (real)" stackId="u" fill={C.real} radius={[3, 3, 0, 0]} maxBarSize={28}>
-            {etiquetas && <LabelList dataKey="lblReal" position="top" style={{ fontSize: 9, fill: C.real, fontWeight: 600 }} />}
+            {etiquetas && <LabelList dataKey="lblReal" position="top" style={{ fontSize: 11, fill: C.real, fontWeight: 700 }} />}
           </Bar>
           <Bar yAxisId="un" dataKey="proyectado" name="Arrendadas (proyección)" stackId="u" fill={C.proyectado} radius={[3, 3, 0, 0]} maxBarSize={28}>
-            {etiquetas && <LabelList dataKey="lblProy" position="top" style={{ fontSize: 9, fill: C.eje, fontWeight: 600 }} />}
+            {etiquetas && <LabelList dataKey="lblProy" position="top" style={{ fontSize: 11, fill: C.eje, fontWeight: 700 }} />}
           </Bar>
-          <Line yAxisId="pct" dataKey="pctReal" name="Ocupación %" stroke={C.linea} strokeWidth={2.5} dot={{ r: 2.5, fill: C.linea }} type="monotone" connectNulls={false} />
-          <Line yAxisId="pct" dataKey="pctProy" name="Ocupación % (proyección)" stroke={C.lineaProy} strokeWidth={2} strokeDasharray="5 4" dot={{ r: 2, fill: C.lineaProy }} type="monotone" connectNulls={false} legendType="plainline" />
+          <Line yAxisId="pct" dataKey="pctReal" name="Ocupación %" stroke={C.linea} strokeWidth={2.5} dot={{ r: 1.5, fill: C.linea }} activeDot={{ r: 4 }} type="monotone" connectNulls={false} />
+          <Line yAxisId="pct" dataKey="pctProy" name="Ocupación % (proyección)" stroke={C.lineaProy} strokeWidth={2.5} strokeDasharray="5 4" dot={{ r: 1.5, fill: C.lineaProy }} activeDot={{ r: 4 }} type="monotone" connectNulls={false} />
           {presupuesto && <Line yAxisId="un" dataKey="presupuesto" name="Presupuesto (un.)" stroke={C.presupuesto} strokeWidth={1.5} strokeDasharray="2 3" dot={false} type="monotone" />}
         </ComposedChart>
       </ResponsiveContainer>
     </div>
   )
 
-  return <Tarjeta titulo="Evolución de arriendos" subtitulo={subtitulo} controles={controles}>{cuerpo}</Tarjeta>
+  return <Tarjeta titulo={total ? `Evolución de arriendos · ${total} unidades` : 'Evolución de arriendos'} controles={controles}>{cuerpo}</Tarjeta>
 }
 
 function Detalle({ active, payload }: TooltipProps<number, string>) {

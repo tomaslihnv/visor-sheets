@@ -5,6 +5,7 @@ import { useHoja } from '../../datos/hojas'
 import { etiquetaMesLarga, mesActual, sumarMeses } from '../../datos/fechas'
 import { Mensaje } from '../../ui/Tarjeta'
 import { Bloque, EsqueletoGrafico } from '../../ui/Esqueleto'
+import { leyendaArriba } from '../../ui/graficos'
 import { SelectorMes, SelectorRangoMeses, Segmentado, atajosDeRango } from '../../ui/SelectorMes'
 import { mesesDisponibles } from '../../indicadores/evolucionArriendos/datos'
 import { META_OCUPACION, formatoNumero, formatoPct, formatoVariacion, laminaOcupacion, opcionesPorDefecto, type LaminaOcupacion, type Opciones } from './datos'
@@ -122,7 +123,7 @@ export function LaminaOcupacionVista({ edificio, onLamina }: { edificio: Edifici
               <YAxis domain={[0, 100]} ticks={[0, 20, 40, 60, 80, 100]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 10, fill: '#5b6670' }} tickLine={{ stroke: '#2d3334' }} axisLine={{ stroke: '#2d3334' }} width={56}
                 label={{ value: 'Ocupación (%)', angle: -90, position: 'insideLeft', offset: 4, style: { textAnchor: 'middle' }, fontSize: 11, fill: '#2d3334', fontWeight: 600 }} />
               <Tooltip formatter={(v) => formatoPct(Number(v))} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-              <Legend verticalAlign="top" iconType="plainline" wrapperStyle={{ fontSize: 12, paddingBottom: 12 }} />
+              <Legend {...leyendaArriba} />
               <ReferenceLine y={META_OCUPACION} stroke={META} strokeWidth={1.5}
                 label={{ value: `${META_OCUPACION}%`, position: 'right', fill: META, fontSize: 10, fontWeight: 700 }} />
               <Line dataKey="presupuesto" name="Presupuesto" stroke={PRESUPUESTO} strokeWidth={2} dot={false} isAnimationActive={false} />

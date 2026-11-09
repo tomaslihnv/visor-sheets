@@ -98,9 +98,12 @@ export interface PisoSubterraneo {
   bodegas: Bodega[]
 }
 
-// Pisos negativos, del más alto al más profundo, con sus estacionamientos agrupados y sus bodegas.
+// Pisos con estacionamientos (el piso sale de la columna Piso de EST: también los de superficie, p. ej. visitas
+// en el 1) y los subterráneos con bodegas, del más alto al más profundo. Las bodegas de pisos sobre el suelo van
+// al lado del edificio (bodegasPorPiso), no aquí.
 export function pisosSubterraneo(estac: Estacionamiento[], bodegas: Bodega[]): PisoSubterraneo[] {
-  const pisos = [...new Set(estac.map((e) => e.piso).filter((p): p is number => p !== null && p < 0))].sort((a, b) => b - a)
+  const conPiso = [...estac, ...bodegas.filter((b) => b.piso !== null && b.piso < 0)].map((x) => x.piso)
+  const pisos = [...new Set(conPiso.filter((p): p is number => p !== null))].sort((a, b) => b - a)
   return pisos.map((p) => {
     const del = estac.filter((e) => e.piso === p).sort(porNumero)
     return {
@@ -108,7 +111,7 @@ export function pisosSubterraneo(estac: Estacionamiento[], bodegas: Bodega[]): P
       autos: del.filter((e) => e.grupo === 'auto'),
       motos: del.filter((e) => e.grupo === 'moto'),
       inhab: del.filter((e) => e.grupo === 'inhab'),
-      bodegas: bodegas.filter((b) => b.piso === p).sort(porNumero),
+      bodegas: p < 0 ? bodegas.filter((b) => b.piso === p).sort(porNumero) : [],
     }
   })
 }
