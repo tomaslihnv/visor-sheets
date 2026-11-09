@@ -1,6 +1,8 @@
 # VISOR INSITU
 
-Visor de gestión de activos inmobiliarios para INSITU Irarrázaval e INSITU Echaurren. Aplicación web estática sin backend, desplegada en GitHub Pages.
+Visor de gestión de activos inmobiliarios para INSITU Irarrázaval, INSITU Echaurren e INSITU Tomás Moro. Aplicación web estática sin backend, desplegada en GitHub Pages.
+
+> **Versión nueva (React):** el código está en [`app/`](app/) (Vite + React + TypeScript + Tailwind + Recharts, láminas con pptxgenjs) y se publica compilado en la raíz del sitio. El visor anterior, con el que se escribió el resto de este documento, quedó en [`anterior/`](anterior/) y se publica en `/visor-sheets/anterior/`: ahí siguen las pestañas aún no migradas (Reparaciones y Caracterización).
 
 **URL:** [tomaslihnv.github.io/visor-sheets](https://tomaslihnv.github.io/visor-sheets/)
 
@@ -121,8 +123,21 @@ Luego abrir `http://localhost:8080`.
 
 ## Deploy
 
-Push a `main` → GitHub Pages publica automáticamente. No hay build ni paso extra.
+GitHub Pages publica la rama `main` tal cual, sin compilar. Por eso la app nueva se compila en la raíz del repo antes de subirla:
 
+```bash
+cd app
+npm install          # la primera vez
+npm run publicar     # pruebas + tipos + compila a ../index.html y ../assets/
+```
+
+Después, commit y push a `main`. El visor anterior (`anterior/`) no necesita compilación.
+
+Para desarrollar la app: `cd app && npm run dev` (http://localhost:5173). Las pruebas: `npm test`.
+
+En la app nueva, agregar un edificio es agregar su entrada en `app/src/edificios.ts` (hojas, layout, colores) y su logo.
+
+En el visor anterior:
 Para agregar un nuevo edificio:
 1. Agregar sus URLs en `src/config.js` (objeto `URLS`).
 2. Definir su layout de pisos en `src/config.js` (arreglo `LAYOUT_XXX`).

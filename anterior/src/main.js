@@ -748,6 +748,15 @@ document.addEventListener('DOMContentLoaded', initChartFontSliders);
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────
 
+// La app nueva enlaza aquí con ?b=<edificio> para las pestañas que aún no migra: se abre en ese edificio.
+// Se fija antes de cargar las hojas, así cada carga ya pinta el edificio correcto.
+const edificioPedido = new URLSearchParams(location.search).get('b');
+if (BUILDINGS[edificioPedido] && edificioPedido !== state.AB) {
+  state.AB = edificioPedido;
+  document.documentElement.style.setProperty('--accent', BUILDINGS[edificioPedido].accent);
+  document.querySelectorAll('.bldg-tab').forEach(t => t.classList.toggle('active', t.id === 'bt-' + edificioPedido));
+}
+
 renderStacking();
 
 function revealStacking() {

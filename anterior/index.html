@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VISOR INSITU</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/main.css">
+<style>
+/* Estilos en styles/main.css */
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN OVERLAY ── -->
+<div id="auth-overlay">
+  <div class="auth-bg">
+
+    <!-- Panel izquierdo — visual arquitectónico -->
+    <div class="auth-visual">
+      <div class="auth-visual-glow"></div>
+      <div class="auth-building-grid" id="auth-building-grid"></div>
+      <div class="auth-brand-watermark">VISOR</div>
+    </div>
+
+    <!-- Panel derecho — formulario -->
+    <div class="auth-panel">
+      <div class="auth-panel-inner">
+        <div class="auth-eyebrow">Gestión de activos</div>
+        <h1 class="auth-heading">VISOR<br><em>INSITU</em></h1>
+        <div class="auth-gold-line"></div>
+        <p class="auth-sub">Ingresa con tu cuenta <strong>@situ.cl</strong> o <strong>@insiturentas.cl</strong> para acceder al visor de propiedades.</p>
+        <button class="auth-btn-google" id="btn-google-login">
+          <svg width="17" height="17" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 20-8 20-20 0-1.3-.1-2.7-.4-4z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 18.9 12 24 12c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 10-1.9 13.6-5l-6.3-5.1C29.5 35.6 26.9 36 24 36c-5.2 0-9.5-2.9-11.3-7.1l-6.5 5C9.6 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.5-2.6 4.6-4.7 6l6.3 5.1C40.7 35.4 44 30.1 44 24c0-1.3-.1-2.7-.4-4z"/></svg>
+          Continuar con Google
+        </button>
+        <p class="auth-error" id="auth-error"></p>
+        <div class="auth-footer">Acceso restringido · INSITU</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+<script>
+(function() {
+  var grid = document.getElementById('auth-building-grid');
+  if (!grid) return;
+  var cols = 11, rows = 16;
+  var durations = [3.8, 4.6, 5.2, 6.1, 4.1, 5.7];
+  for (var i = 0; i < cols * rows; i++) {
+    var cell = document.createElement('div');
+    cell.className = 'auth-cell';
+    var delay = (Math.random() * 6).toFixed(2);
+    var dur = durations[Math.floor(Math.random() * durations.length)];
+    cell.style.setProperty('--d', dur + 's');
+    cell.style.setProperty('--delay', delay + 's');
+    grid.appendChild(cell);
+  }
+})();
+</script>
+
+<!-- ── APP ── -->
+<div id="app-root" style="display:none">
+
+<div class="hdr">
+  <button class="bldg-tab active" id="bt-irr" onclick="switchBuilding('irr')">
+    <span class="bldg-name">INSITU IRARRÁZAVAL</span>
+    <span class="bldg-sub">Live · Google Sheets</span>
+  </button>
+  <button class="bldg-tab" id="bt-ech" onclick="switchBuilding('ech')">
+    <span class="bldg-name">INSITU ECHAURREN</span>
+    <span class="bldg-sub">Live · Google Sheets</span>
+  </button>
+  <button class="bldg-tab" id="bt-tm" onclick="switchBuilding('tm')">
+    <span class="bldg-name">INSITU TOMÁS MORO</span>
+    <span class="bldg-sub">Live · Google Sheets</span>
+  </button>
+  <div class="hdr-user" id="hdr-user">
+    <span class="hdr-user-email" id="hdr-user-email"></span>
+    <button class="hdr-signout" id="btn-signout">Salir</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('stacking',this)">Stacking Plan</button>
+  <button class="tab-btn" onclick="showTab('evolucion',this)">Evolución</button>
+  <button class="tab-btn" onclick="showTab('hoja1',this)">Estatus Actual</button>
+  <button class="tab-btn" onclick="showTab('hoja2',this)">Evolución de Arriendos</button>
+  <button class="tab-btn" onclick="showTab('estac',this)">Estacionamientos</button>
+  <button class="tab-btn" onclick="showTab('bodegas',this)">Bodegas</button>
+  <button class="tab-btn" onclick="showTab('venc',this)">Vencimientos</button>
+  <button class="tab-btn" onclick="showTab('sal',this)">Salidas</button>
+  <button class="tab-btn" onclick="showTab('auditoria',this)">Reparaciones</button>
+  <button class="tab-btn" onclick="showTab('caracterizacion',this)">Caracterización</button>
+</div>
+
+<div id="panel-stacking" class="panel active">
+  <div class="stacking-layout">
+    <div class="stacking-left">
+      <div class="legend">
+        <!-- Tabs -->
+        <div class="legend-tabs">
+          <button class="legend-tab active" onclick="switchLegendTab('unidades',this)">Unidades</button>
+          <button class="legend-tab" onclick="switchLegendTab('bodegas',this)">Bodegas</button>
+          <button class="legend-tab" onclick="switchLegendTab('estac',this)">Estac.</button>
+          <button class="btn-toggle-tipo" id="btn-toggle-tipo" onclick="toggleTipologia(this)" title="Mostrar/ocultar tipología en celdas">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Tipología
+          </button>
+          <button class="btn-toggle-tipo" id="btn-toggle-hdr" onclick="toggleHeader(this)" title="Mostrar/ocultar cabecera de columnas">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1" opacity="0.4"/><rect x="3" y="17" width="18" height="4" rx="1" opacity="0.2"/></svg>
+            Cabecera
+          </button>
+          <button class="btn-export-pdf" id="btn-export-pdf" onclick="exportStackingPDF()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar PDF
+          </button>
+        </div>
+
+        <!-- Panel Unidades -->
+        <div class="legend-panel active" id="legend-panel-unidades">
+
+          <!-- Página 1: Estado + Métricas core -->
+          <div class="legend-page" id="legend-page-1">
+            <div class="legend-item"><div class="legend-dot" style="background:#d1fae5;border-color:#6ee7b7"></div>Contratos <span class="legend-count" id="lc-contr">—</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#ede9fe;border-color:#c4b5fd"></div>Renta corta <span class="legend-count" id="lc-rc">—</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#fee2e2;border-color:#fca5a5"></div>Vacantes <span class="legend-count" id="lc-vac">—</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#ffedd5;border-color:#fdba74"></div>Pilotos <span class="legend-count" id="lc-pilot">—</span></div>
+            <div class="legend-sep"></div>
+            <div class="legend-metric">
+              <span class="metric-label">Depto.</span>
+              <span class="metric-val" id="occ-depto">—</span>
+              <span id="occ-depto-un" style="font-size:10px;color:#8a9bb0;margin-left:3px;">—</span>
+            </div>
+            <div class="legend-metric"><span class="metric-label">Estac.</span><span class="metric-val" id="occ-estac">—</span></div>
+            <div class="legend-metric"><span class="metric-label">Bodega</span><span class="metric-val" id="occ-bod">—</span></div>
+          </div>
+
+          <!-- Página 2: Tipología + Proyecciones -->
+          <div class="legend-page" id="legend-page-2">
+            <div class="legend-page-title">Tipología</div>
+            <div id="tipologia-breakdown"></div>
+            <div class="legend-sep"></div>
+            <div class="legend-page-title">Orientación</div>
+            <div id="orientacion-breakdown"></div>
+            <div class="legend-sep"></div>
+            <div class="legend-metric">
+              <span class="metric-label">Depto. Proy.</span>
+              <span class="metric-val" id="occ-proy-pct">—</span>
+              <span id="occ-proy-un" style="font-size:10px;color:#8a9bb0;margin-left:3px;">—</span>
+            </div>
+            <div class="legend-metric"><span class="metric-label">Netos Proy.</span><span class="metric-val" id="occ-netos-un">—</span></div>
+          </div>
+
+        </div>
+
+        <!-- Panel Bodegas -->
+        <div class="legend-panel" id="legend-panel-bodegas">
+          <div class="legend-item"><div class="legend-dot" style="background:#d1fae5;border-color:#6ee7b7"></div>Arrendadas <span class="legend-count" id="lc-bod-contr">—</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#fee2e2;border-color:#fca5a5"></div>Vacantes <span class="legend-count" id="lc-bod-vac">—</span></div>
+          <div class="legend-sep"></div>
+          <div class="legend-metric">
+            <span class="metric-label">Ocupación</span>
+            <span class="metric-val" id="occ-bod-pct">—</span>
+            <span id="occ-bod-un" style="font-size:10px;color:#8a9bb0;margin-left:3px;">—</span>
+          </div>
+        </div>
+
+        <!-- Panel Estacionamientos -->
+        <div class="legend-panel" id="legend-panel-estac">
+          <div class="legend-item"><div class="legend-dot" style="background:#d1fae5;border-color:#6ee7b7"></div>Arrendados <span class="legend-count" id="lc-estac-arr">—</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#fee2e2;border-color:#fca5a5"></div>Vacantes <span class="legend-count" id="lc-estac-vac">—</span></div>
+          <div class="legend-sep"></div>
+          <div class="legend-metric">
+            <span class="metric-label">Ocupación</span>
+            <span class="metric-val" id="occ-estac-pct">—</span>
+            <span id="occ-estac-un" style="font-size:10px;color:#8a9bb0;margin-left:3px;">—</span>
+          </div>
+          <div class="legend-metric">
+            <span class="metric-label">Total</span>
+            <span class="metric-val" id="occ-estac-total">—</span>
+          </div>
+        </div>
+
+        <!-- Dots paginación unidades (solo mobile, fuera del scroll) -->
+        <div class="legend-dots" id="legend-dots">
+          <button class="legend-dot-btn active" onclick="goLegendPage(0)" aria-label="Página 1"></button>
+          <button class="legend-dot-btn" onclick="goLegendPage(1)" aria-label="Página 2"></button>
+        </div>
+
+      </div>
+      <div class="stacking-wrap">
+        <div class="skel-grid" id="stacking-skel" data-skel-rows="14" data-skel-cols="16"></div>
+        <div class="stacking-zoom-inner" id="stacking-zoom-inner" style="display:none">
+          <div class="col-hdr-wrap" id="col-hdr-wrap">
+            <div class="col-hdr-row" id="col-hdr-torre"></div>
+            <div class="col-hdr-row" id="col-hdr-col"></div>
+            <div class="col-hdr-row" id="col-hdr-tipo"></div>
+            <div class="col-hdr-row" id="col-hdr-prod"></div>
+            <div class="col-hdr-row col-hdr-row-pct" id="col-hdr-pct"></div>
+            <div class="col-hdr-row" id="col-hdr-orient"></div>
+          </div>
+          <div class="building" id="building"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters-panel">
+      <div class="fp-header">
+        <span class="fp-header-title">Filtros</span>
+        <button class="fp-reset" onclick="resetFilters()">✕ Limpiar</button>
+      </div>
+
+      <div class="filter-section">
+        <div class="filter-title">Tipo de bien</div>
+        <div class="radio-group">
+          <div class="radio-item"><input type="radio" name="ftb" id="ftb-todos"  value="todos"            checked onchange="applyFilters()"><label for="ftb-todos">Todos</label></div>
+          <div class="radio-item"><input type="radio" name="ftb" id="ftb-deptos" value="departamentos"           onchange="applyFilters()"><label for="ftb-deptos">Departamentos</label></div>
+          <div class="radio-item"><input type="radio" name="ftb" id="ftb-estac"  value="estacionamientos"        onchange="applyFilters()"><label for="ftb-estac">Estacionamientos</label></div>
+          <div class="radio-item"><input type="radio" name="ftb" id="ftb-bodegas" value="bodegas"                onchange="applyFilters()"><label for="ftb-bodegas">Bodegas</label></div>
+        </div>
+      </div>
+      <div class="filter-divider"></div>
+
+      <div class="filter-section">
+        <div class="filter-title">Unidades</div>
+        <div class="radio-group">
+          <div class="radio-item"><input type="radio" name="fu" id="fu-todas"    value="todas"         checked onchange="applyFilters()"><label for="fu-todas">Todas</label></div>
+          <div class="radio-item"><input type="radio" name="fu" id="fu-contr"    value="contratos"              onchange="applyFilters()"><label for="fu-contr">Contratos</label></div>
+          <div class="radio-item"><input type="radio" name="fu" id="fu-renta"    value="en-renta"               onchange="applyFilters()"><label for="fu-renta">En renta</label></div>
+          <div class="radio-item"><input type="radio" name="fu" id="fu-vacantes" value="vacantes"               onchange="applyFilters()"><label for="fu-vacantes">Vacantes</label></div>
+          <div class="radio-item"><input type="radio" name="fu" id="fu-inhab"    value="inhabilitadas"          onchange="applyFilters()"><label for="fu-inhab">Inhabilitadas</label></div>
+        </div>
+      </div>
+      <div class="filter-divider"></div>
+
+      <div class="filter-section">
+        <div class="filter-title">Tipología</div>
+        <div class="select-group">
+          <div class="select-wrap"><span class="select-label">Tipo</span>
+            <select class="filter-select" id="ft-tipo" onchange="applyFilters()"><option value="">Todos</option></select></div>
+          <div class="select-wrap"><span class="select-label">Sub Tip. (1)</span>
+            <select class="filter-select" id="ft-sub1" onchange="applyFilters()"><option value="">Todos</option></select></div>
+          <div class="select-wrap"><span class="select-label">Sub Tip. (2)</span>
+            <select class="filter-select" id="ft-sub2" onchange="applyFilters()"><option value="">Todos</option></select></div>
+        </div>
+      </div>
+      <div class="filter-divider"></div>
+
+      <div class="filter-section">
+        <div class="filter-title">Orientación</div>
+        <div class="check-group">
+          <div class="check-item"><input type="checkbox" id="fo-n" value="N" onchange="applyFilters()"><label for="fo-n">Norte (N)</label></div>
+          <div class="check-item"><input type="checkbox" id="fo-s" value="S" onchange="applyFilters()"><label for="fo-s">Sur (S)</label></div>
+          <div class="check-item"><input type="checkbox" id="fo-o" value="O" onchange="applyFilters()"><label for="fo-o">Oriente (O)</label></div>
+          <div class="check-item"><input type="checkbox" id="fo-p" value="P" onchange="applyFilters()"><label for="fo-p">Poniente (P)</label></div>
+        </div>
+      </div>
+
+      <div class="filter-divider" id="fd-venc" style="display:none"></div>
+      <div class="filter-section"  id="fs-venc" style="display:none">
+        <div class="filter-title">Vencimiento</div>
+        <div class="slider-label" id="venc-label">Sin filtro</div>
+        <div class="slider-wrap">
+          <input type="range" id="venc-slider" step="1" oninput="onVencSlider(this)">
+        </div>
+      </div>
+
+      <div class="filter-divider" id="fd-uf" style="display:none"></div>
+      <div class="filter-section"  id="fs-uf"   style="display:none">
+        <div class="filter-title">Canon UF/m²</div>
+        <div class="dual-range-wrap">
+          <div class="dual-range-track"></div>
+          <div class="dual-range-fill" id="uf-fill"></div>
+          <input type="range" class="dual-range-input" id="uf-lo" step="0.01" oninput="onUFRange()">
+          <input type="range" class="dual-range-input" id="uf-hi" step="0.01" oninput="onUFRange()">
+        </div>
+        <div class="dual-range-vals"><span id="uf-lo-lbl">—</span><span id="uf-hi-lbl">—</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="unit-tt">
+  <div class="tt-title" id="tt-title">—</div>
+  <div id="tt-body"></div>
+</div>
+
+<div id="panel-hoja1" class="panel">
+  <div class="table-wrap">
+    <div class="table-notice table-notice-row">
+      <span id="ipc-notice">⏳ Cargando valores UF…</span>
+      <button class="btn-export-pdf" onclick="openEstatusExportModal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar
+      </button>
+    </div>
+    <div id="table1"><div class="skel-table" data-skel-rows="8"></div></div>
+  </div>
+</div>
+
+<div id="panel-hoja2" class="panel">
+  <div class="table-wrap" id="table2"><div class="skel-table" data-skel-rows="8"></div></div>
+</div>
+
+<div id="panel-estac" class="panel">
+  <div class="table-wrap" id="table3"><div class="skel-table" data-skel-rows="8"></div></div>
+</div>
+
+<div id="panel-bodegas" class="panel">
+  <div class="table-wrap" id="table4"><div class="skel-table" data-skel-rows="8"></div></div>
+</div>
+
+<div id="panel-venc" class="panel">
+  <div class="table-wrap" id="table5"><div class="skel-table" data-skel-rows="8"></div></div>
+</div>
+
+<div id="panel-sal" class="panel">
+  <div class="table-wrap" id="table6"><div class="skel-table" data-skel-rows="8"></div></div>
+</div>
+
+<div id="panel-auditoria" class="panel">
+  <div class="aud-layout">
+
+    <!-- ── Leyenda ─────────────────────────────────────────────── -->
+    <div class="aud-legend-bar">
+      <span class="aud-legend-item"><span class="aud-dot" style="background:#fca5a5;border-color:#f87171"></span>Dañado</span>
+      <span class="aud-legend-item"><span class="aud-dot" style="background:#e2e8f0;border-color:#94a3b8"></span>Por revisar</span>
+      <span class="aud-legend-item"><span class="aud-dot" style="background:#fef9c3;border-color:#fde047"></span>En proceso</span>
+      <span class="aud-legend-item"><span class="aud-dot" style="background:#d1fae5;border-color:#6ee7b7"></span>Reparado</span>
+      <span class="aud-legend-item"><span class="aud-dot" style="background:#f0f4f8;border-color:#d1dae3"></span>Sin datos</span>
+    </div>
+
+    <!-- ── Sin datos ────────────────────────────────────────────── -->
+    <div id="auditoria-no-data" class="aud-no-data" style="display:none">
+      Sin datos de reparaciones para este edificio
+    </div>
+
+    <!-- ── Stacking plan coloreado ──────────────────────────────── -->
+    <div class="aud-stacking-card">
+      <div class="aud-section-title">
+        Estado de Reparaciones por Unidad
+        <div class="evol-range chart-font-wrap" style="margin-left:auto" data-html2canvas-ignore>
+          <span class="chart-font-lbl">Texto</span>
+          <input class="chart-font-slider" type="range" min="7" max="20" value="9" step="1" oninput="document.getElementById('auditoria-stacking').style.setProperty('--aud-fs',this.value+'px');this.nextElementSibling.textContent=this.value+'px'">
+          <span class="chart-font-val">9px</span>
+        </div>
+        <button class="btn-copy-dir" onclick="copyAuditStackingCard(this)" title="Copiar como imagen"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+      </div>
+      <div id="auditoria-stacking" class="aud-stacking-wrap">
+        <div class="skel-grid" data-skel-rows="8" data-skel-cols="16"></div>
+      </div>
+    </div>
+
+    <!-- ── Gráfico de barras + tabla ────────────────────────────── -->
+    <div class="aud-bottom-grid">
+      <div class="aud-chart-card" data-chart-key="auditoria">
+        <div class="aud-section-title">
+          <span class="evol-card-title" style="font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit">Vencimientos con Reparaciones Pendientes</span>
+          <span id="auditoria-month-label" class="aud-month-chip"></span>
+          <div class="evol-card-controls" style="margin-left:auto" data-html2canvas-ignore></div>
+          <button class="btn-export-chart" onclick="openExportPanel(this)" title="Exportar gráfico"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+        </div>
+        <p class="aud-hint">Haz clic en una barra para filtrar el stacking plan y ver el detalle</p>
+        <div class="aud-bar-wrap">
+          <canvas id="auditoria-bar-canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="aud-table-card">
+        <div class="aud-section-title">Detalle de unidades</div>
+        <div class="aud-table-wrap">
+          <table class="aud-table">
+            <thead>
+              <tr>
+                <th>Depto</th>
+                <th>Titular</th>
+                <th>Renta</th>
+                <th>F. Término</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="auditoria-table-body">
+              <tr><td colspan="5" class="aud-table-empty">Selecciona un mes en el gráfico para ver el detalle</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="panel-evolucion" class="panel">
+  <div class="evol-layout">
+
+    <div class="evol-card" data-chart-key="evol">
+      <div class="evol-card-header">
+        <div class="evol-card-title-row">
+          <span class="evol-card-title">Ocupación de Departamentos</span>
+          <button class="btn-export-chart" onclick="openExportPanel(this)" title="Exportar gráfico"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+        </div>
+        <div class="evol-card-controls">
+          <label class="evol-check-label"><input type="checkbox" id="evol-labels" onchange="renderEvolChart()" checked> Etiquetas</label>
+          <div class="evol-range">
+            <label>Desde</label>
+            <input type="month" id="evol-desde" onchange="renderBothEvolCharts()">
+            <label>Hasta</label>
+            <input type="month" id="evol-hasta" onchange="renderBothEvolCharts()">
+            <label>Corte</label>
+            <input type="month" id="evol-corte" onchange="renderBothEvolCharts()">
+          </div>
+        </div>
+      </div>
+      <div class="evol-chart-wrap evol-h-340">
+        <canvas id="evol-chart"></canvas>
+      </div>
+    </div>
+
+    <div class="evol-card" data-chart-key="netos">
+      <div class="evol-card-header">
+        <div class="evol-card-title-row">
+          <span class="evol-card-title">Nuevos Arriendos Netos</span>
+          <button class="btn-export-chart" onclick="openExportPanel(this)" title="Exportar gráfico"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+        </div>
+        <div class="evol-card-controls">
+          <label class="evol-check-label"><input type="checkbox" id="netos-labels" onchange="renderNetosChart()" checked> Etiquetas</label>
+          <div class="evol-range">
+            <label>Desde</label>
+            <input type="month" id="netos-desde" onchange="renderNetosChart()">
+            <label>Hasta</label>
+            <input type="month" id="netos-hasta" onchange="renderNetosChart()">
+          </div>
+        </div>
+      </div>
+      <div class="evol-chart-wrap evol-h-260">
+        <canvas id="netos-chart"></canvas>
+      </div>
+    </div>
+
+    <div class="evol-card" data-chart-key="venc">
+      <div class="evol-card-header">
+        <div class="evol-card-title-row">
+          <span class="evol-card-title">Vencimientos</span>
+          <button class="btn-export-chart" onclick="openExportPanel(this)" title="Exportar gráfico"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+        </div>
+        <div class="evol-card-controls">
+          <label class="evol-check-label"><input type="checkbox" id="venc-chart-labels" onchange="renderVencChart()" checked> Etiquetas</label>
+          <div class="evol-range">
+            <label>Tipología</label>
+            <select id="venc-chart-tipo" onchange="renderVencChart()"><option value="">Todas</option></select>
+          </div>
+          <div class="evol-range">
+            <label>Desde</label>
+            <input type="month" id="venc-chart-desde" onchange="renderVencChart()">
+            <label>Hasta</label>
+            <input type="month" id="venc-chart-hasta" onchange="renderVencChart()">
+          </div>
+        </div>
+      </div>
+      <div class="evol-chart-wrap evol-h-260">
+        <canvas id="venc-chart-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="evol-card" data-chart-key="renewal">
+      <div class="evol-card-header">
+        <div class="evol-card-title-row">
+          <span class="evol-card-title">Renewal Rate (%)</span>
+          <button class="btn-export-chart" onclick="openExportPanel(this)" title="Exportar gráfico"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+        </div>
+        <div class="evol-card-controls">
+          <label class="evol-check-label"><input type="checkbox" id="renewal-chart-labels" onchange="renderRenewalChart()" checked> Etiquetas</label>
+          <label class="evol-check-label"><input type="checkbox" id="renewal-chart-avg" onchange="renderRenewalChart()" checked> Promedio</label>
+          <div class="evol-range">
+            <label>Tipología</label>
+            <select id="renewal-chart-tipo" onchange="renderRenewalChart()"><option value="">Todas</option></select>
+          </div>
+          <div class="evol-range">
+            <label>Desde</label>
+            <input type="month" id="renewal-chart-desde" onchange="renderRenewalChart()">
+            <label>Hasta</label>
+            <input type="month" id="renewal-chart-hasta" onchange="renderRenewalChart()">
+          </div>
+        </div>
+      </div>
+      <div class="evol-chart-wrap evol-h-260">
+        <canvas id="renewal-chart-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="evol-card" data-chart-key="entrada">
+      <div class="evol-card-header">
+        <div class="evol-card-title-row">
+          <span class="evol-card-title">Eventos de Entrada</span>
+          <button class="btn-export-chart" onclick="openExportPanel(this)" title="Exportar gráfico"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+        </div>
+        <div class="evol-card-controls">
+          <label class="evol-check-label"><input type="checkbox" id="entrada-chart-labels" onchange="renderEntradaChart()" checked> Etiquetas</label>
+          <div class="evol-range">
+            <label>Desde</label>
+            <input type="month" id="entrada-chart-desde" onchange="renderEntradaChart()">
+            <label>Hasta</label>
+            <input type="month" id="entrada-chart-hasta" onchange="renderEntradaChart()">
+          </div>
+        </div>
+      </div>
+      <div class="evol-chart-wrap evol-h-300">
+        <canvas id="entrada-chart-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="evol-card" data-chart-key="termino">
+      <div class="evol-card-header">
+        <div class="evol-card-title-row">
+          <span class="evol-card-title">Contratos, Salidas y Netos</span>
+          <button class="btn-export-chart" onclick="openExportPanel(this)" title="Exportar gráfico"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+        </div>
+        <div class="evol-card-controls">
+          <label class="evol-check-label"><input type="checkbox" id="flujo-chart-labels" onchange="renderFlujoChart()" checked> Etiquetas</label>
+          <div class="evol-range">
+            <label>Desde</label>
+            <input type="month" id="flujo-chart-desde" onchange="renderFlujoChart()">
+            <label>Hasta</label>
+            <input type="month" id="flujo-chart-hasta" onchange="renderFlujoChart()">
+          </div>
+        </div>
+      </div>
+      <div class="evol-chart-wrap evol-h-300">
+        <canvas id="flujo-chart-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="evol-card" data-chart-key="salidas">
+      <div class="evol-card-header">
+        <div class="evol-card-title-row">
+          <span class="evol-card-title">Análisis de Salidas</span>
+          <button class="btn-export-chart" onclick="openExportPanel(this)" title="Exportar gráfico"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+        </div>
+        <div class="evol-card-controls">
+          <label class="evol-check-label"><input type="checkbox" id="salidas-chart-labels" onchange="renderSalidasChart()" checked> Etiquetas</label>
+          <label class="evol-check-label"><input type="checkbox" id="salidas-chart-pct" onchange="renderSalidasChart()"> % del total</label>
+          <div class="evol-range">
+            <label>Tipo</label>
+            <select id="salidas-chart-tipo" onchange="renderSalidasChart()"><option value="">Todos</option></select>
+          </div>
+          <div class="evol-range">
+            <label>Desde</label>
+            <input type="month" id="salidas-chart-desde" onchange="renderSalidasChart()">
+            <label>Hasta</label>
+            <input type="month" id="salidas-chart-hasta" onchange="renderSalidasChart()">
+          </div>
+        </div>
+      </div>
+      <div class="evol-chart-wrap evol-h-320">
+        <canvas id="salidas-chart-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="evol-card" data-chart-key="desglose">
+      <div class="evol-card-header">
+        <div class="evol-card-title-row">
+          <span class="evol-card-title">Desglose de Salidas</span>
+          <button class="btn-export-chart" onclick="openExportPanel(this)" title="Exportar gráfico"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+        </div>
+        <div class="evol-card-controls">
+          <label class="evol-check-label"><input type="checkbox" id="desglose-labels" onchange="renderDesgloseSalidasChart()" checked> Etiquetas</label>
+          <div class="evol-range">
+            <label>Desde</label>
+            <input type="month" id="desglose-desde" onchange="renderDesgloseSalidasChart()">
+            <label>Hasta</label>
+            <input type="month" id="desglose-hasta" onchange="renderDesgloseSalidasChart()">
+          </div>
+        </div>
+      </div>
+      <div class="evol-chart-wrap evol-h-300">
+        <canvas id="desglose-chart-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="evol-card" data-chart-key="motivo">
+      <div class="evol-card-header">
+        <div class="evol-card-title-row">
+          <span class="evol-card-title">Motivo de Salida (%)</span>
+          <button class="btn-export-chart" onclick="openExportPanel(this)" title="Exportar gráfico"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+        </div>
+        <div class="evol-card-controls">
+          <label class="evol-check-label"><input type="checkbox" id="motivo-chart-labels" onchange="renderMotivoChart()" checked> Etiquetas</label>
+          <div class="evol-range">
+            <label>Tipología</label>
+            <select id="motivo-chart-tipologia" onchange="renderMotivoChart()"><option value="">Todas</option></select>
+          </div>
+          <div class="evol-range">
+            <label>Tipo</label>
+            <select id="motivo-chart-tipo" onchange="renderMotivoChart()"><option value="">Todos</option></select>
+          </div>
+          <div class="evol-range">
+            <label>Desde</label>
+            <input type="month" id="motivo-chart-desde" onchange="renderMotivoChart()">
+            <label>Hasta</label>
+            <input type="month" id="motivo-chart-hasta" onchange="renderMotivoChart()">
+          </div>
+        </div>
+      </div>
+      <div class="evol-chart-wrap evol-h-300">
+        <canvas id="motivo-chart-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="evol-card" data-chart-key="permanencia">
+      <div class="evol-card-header">
+        <div class="evol-card-title-row">
+          <span class="evol-card-title">Antigüedad de Contratos</span>
+          <button class="btn-export-chart" onclick="openExportPanel(this)" title="Exportar gráfico"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+        </div>
+        <div class="evol-card-controls">
+          <label class="evol-check-label"><input type="checkbox" id="permanencia-chart-labels" onchange="renderPermanenciaChart()" checked> Etiquetas</label>
+          <div class="evol-range">
+            <label>Tipología</label>
+            <select id="permanencia-chart-tipo" onchange="renderPermanenciaChart()"><option value="">Todas</option></select>
+          </div>
+          <span id="permanencia-stat-anual" class="evol-perm-stat"></span>
+          <span id="permanencia-stat-semestral" class="evol-perm-stat"></span>
+        </div>
+      </div>
+      <div class="evol-chart-wrap evol-h-300">
+        <canvas id="permanencia-chart-canvas"></canvas>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /#app-root -->
+
+<!-- Genera el contenido de los skeleton loaders (filas/celdas) para no repetir markup -->
+<script>
+(function() {
+  document.querySelectorAll('[data-skel-rows]').forEach(function(el) {
+    var rows   = parseInt(el.dataset.skelRows) || 6;
+    var cols   = parseInt(el.dataset.skelCols) || 0;
+    var isGrid = el.classList.contains('skel-grid');
+    var html   = '';
+    for (var r = 0; r < rows; r++) {
+      if (isGrid) {
+        html += '<div class="skel-grid-row"><div class="skel-block skel-lbl"></div>';
+        for (var c = 0; c < cols; c++) html += '<div class="skel-block skel-cell"></div>';
+        html += '</div>';
+      } else {
+        html += '<div class="skel-table-row' + (r === 0 ? ' skel-head' : '') + '">' +
+          '<div class="skel-block"></div><div class="skel-block"></div>' +
+          '<div class="skel-block"></div><div class="skel-block"></div>' +
+          '</div>';
+      }
+    }
+    el.innerHTML = html;
+  });
+})();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script type="module" src="src/main.js"></script>
+
+<script type="module">
+import { initializeApp }                          from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+                                                  from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js';
+import { getFirestore, doc, getDoc, setDoc }      from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js';
+
+const ALLOWED_DOMAINS = ['situ.cl', 'insiturentas.cl'];
+const isAllowed = email => ALLOWED_DOMAINS.some(d => email.endsWith('@' + d));
+
+const app  = initializeApp({
+  apiKey:            'AIzaSyBGWWznP2htQmHGc2s1MZ1bZpPdyNUGuQA',
+  authDomain:        'visor-de-rent-roll-situ.firebaseapp.com',
+  projectId:         'visor-de-rent-roll-situ',
+  storageBucket:     'visor-de-rent-roll-situ.firebasestorage.app',
+  messagingSenderId: '919455582844',
+  appId:             '1:919455582844:web:422bbb939426a8df0597f9',
+});
+const auth     = getAuth(app);
+const db       = getFirestore(app);
+const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ prompt: 'select_account' }); // sin hd: permite ambos dominios
+
+// Selección de columnas predeterminada del exportador de Estatus Actual —
+// compartida entre todos los usuarios (config/estatusExportCols en Firestore).
+window.__estatusColsPreset = {
+  async load() {
+    try {
+      const snap = await getDoc(doc(db, 'config', 'estatusExportCols'));
+      return snap.exists() ? snap.data().cols : null;
+    } catch (err) {
+      console.error('Error cargando preset de columnas:', err);
+      return null;
+    }
+  },
+  async save(cols) {
+    await setDoc(doc(db, 'config', 'estatusExportCols'), {
+      cols,
+      updatedAt: Date.now(),
+      updatedBy: auth.currentUser?.email || null,
+    });
+  },
+};
+
+const overlay   = document.getElementById('auth-overlay');
+const appRoot   = document.getElementById('app-root');
+const errorEl   = document.getElementById('auth-error');
+const emailEl   = document.getElementById('hdr-user-email');
+
+function showError(msg) { errorEl.textContent = msg; }
+function clearError()   { errorEl.textContent = ''; }
+
+onAuthStateChanged(auth, user => {
+  if (user && isAllowed(user.email)) {
+    overlay.style.display  = 'none';
+    appRoot.style.display  = '';
+    emailEl.textContent    = user.email;
+    clearError();
+  } else {
+    appRoot.style.display  = 'none';
+    overlay.style.display  = 'flex';
+    if (user) {
+      // Correo de dominio no permitido
+      showError('Acceso restringido a correos @situ.cl o @insiturentas.cl');
+      signOut(auth);
+    }
+  }
+});
+
+document.getElementById('btn-google-login').addEventListener('click', async () => {
+  clearError();
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (err) {
+    if (err.code !== 'auth/popup-closed-by-user') {
+      showError('Error al iniciar sesión. Intenta de nuevo.');
+    }
+  }
+});
+
+document.getElementById('btn-signout').addEventListener('click', () => signOut(auth));
+</script>
+
+<script>
+// ── LEGEND PAGINATION (mobile) ──
+(function() {
+  var panel, dots, isMobile;
+
+  function isMobileView() { return window.innerWidth <= 640; }
+
+  function initLegendPagination() {
+    panel = document.getElementById('legend-panel-unidades');
+    var dotsEl = document.getElementById('legend-dots');
+    if (!panel || !dotsEl) return;
+
+    panel.addEventListener('scroll', function() {
+      if (!isMobileView()) return;
+      var page = Math.round(panel.scrollLeft / panel.offsetWidth);
+      dotsEl.querySelectorAll('.legend-dot-btn').forEach(function(d, i) {
+        d.classList.toggle('active', i === page);
+      });
+    }, { passive: true });
+  }
+
+  window.goLegendPage = function(idx) {
+    var p = document.getElementById('legend-panel-unidades');
+    if (!p || !isMobileView()) return;
+    p.scrollTo({ left: idx * p.offsetWidth, behavior: 'smooth' });
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLegendPagination);
+  } else {
+    initLegendPagination();
+  }
+})();
+</script>
+<!-- Modal exportar PDF -->
+<div id="pdf-export-modal" class="pdf-modal-overlay" style="display:none" onclick="if(event.target===this)pdfModalResolve(null)">
+  <div class="pdf-modal">
+    <div class="pdf-modal-header">
+      <span class="pdf-modal-title">Exportar Stacking PDF</span>
+      <button class="pdf-modal-close" onclick="pdfModalResolve(null)">✕</button>
+    </div>
+    <div class="pdf-modal-body">
+      <label class="pdf-modal-option">
+        <div class="pdf-modal-option-text">
+          <span class="pdf-modal-option-label">Links a contratos (Drive)</span>
+          <span class="pdf-modal-option-desc">Las celdas del PDF serán clickeables y abrirán la carpeta de contratos del departamento. Solo para uso interno.</span>
+        </div>
+        <div class="pdf-modal-toggle-wrap">
+          <input type="checkbox" id="pdf-include-links" class="pdf-modal-checkbox">
+          <span class="pdf-modal-toggle"></span>
+        </div>
+      </label>
+    </div>
+    <div class="pdf-modal-footer">
+      <button class="pdf-modal-btn-cancel" onclick="pdfModalResolve(null)">Cancelar</button>
+      <button class="pdf-modal-btn-ok" onclick="pdfModalResolve({includeLinks: document.getElementById('pdf-include-links').checked})">Generar PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal exportar Estatus Actual -->
+<div id="estatus-export-modal" class="pdf-modal-overlay" style="display:none" onclick="if(event.target===this)closeEstatusExportModal()">
+  <div class="pdf-modal exp-modal">
+    <div class="pdf-modal-header">
+      <span class="pdf-modal-title">Exportar Estatus Actual</span>
+      <button class="pdf-modal-close" onclick="closeEstatusExportModal()">✕</button>
+    </div>
+    <div class="pdf-modal-body">
+      <div class="exp-cols-toolbar">
+        <span class="exp-cols-label">Columnas a incluir</span>
+        <div class="exp-cols-actions">
+          <button type="button" onclick="toggleAllExportCols(true)">Todas</button>
+          <span>·</span>
+          <button type="button" onclick="toggleAllExportCols(false)">Ninguna</button>
+          <span>·</span>
+          <button type="button" onclick="saveExportColsPreset(this)">Guardar como predeterminado</button>
+        </div>
+      </div>
+      <div class="exp-cols-list" id="exp-cols-list"></div>
+      <div class="exp-cols-preset-status" id="exp-cols-preset-status"></div>
+    </div>
+    <div class="pdf-modal-footer exp-format-footer">
+      <button class="exp-format-btn" onclick="runEstatusExport('csv', this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        CSV
+      </button>
+      <button class="exp-format-btn" onclick="runEstatusExport('xlsx', this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        XLSX
+      </button>
+      <button class="exp-format-btn" onclick="runEstatusExport('table', this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Tabla
+      </button>
+      <button class="exp-format-btn" onclick="runEstatusExport('pdf', this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DIRECTORIO ─────────────────────────────────────────────────────── -->
+<div id="panel-caracterizacion" class="panel">
+  <div class="dir-layout">
+
+    <!-- Fila superior -->
+    <div class="dir-row dir-row-top">
+
+      <!-- Composición del hogar -->
+      <div class="dir-card dir-card-hogar">
+        <div class="dir-card-title">Composición del hogar<button class="btn-copy-dir" onclick="copyDirCard(this)" title="Copiar como imagen"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+        <div class="dir-card-body dir-chart-medium">
+          <canvas id="dir-chart-hogar"></canvas>
+          <div id="dir-hogar-nodata" class="dir-nodata" style="display:none">
+            Sin datos de composición en la columna <em>Descripción</em>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ocupación -->
+      <div class="dir-card dir-card-ocup">
+        <div class="dir-card-title">Ocupación residentes<button class="btn-copy-dir" onclick="copyDirCard(this)" title="Copiar como imagen"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+        <div class="dir-card-body dir-chart-medium">
+          <canvas id="dir-chart-ocupacion"></canvas>
+          <div id="dir-ocup-nodata" class="dir-nodata" style="display:none">
+            Requiere columna <em>Ocupación</em> en la hoja de datos
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="dir-card dir-card-kpis">
+        <div class="dir-card-title">Caracterización<button class="btn-copy-dir" onclick="copyDirCard(this)" title="Copiar como imagen"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+        <div id="dir-kpis" class="dir-kpis-list"></div>
+      </div>
+
+    </div>
+
+    <!-- Fila inferior -->
+    <div class="dir-row dir-row-bottom">
+
+      <!-- Edad × Tipología -->
+      <div class="dir-card dir-card-edad">
+        <div class="dir-card-title">Residente por grupo etario y tipología<button class="btn-copy-dir" onclick="copyDirCard(this)" title="Copiar como imagen"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+        <div class="dir-card-body dir-chart-tall">
+          <canvas id="dir-chart-edad"></canvas>
+          <div id="dir-edad-nodata" class="dir-nodata" style="display:none">
+            Requiere columna <em>Edad</em> en la hoja de datos
+          </div>
+        </div>
+      </div>
+
+      <!-- Residentes por sexo -->
+      <div class="dir-card dir-card-arriendos">
+        <div class="dir-card-title">Residentes por sexo<button class="btn-copy-dir" onclick="copyDirCard(this)" title="Copiar como imagen"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+        <div class="dir-card-body dir-chart-tall">
+          <canvas id="dir-chart-sexo"></canvas>
+        </div>
+      </div>
+
+      <!-- Tabla stock -->
+      <div class="dir-card dir-card-tabla">
+        <div class="dir-card-title">Arriendos vs stock total (neto de pilotos)<button class="btn-copy-dir" onclick="copyDirCard(this)" title="Copiar como imagen"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+        <div id="dir-tabla-stock" class="dir-tabla-wrap"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
