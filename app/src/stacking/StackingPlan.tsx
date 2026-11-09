@@ -11,6 +11,7 @@ import { Mensaje } from '../ui/Tarjeta'
 import { Grilla } from './Grilla'
 import { Leyenda, type Pestana } from './Leyenda'
 import { PanelFiltros, filtrosActivos } from './PanelFiltros'
+import { ExportarPdf } from './ExportarPdf'
 import { Tooltip, type Ficha, type PosicionFicha } from './Tooltip'
 
 const PESTANAS: [Pestana, string][] = [['unidades', 'Unidades'], ['bodegas', 'Bodegas'], ['estac', 'Estac.']]
@@ -96,6 +97,7 @@ export function StackingPlan({ edificio }: { edificio: Edificio }) {
           <Interruptor activo={conTipologia} onClick={() => setConTipologia((v) => !v)}>Tipología</Interruptor>
           <Interruptor activo={conCabecera} onClick={() => setConCabecera((v) => !v)}>Cabecera</Interruptor>
           <Interruptor activo={ajustar} onClick={() => setAjustar((v) => !v)}>Ajustar al ancho</Interruptor>
+          <ExportarPdf datos={{ edificio, unidades, estac, bodegas }} listo={!estatus.cargando && !est.cargando && !bod.cargando} />
           <button onClick={() => setConFiltros((v) => !v)}
             className={`rounded-full px-3.5 py-1 text-xs font-medium transition-colors ${conFiltros || activos ? 'bg-oscuro text-white' : 'bg-slate-100 text-oscuro hover:bg-slate-200'}`}>
             Filtros{activos > 0 && <span className="ml-1.5 rounded-full bg-acento px-1.5 text-[10px]">{activos}</span>}
