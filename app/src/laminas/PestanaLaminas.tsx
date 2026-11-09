@@ -5,15 +5,18 @@ import type { LaminaOcupacion } from './ocupacion/datos'
 import type { LaminaSalidas } from './salidas/datos'
 import { LaminaOcupacionVista } from './ocupacion/Vista'
 import { LaminaSalidasVista } from './salidas/Vista'
+import type { LaminaStacking } from './stacking/datos'
+import { LaminaStackingVista } from './stacking/Vista'
 
 // Pestaña Láminas: la vista previa de cada lámina con sus controles, y un botón que descarga todas juntas
 // en una presentación, tal como se ven.
 export function PestanaLaminas({ edificio }: { edificio: Edificio }) {
-  const [laminas, setLaminas] = useState<Laminas>({ ocupacion: null, salidas: null })
+  const [laminas, setLaminas] = useState<Laminas>({ ocupacion: null, salidas: null, stacking: null })
   const [exportando, setExportando] = useState(false)
   const alOcupacion = useCallback((ocupacion: LaminaOcupacion | null) => setLaminas((l) => ({ ...l, ocupacion })), [])
   const alSalidas = useCallback((salidas: LaminaSalidas | null) => setLaminas((l) => ({ ...l, salidas })), [])
-  const cuantas = Number(!!laminas.ocupacion) + Number(!!laminas.salidas)
+  const alStacking = useCallback((stacking: LaminaStacking | null) => setLaminas((l) => ({ ...l, stacking })), [])
+  const cuantas = Number(!!laminas.ocupacion) + Number(!!laminas.salidas) + Number(!!laminas.stacking)
 
   async function exportar() {
     setExportando(true)
@@ -44,6 +47,10 @@ export function PestanaLaminas({ edificio }: { edificio: Edificio }) {
       <section className="space-y-3">
         <p className="text-[11px] font-bold tracking-widest text-gris-claro uppercase">Lámina 2 · Análisis de salidas</p>
         <LaminaSalidasVista edificio={edificio} onLamina={alSalidas} />
+      </section>
+      <section className="space-y-3">
+        <p className="text-[11px] font-bold tracking-widest text-gris-claro uppercase">Lámina 3 · Stacking plan</p>
+        <LaminaStackingVista edificio={edificio} onLamina={alStacking} />
       </section>
     </div>
   )

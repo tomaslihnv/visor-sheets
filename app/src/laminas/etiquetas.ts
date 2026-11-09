@@ -33,7 +33,7 @@ export interface Medidas {
   separacion: number // entre el punto y la etiqueta
 }
 
-type Caja = { x0: number; y0: number; x1: number; y1: number }
+export type Caja = { x0: number; y0: number; x1: number; y1: number }
 
 const choca = (a: Caja, b: Caja) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1
 
@@ -42,13 +42,14 @@ export function puntoEnTrazado(t: Trazado, i: number, v: number) {
 }
 
 // `puntos`: marcadores que ninguna etiqueta debe tapar (los de todas las series dibujadas).
-export function ubicarEtiquetas(etiquetas: Etiqueta[], puntos: { i: number; v: number }[], t: Trazado, m: Medidas): EtiquetaUbicada[] {
+// `bloqueadas`: zonas ya ocupadas por otros textos fijos (p. ej. cifras sobre barras).
+export function ubicarEtiquetas(etiquetas: Etiqueta[], puntos: { i: number; v: number }[], t: Trazado, m: Medidas, bloqueadas: Caja[] = []): EtiquetaUbicada[] {
   // Menor que la separación: si no, cada etiqueta chocaría con el marcador de su propio punto.
   const radio = m.separacion * 0.8
   const ocupadas: Caja[] = puntos.map(({ i, v }) => {
     const p = puntoEnTrazado(t, i, v)
     return { x0: p.x - radio, y0: p.y - radio, x1: p.x + radio, y1: p.y + radio }
-  })
+  }).concat(bloqueadas)
   const ubicadas: EtiquetaUbicada[] = []
 
   for (const e of [...etiquetas].sort((a, b) => a.prioridad - b.prioridad)) {
