@@ -1,6 +1,9 @@
-import type { ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
+import { BotonExportar } from './ExportarGrafico'
 
-export function Tarjeta({ titulo, subtitulo, controles, children }: { titulo: string; subtitulo?: string; controles?: ReactNode; children: ReactNode }) {
+// `exportable`: agrega el botón para bajar el gráfico (children) como PNG.
+export function Tarjeta({ titulo, subtitulo, controles, exportable, children }: { titulo: string; subtitulo?: string; controles?: ReactNode; exportable?: boolean; children: ReactNode }) {
+  const grafico = useRef<HTMLDivElement>(null)
   return (
     <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
       <header className="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-slate-100 pb-4">
@@ -8,9 +11,14 @@ export function Tarjeta({ titulo, subtitulo, controles, children }: { titulo: st
           <h2 className="text-base font-bold">{titulo}</h2>
           {subtitulo && <p className="mt-0.5 text-sm text-gris">{subtitulo}</p>}
         </div>
-        {controles && <div className="flex flex-wrap items-center gap-3 text-xs text-gris">{controles}</div>}
+        {(controles || exportable) && (
+          <div className="flex flex-wrap items-center gap-3 text-xs text-gris">
+            {controles}
+            {exportable && <BotonExportar titulo={titulo} grafico={grafico}>{children}</BotonExportar>}
+          </div>
+        )}
       </header>
-      {children}
+      {exportable ? <div ref={grafico}>{children}</div> : children}
     </section>
   )
 }

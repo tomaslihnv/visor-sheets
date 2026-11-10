@@ -53,3 +53,6 @@ body { @apply bg-slate-50 text-oscuro antialiased; }
 .acercar { animation: acercar 7s ease-out both; }
 .avance { animation: avance linear both; transform-origin: left; }
 .trazo { stroke-dasharray: 1; animation: trazo 1.1s cubic-bezier(0.65, 0, 0.35, 1) both; }
+
+/* Copia del gráfico en la ventana de exportar: ocupa todo el lienzo y sin animación de entrada. */
+[data-exportando] > div { height: 100% !important; animation: none !important; }
