@@ -81,7 +81,7 @@ export function Reparaciones({ edificio }: { edificio: Edificio }) {
       </Tarjeta>
 
       <div className="grid gap-6 2xl:grid-cols-2">
-        <Tarjeta titulo="Vencimientos con reparaciones pendientes" subtitulo="Contratos que vencen en los próximos 12 meses, según el estado de su unidad · haz clic en un mes">
+        <Tarjeta exportable titulo="Vencimientos con reparaciones pendientes" subtitulo="Contratos que vencen en los próximos 12 meses, según el estado de su unidad · haz clic en un mes">
           {rep.cargando || con.cargando ? <EsqueletoGrafico /> : 'error' in con ? <Mensaje>No se pudo leer la hoja I. Contratos: {con.error}</Mensaje> : (
             <div className="aparecer h-80">
               <ResponsiveContainer>

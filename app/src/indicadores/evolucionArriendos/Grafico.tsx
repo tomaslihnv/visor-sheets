@@ -9,8 +9,8 @@ import { mesActual, sumarMeses } from '../../datos/fechas'
 import { ejeX, ejeY, leyendaArriba } from '../../ui/graficos'
 import { evolucionArriendos, mesesDisponibles, opcionesPorDefecto, type Opciones, type PuntoEvolucion } from './datos'
 
-// Los mismos colores de las láminas (exportarPptx.ts de los otros proyectos).
-const C = { real: '#96323c', proyectado: '#d7a1a7', linea: '#2d3334', lineaProy: '#8a949c', presupuesto: '#5b6670', eje: '#5b6670' }
+// Barras pizarra (real) y pizarra claro (proyección), como las láminas del equipo.
+const C = { real: '#44546a', proyectado: '#c5cfdb', linea: '#2d3334', lineaProy: '#8a949c', presupuesto: '#5b6670', eje: '#5b6670' }
 
 type PuntoGrafico = PuntoEvolucion & { pctReal: number | null; pctProy: number | null; lblReal: string; lblProy: string }
 
@@ -72,10 +72,10 @@ export function EvolucionArriendos({ edificio }: { edificio: Edificio }) {
           <YAxis yAxisId="un" orientation="right" {...ejeY('Unidades')} domain={[0, total ? total * 1.2 : 'auto']}
             ticks={total ? [0, 0.2, 0.4, 0.6, 0.8, 1, 1.2].map((f) => Math.round(total * f)) : undefined}
             label={{ ...ejeY('Unidades').label, angle: 90, position: 'insideRight' }} />
-          <Tooltip content={<Detalle />} cursor={{ fill: '#96323c0d' }} />
+          <Tooltip content={<Detalle />} cursor={{ fill: '#44546a0d' }} />
           <Legend {...leyendaArriba} />
           <Bar yAxisId="un" dataKey="real" name="Arrendadas (real)" stackId="u" fill={C.real} radius={[3, 3, 0, 0]} maxBarSize={28}>
-            {etiquetas && <LabelList dataKey="lblReal" position="top" style={{ fontSize: 11, fill: C.real, fontWeight: 700 }} />}
+            {etiquetas && <LabelList dataKey="lblReal" position="top" style={{ fontSize: 11, fill: C.linea, fontWeight: 700 }} />}
           </Bar>
           <Bar yAxisId="un" dataKey="proyectado" name="Arrendadas (proyección)" stackId="u" fill={C.proyectado} radius={[3, 3, 0, 0]} maxBarSize={28}>
             {etiquetas && <LabelList dataKey="lblProy" position="top" style={{ fontSize: 11, fill: C.eje, fontWeight: 700 }} />}
@@ -88,7 +88,7 @@ export function EvolucionArriendos({ edificio }: { edificio: Edificio }) {
     </div>
   )
 
-  return <Tarjeta titulo={total ? `Evolución de arriendos · ${total} unidades` : 'Evolución de arriendos'} controles={controles}>{cuerpo}</Tarjeta>
+  return <Tarjeta exportable titulo={total ? `Evolución de arriendos · ${total} unidades` : 'Evolución de arriendos'} controles={controles}>{cuerpo}</Tarjeta>
 }
 
 function Detalle({ active, payload }: TooltipProps<number, string>) {

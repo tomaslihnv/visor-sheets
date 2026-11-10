@@ -59,7 +59,7 @@ export function GraficoNetos({ edificio }: { edificio: Edificio }) {
     .map(([value, color]) => ({ value, color, type: 'square' as const, id: value }))
 
   return (
-    <Tarjeta titulo="Nuevos arriendos netos"
+    <Tarjeta exportable titulo="Nuevos arriendos netos"
       controles={<><ControlRango rango={rango} meses={meses} onChange={setRango} /><Casilla etiqueta="Etiquetas" valor={conEtiquetas} onChange={setEtiquetas} /></>}>
       <Cuerpo cargando={cargando} error={error} vacio={!puntos.length && 'Sin datos en este período.'}>
         <BarChart data={puntos} margin={margen}>
@@ -95,7 +95,7 @@ export function GraficoVencimientos({ edificio }: { edificio: Edificio }) {
   )
 
   return (
-    <Tarjeta titulo="Vencimientos"
+    <Tarjeta exportable titulo="Vencimientos"
       controles={<><ControlRango rango={rango} meses={meses} onChange={setRango} /><Desplegable etiqueta="Tipología" valor={tipologia} opciones={tipologiasDe(venc)} onChange={setTipologia} /><Casilla etiqueta="Etiquetas" valor={conEtiquetas} onChange={setEtiquetas} /></>}>
       <Cuerpo cargando={cargando} error={error} vacio={!puntos.some((p) => p.total) && 'Sin vencimientos en este período.'}>
         <ComposedChart data={puntos} margin={margen}>
@@ -126,7 +126,7 @@ export function GraficoRenewal({ edificio }: { edificio: Edificio }) {
   const etiquetas: Etiqueta[] = puntos.flatMap((p, i) => (p.pct === null ? [] : [{ id: `r${i}`, i, v: p.pct, texto: pct(p.pct), color: TINTA, prioridad: 1 }]))
 
   return (
-    <Tarjeta titulo="Renewal rate"
+    <Tarjeta exportable titulo="Renewal rate"
       controles={<><ControlRango rango={rango} meses={meses} onChange={setRango} /><Desplegable etiqueta="Tipología" valor={tipologia} opciones={tipologiasDe(venc)} onChange={setTipologia} /><Casilla etiqueta="Etiquetas" valor={conEtiquetas} onChange={setEtiquetas} /><Casilla etiqueta="Promedio" valor={conPromedio} onChange={setPromedio} /></>}>
       <Cuerpo forma="lineas" cargando={cargando} error={error} vacio={!puntos.some((p) => p.pct !== null) && 'Sin vencimientos con resultado en este período.'}>
         <ComposedChart data={puntos} margin={margen}>
@@ -155,7 +155,7 @@ export function GraficoEntrada({ edificio }: { edificio: Edificio }) {
   const e = escala(puntos.map((p) => p.total), 0.12)
 
   return (
-    <Tarjeta titulo="Eventos de entrada"
+    <Tarjeta exportable titulo="Eventos de entrada"
       controles={<><ControlRango rango={rango} meses={meses} onChange={setRango} /><Casilla etiqueta="Etiquetas" valor={conEtiquetas} onChange={setEtiquetas} /></>}>
       <Cuerpo cargando={cargando} error={error} vacio={!tipos.length && 'La hoja I. Contratos no tiene eventos de entrada.'}>
         <ComposedChart data={puntos} margin={margen}>
@@ -192,7 +192,7 @@ export function GraficoFlujo({ edificio }: { edificio: Edificio }) {
   ])
 
   return (
-    <Tarjeta titulo="Contratos, salidas y netos"
+    <Tarjeta exportable titulo="Contratos, salidas y netos"
       controles={<><ControlRango rango={rango} meses={meses} onChange={setRango} /><Casilla etiqueta="Etiquetas" valor={conEtiquetas} onChange={setEtiquetas} /></>}>
       <Cuerpo cargando={cargando} error={error} vacio={!puntos.length && 'Sin datos en este período.'}>
         <ComposedChart data={puntos} margin={{ ...margen, top: 48 }} stackOffset="sign">
@@ -249,7 +249,7 @@ export function GraficoSalidas({ edificio }: { edificio: Edificio }) {
   const e = escala(puntos.map((p) => Number(p.total)), 0.15)
 
   return (
-    <Tarjeta titulo="Análisis de salidas"
+    <Tarjeta exportable titulo="Análisis de salidas"
       controles={<><ControlRango rango={rango} meses={meses} onChange={setRango} /><Desplegable etiqueta="Tipo" valor={tipo} opciones={tiposSalida(sal)} onChange={setTipo} todos="Todos" /><Casilla etiqueta="Etiquetas" valor={conEtiquetas} onChange={setEtiquetas} /><Casilla etiqueta="% del total" valor={enPct} onChange={setPct} /></>}>
       <Cuerpo cargando={cargando} error={error} vacio={!motivos.length && 'Sin salidas registradas en este período.'}>
         <ComposedChart data={puntos} margin={margen}>
@@ -284,7 +284,7 @@ export function GraficoDesglose({ edificio }: { edificio: Edificio }) {
   )
 
   return (
-    <Tarjeta titulo="Desglose de salidas"
+    <Tarjeta exportable titulo="Desglose de salidas"
       controles={<><ControlRango rango={rango} meses={meses} onChange={setRango} /><Casilla etiqueta="Etiquetas" valor={conEtiquetas} onChange={setEtiquetas} /></>}>
       <Cuerpo cargando={cargando} error={error} vacio={!puntos.some((p) => p.total) && 'Sin salidas registradas en este período.'}>
         <ComposedChart data={puntos} margin={margen}>
@@ -312,7 +312,7 @@ export function GraficoMotivo({ edificio }: { edificio: Edificio }) {
   const filas = useMemo(() => motivosSalida(sal, rango, { tipologia, tipo }), [sal, rango, tipologia, tipo])
 
   return (
-    <Tarjeta titulo="Motivo de salida (% de las salidas)"
+    <Tarjeta exportable titulo="Motivo de salida (% de las salidas)"
       controles={<><ControlRango rango={rango} meses={meses} onChange={setRango} /><Desplegable etiqueta="Tipología" valor={tipologia} opciones={tipologiasDe(sal)} onChange={setTipologia} /><Desplegable etiqueta="Tipo" valor={tipo} opciones={tiposSalida(sal)} onChange={setTipo} todos="Todos" /><Casilla etiqueta="Etiquetas" valor={conEtiquetas} onChange={setEtiquetas} /></>}>
       <Cuerpo cargando={cargando} error={error} vacio={!filas.length && 'Sin salidas registradas en este período.'}>
         <BarChart data={filas} layout="vertical" margin={{ top: 4, right: 52, bottom: 4, left: 8 }}>
@@ -339,7 +339,7 @@ export function GraficoAntiguedad({ edificio }: { edificio: Edificio }) {
   const chip = (t: string) => <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-gris">{t}</span>
 
   return (
-    <Tarjeta titulo="Antigüedad de contratos vigentes"
+    <Tarjeta exportable titulo="Antigüedad de contratos vigentes"
       controles={<><Desplegable etiqueta="Tipología" valor={tipo} opciones={tipos} onChange={setTipo} /><Casilla etiqueta="Etiquetas" valor={conEtiquetas} onChange={setEtiquetas} />{chip(`Perm. anual (>12m): ${a.anual}%`)}{chip(`Perm. semestral (>6m): ${a.semestral}%`)}</>}>
       <Cuerpo forma="dona" cargando={estatus.cargando} error={'error' in estatus ? estatus.error : undefined} vacio={!a.total && 'Sin contratos vigentes con fecha de firma.'}>
         <PieChart>
